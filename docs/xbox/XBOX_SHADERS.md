@@ -211,3 +211,18 @@ Descriptor-chain failures went from 82 to 36. The others in that group are: Phi 
 
 Not done: a general "heap base + index * stride" lowering to a runtime-sized Vulkan descriptor array kept in sync by the host. The existing table mechanism already does this when the index is a function of register state; Phi splitting extends it to merged heap bases. A buffer-loaded index that varies per loop iteration needs the host side described in the design note and is not covered by validity-only testing.
 
+## Execution harness
+
+Everything above is validity-only: the output passes `spirv-val`. `tools/xbox/exec.cpp` adds real execution. It allocates device-address buffers on the host GPU, builds the SRT and V#/T# descriptors with the real addresses, recompiles the shader against that memory, fills the bindings the recompiler asks for (guest buffers, shader data, flattened SRT, an identity BDA page table, a fault buffer, images, samplers), dispatches, and reads everything back. Test programs are assembled with `rdna_asm.py` and checked against a reference written in Python.
+
+Nine tests pass on an RX 7800 XT (RDNA3 host, wave32):
+- store of per-lane values through a V# loaded from the SRT
+- `v_readfirstlane` under an exec mask narrower than the one the VGPR was written under (hardware answer: the first active lane's old value)
+- a scalarization (waterfall) loop with `s_and_saveexec` / `s_cbranch_execnz` over four distinct per-lane values
+- `image_store` through a T# that is loaded on two branches and merged by a Phi, for both selector values (the selected image gets the data, the other stays untouched; with `XBOX_NO_STORE_SPLIT=1` the shader no longer compiles)
+- `image_bvh_intersect_ray`: box32 node unsorted and with box sort, ray extent clipping, triangle hit and triangle miss, compared with a slab test and Moller-Trumbore
+
+What this found: the harness's own mistakes (T# format 56 is `8_8_8_8_UNORM`, so stored floats were clamped; the BDA page table must be exactly `header + n * 32` bytes; the `rdna2.py` VOPC table is wrong for the non-cmpx compares), not recompiler bugs. The lane-active assumption did not produce a wrong result in the two shapes tested.
+
+Still open: box16 nodes, 64-bit node pointers, `a16` rays, multi-wave and multi-group dispatch, image formats other than RGBA32F, and any shader that needs image tables. The BVH tests use nodes laid out the way the emulation reads them, so they check the emulation against the ISA's traversal maths, not against the Xbox's own compressed BVH format.
+

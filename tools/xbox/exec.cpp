@@ -14,6 +14,7 @@
 // Supported bindings: guest buffers (V# bases must be region starts), shader data, flattened SRT, GDS/page-table/fault stubs.
 // Images and samplers are not implemented yet and make the run fail with a clear message.
 #include "Recompiler.hpp"
+#include "BdaAbi.hpp"
 #include <vulkan/vulkan.h>
 #include <algorithm>
 #include <array>
@@ -234,11 +235,14 @@ int main(int argc, char** argv) {
             }
             else if (l.w[0] == "poke") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(Num(l.w[3]));
             else if (l.w[0] == "ptrlo") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(region(l.w[3]).address + (l.w.size() > 4 ? Num(l.w[4]) : 0));
+            else if (l.w[0] == "ptr8lo") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(region(l.w[3]).address >> 8);
+            else if (l.w[0] == "ptr8hi") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(((region(l.w[3]).address >> 40) & 0xffu) | Num(l.w[4]));
             else if (l.w[0] == "ptrhi") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(((region(l.w[3]).address >> 32) & 0xffffu) | Num(l.w[4]));
             else if (l.w[0] == "user") { const auto k = Num(l.w[1]); userData.at(k) = static_cast<std::uint32_t>(region(l.w[2]).address); userData.at(k + 1) = static_cast<std::uint32_t>(region(l.w[2]).address >> 32); }
             else if (l.w[0] == "userval") userData.at(Num(l.w[1])) = static_cast<std::uint32_t>(Num(l.w[2]));
         }
 
+        for (auto& [id, r] : regions) std::printf("region %u at 0x%llx size %llu\n", id, static_cast<unsigned long long>(r.address), static_cast<unsigned long long>(r.size));
         // Compile against a snapshot of the real contents at the real addresses.
         const auto raw = ReadFile(codePath);
         std::vector<std::uint32_t> code(raw.size() / 4);
@@ -251,8 +255,8 @@ int main(int argc, char** argv) {
         }
         RecompileRequest request{};
         request.context.memory = MemoryRegionView(std::span<const MemoryRegion>(memory));
-        const std::vector<std::uint32_t> caps{1u,55u,56u,32u,33u,5283u,9u,10u,11u,22u,39u,61u,62u,63u,64u,65u,66u,67u,68u,4427u,4433u,4434u,4435u,4436u,4437u,4438u,4445u,4447u,4448u,4449u,5301u,5302u,5303u};
-        const std::array<std::string_view, 6> ext{"SPV_KHR_storage_buffer_storage_class", "SPV_KHR_physical_storage_buffer", "SPV_KHR_16bit_storage", "SPV_KHR_float_controls", "SPV_KHR_8bit_storage", "SPV_KHR_shader_ballot"};
+        const std::vector<std::uint32_t> caps{1u,55u,56u,32u,33u,5283u,9u,10u,11u,22u,39u,61u,62u,63u,64u,65u,66u,67u,68u,4427u,4433u,4434u,4435u,4436u,4437u,4438u,4445u,4447u,4448u,4449u,4450u,5345u,5346u,5347u,5301u,5302u,5303u,5304u,5305u,6u,38u,41u,5u,17u,18u,19u,3u,2u,4u,7u,8u,45u,5249u};
+        const std::array<std::string_view, 7> ext{"SPV_EXT_mesh_shader", "SPV_KHR_storage_buffer_storage_class", "SPV_KHR_physical_storage_buffer", "SPV_KHR_16bit_storage", "SPV_KHR_8bit_storage", "SPV_KHR_vulkan_memory_model", "SPV_KHR_shader_ballot"};
         request.shader = {ShaderStage::Compute, 0x20000u, code};
         request.context.waveSize = wave;
         request.context.userDataBaseRegister = 0;
@@ -263,7 +267,8 @@ int main(int argc, char** argv) {
         request.target.subgroupSize = wave;
         request.target.bdaAbiVersion = 1;
         request.target.supportedCapabilities = caps;
-        request.target.supportedExtensions = std::vector<std::string_view>(ext.begin(), ext.end());
+        const std::vector<std::string_view> extVector(ext.begin(), ext.end());
+        request.target.supportedExtensions = extVector;
         request.target.maxWorkgroupSize = {1024u, 1024u, 64u};
         request.target.maxWorkgroupInvocations = 1024;
         request.target.maxWorkgroupSharedMemoryBytes = 65536;
@@ -279,6 +284,7 @@ int main(int argc, char** argv) {
         std::vector<std::vector<VkDescriptorImageInfo>> imageInfos(result.bindings.size());
         std::vector<Region> extra;
         extra.reserve(result.bindings.size() * 4 + 8);
+        Region* faultBuffer = nullptr;
         const auto regionAt = [&](std::uint64_t addr) -> Region* {
             for (auto& [id, r] : regions) if (addr >= r.address && addr < r.address + r.size) return &r;
             return nullptr;
@@ -324,7 +330,23 @@ int main(int argc, char** argv) {
                     MakeBuffer(dev, extra.back(), std::max<std::size_t>(b.guestDescriptor.size() * 4, 16), 0);
                     std::memcpy(extra.back().mapped, b.guestDescriptor.data(), b.guestDescriptor.size() * 4);
                     info.buffer = extra.back().buffer;
-                } else if (b.role == DescriptorRole::Gds || b.role == DescriptorRole::BdaPagetable || b.role == DescriptorRole::FaultBuffer) {
+                } else if (b.role == DescriptorRole::BdaPagetable) {
+                    // identity page table: every region maps to its own device address
+                    extra.emplace_back();
+                    std::vector<BdaAbi::Range> ranges;
+                    for (auto& [rid, r] : regions) ranges.push_back({r.address, r.address + r.size, r.address, BdaAbi::Read | BdaAbi::Write, 0});
+                    std::sort(ranges.begin(), ranges.end(), [](const BdaAbi::Range& a, const BdaAbi::Range& c) { return a.begin < c.begin; });
+                    MakeBuffer(dev, extra.back(), sizeof(BdaAbi::Header) + ranges.size() * sizeof(BdaAbi::Range), 0);
+                    const BdaAbi::Header header{BdaAbi::Version, static_cast<std::uint32_t>(ranges.size()), static_cast<std::uint32_t>(sizeof(BdaAbi::Range)), 0};
+                    std::memcpy(extra.back().mapped, &header, sizeof(header));
+                    std::memcpy(static_cast<std::byte*>(extra.back().mapped) + sizeof(header), ranges.data(), ranges.size() * sizeof(BdaAbi::Range));
+                    info.buffer = extra.back().buffer;
+                } else if (b.role == DescriptorRole::FaultBuffer) {
+                    extra.emplace_back();
+                    MakeBuffer(dev, extra.back(), BdaAbi::FaultBufferBytes, 0);
+                    faultBuffer = &extra.back();
+                    info.buffer = extra.back().buffer;
+                } else if (b.role == DescriptorRole::Gds) {
                     extra.emplace_back();
                     MakeBuffer(dev, extra.back(), 1u << 16, 0);
                     info.buffer = extra.back().buffer;
@@ -432,6 +454,13 @@ int main(int argc, char** argv) {
         for (auto& [iid, rb] : readback) {
             std::ofstream o(outDir + "/image" + std::to_string(iid) + ".bin", std::ios::binary);
             o.write(static_cast<const char*>(rb.mapped), static_cast<std::streamsize>(rb.size));
+        }
+        if (faultBuffer != nullptr) {
+            const auto* fault = static_cast<const BdaAbi::Fault*>(faultBuffer->mapped);
+            if (fault->state != BdaAbi::FaultState::Empty) {
+                std::printf("FAULT reason=%u address=0x%llx bytes=%u instruction=0x%x\n", static_cast<unsigned>(fault->reason), static_cast<unsigned long long>(fault->address), fault->bytes, fault->instruction);
+                return 3;
+            }
         }
         std::printf("RAN\n");
         return 0;
