@@ -1235,6 +1235,16 @@ private:
             CollectDescriptorPhis(value->Argument(0), phis, depth - 1u);
             return;
         }
+        // XBOX-FORK: a descriptor dword loaded through a pointer whose halves are Phis (a heap base merged by a join) is split too.
+        const bool pointerLoad = value->Opcode() == IrOpcode::GetAddressResource && value->ArgumentCount() == 2u;
+        const bool addressLoad = value->Opcode() == IrOpcode::LoadAddressU32 && value->ArgumentCount() >= 2u;
+        if (depth != 0u && (pointerLoad || addressLoad)) {
+            const std::size_t operands = pointerLoad ? 2u : 2u;
+            for (std::size_t index = 0; index < operands; index++) {
+                CollectDescriptorPhis(value->Argument(index), phis, depth - 1u);
+            }
+            return;
+        }
         if (depth == 0u || !Detail::IsRuntimeUniformOp(value->Opcode())) {
             return;
         }
