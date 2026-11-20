@@ -1,3 +1,54 @@
+# americas-recomp
+
+An experiment: can the RDNA2 shaders from an Xbox Series game go through [AnyPS5](https://github.com/boykopovar/AnyPS5)'s shader recompiler (the Series X GPU shares the PS5's RDNA2 ISA)? This is a local fork on branch `xbox-series`. The shaders come from the author's own console dump.
+
+**Nothing has been executed.** "Valid" below means the recompiler produced SPIR-V that passes `spirv-val` (Vulkan SDK 1.4.363.1, `--target-env vulkan1.3`). It does not mean the output is correct.
+
+## Progress
+
+Corpus: 24,804 shaders from an RPF9 archive (2,647 compute, 738 pixel, 114 vertex, 8 geometry, 640 mesh).
+
+| Stage | Shaders | Valid SPIR-V | Notes |
+|---|---|---|---|
+| Compute | 2,647 | **2,480 (93.7%)** | union of four fake-memory variants; 0 invalid |
+| Pixel | 738 | **375 (strict)** | 649 with an opt-in approximation (below) |
+| Vertex | 114 | 92 | |
+| Mesh | 640 | 559 | mesh configuration is a guess |
+
+All SPIR-V that was produced validates (0 invalid). Pixel, vertex and mesh are a first sample, not a finished pass.
+
+### What changed in the recompiler
+- **Bindless waterfall loops:** `v_readfirstlane` + `v_cmpx` loops that load descriptors from a heap pointer are now resolved (phi-aware exec-mask check in `SrtInstructionPredicates.cpp`, table-column handling in `ResourceTracker.cpp`).
+- **Structurizer speedup:** faster dominance and a split budget, with an identical graph hash on 4,119 shaders.
+- **Xbox ISA tweaks and MSVC build fixes.**
+- **Header decoder:** `tools/xbox/fssm_header.py` decodes the section directory and pixel input table of the shader container. It agrees with what the code already gives, so it adds no new information.
+
+### Assumptions (not verified on hardware)
+1. A lane-active select arm in waterfall loops is assumed active (`XBOX_NO_LANE_ASSUME` turns it off).
+2. Descriptor heap entries are assumed to be size-aligned (`XBOX_NO_OPAQUE_HEAP_INDEX` turns it off).
+3. Opt-in only: 16-bit interpolation ignores fp16 rounding bits (`XBOX_ALLOW_UNMEASURED_F16_INTERP`). Xbox pixel shaders set round-toward-zero, so results may differ in the last bit. It is off by default, which is why 375 is the headline.
+
+Float mode, export mapping, mesh configuration and descriptor contents are harness defaults, not read from the game.
+
+### Remaining failures
+- Compute (167): 66 timeouts at 30 s, 79 descriptors loaded through address chains, 18 atomic image format failures.
+- Pixel: atomic image formats, emulated barycentrics over the location limit, descriptor chains.
+- Vertex: computed `s_swappc`/`s_setpc` targets, phi dominance errors.
+- Mesh: descriptor sources read through a null pointer (likely a harness gap), sampler chains.
+
+### Where to look
+- [`docs/xbox/XBOX_SHADERS.md`](docs/xbox/XBOX_SHADERS.md): full write-up, with the harness defaults.
+- [`tools/xbox`](tools/xbox): driver, runners, binding analysis, header decoder.
+
+Not included in this repo: the shader dumps and any game files.
+
+## Mention: AnyPS5
+
+This is a fork of [AnyPS5](https://github.com/boykopovar/AnyPS5) (GPL-2.0). The original README is below.
+
+<details>
+<summary>AnyPS5 README (original, unmodified)</summary>
+
 **English** | [Português (Brasil)](docs/user/README.pt-BR.md) | [Español](docs/user/README.es.md) | [Català](docs/user/README.ca.md) | [Italiano](docs/user/README.it.md) | [简体中文](docs/user/README.zh-CN.md) | [Русский](docs/user/README.ru.md) | [Bahasa Indonesia](docs/user/README.id.md) | [Polski](docs/user/README.pl.md) | [日本語](docs/user/README.ja.md) | [العربية](docs/user/README.ar.md)
 
 # About
@@ -45,3 +96,5 @@ AnyPS5 is an independent project and is not affiliated with, authorized or endor
 ## License
 
 This project is licensed under the GNU General Public License version 2 only.
+
+</details>
