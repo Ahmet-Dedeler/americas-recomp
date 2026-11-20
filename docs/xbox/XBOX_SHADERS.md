@@ -244,3 +244,18 @@ Of the 961 that ran, 925 were deterministic and identical with and without the s
 
 What this does not show: that the results are right. Random inputs exercise code paths but a shader that runs and writes something has not been checked against the hardware's answer. The workgroup size and the number of user SGPRs are guesses (one wave; 10, or more when the `.bind` file uses a higher register). The 178 failures are mostly shaders whose descriptors sit behind pointers held in data the harness cannot invent (119), the `ImageTableMap` role (31), and the descriptor-chain shapes listed above.
 
+### A CPU reference for small real shaders
+
+`tools/xbox/cpu_ref.py` is a small RDNA2 interpreter (one wave64 workgroup: SALU, the common VALU, SMEM, MUBUF, DS) and `tools/xbox/cpu_compare.py` runs the same scenario through it and through the recompiled SPIR-V on the GPU, then compares every output buffer byte for byte. Anything the interpreter does not implement is reported as a skip, never guessed. Results are in `docs/xbox/cpu_compare.json`.
+
+The 872 compute shaders of 3,000 bytes or less: **183 give byte-identical results** on the CPU and the GPU (105 of them change memory), **none differ**, 687 are skipped (mostly image instructions, D16 buffer ops, VOP3P, `s_wqm`, image classes the harness cannot build, or unmapped addresses reached through random data) and 2 failed to run on the GPU. Each shader runs with all-float inputs, and also with all-integer inputs when it has no float arithmetic, because small integers are denormal floats and the GPU may flush denormals where the reference does not.
+
+Getting there found no recompiler bug, but it found several tooling facts worth keeping:
+
+* `out_disasm/rdna2.py` names VOPC opcodes with the PC gfx10 table. The Xbox shaders use the GCN-style numbering the recompiler uses (0xC2 is `v_cmp_eq_u32`, 0xD2 `v_cmpx_eq_u32`, 0x82/0x92 the i32 forms). The corpus histogram confirms it. `cpu_ref.py` takes the VOPC names from the recompiler's table.
+* `rdna2.py` reads a 7-bit MUBUF opcode; the recompiler reads 8 bits (bit 25 is opcode bit 7), so the D16 forms (0x80 to 0x87, half-precision data in packed registers) were shown as their 32-bit twins.
+* Its operand text is not faithful for VOP3 (a compare's SGPR destination prints as `v0`, `v_readfirstlane` and `v_readlane` print an SGPR destination as a VGPR). The interpreter decodes operands from the raw words.
+* RDNA2 `v_cmpx_*` writes EXEC only (plus the explicit destination of the VOP3 form); the recompiler does the same.
+* A buffer load at a byte address that is not 4-byte aligned makes the recompiler read the containing aligned dword. D3D forbids such loads, so this is not treated as a bug, but the reference skips shaders that do it.
+* The harness V# now uses OOB_SELECT 1 (only the index is range checked), which suits both structured and raw uses of the same buffer; mode 3 checks a 32-bit byte offset that wraps for huge indices.
+

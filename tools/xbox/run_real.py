@@ -16,14 +16,19 @@ NODE_BYTES = 1 << 16
 DATA_BYTES = 1 << 20
 IMG = 16
 
-def _blob():
+def _blob(profile="mixed"):
+    """seeded input data: 'mixed' = floats at even dwords and small integers at odd dwords (exercises both kinds of code, but the
+    integers are denormals when read as floats); 'float' = normal floats only; 'int' = small integers only"""
     rnd = random.Random(12345)
     words = bytearray()
     for i in range(DATA_BYTES // 4):
-        words += struct.pack('<f', rnd.random() * 2.0) if i % 2 == 0 else struct.pack('<I', rnd.randrange(256))
+        f = lambda: struct.pack('<f', 0.25 + rnd.random() * 3.75)
+        n = lambda: struct.pack('<I', rnd.randrange(256))
+        words += {"mixed": (f if i % 2 == 0 else n), "float": f, "int": n}[profile]()
     return bytes(words)
 
-BLOB = _blob()
+BLOBS = {p: _blob(p) for p in ("mixed", "float", "int")}
+BLOB = BLOBS["mixed"]
 
 def parse_bind(path):
     nodes, descs = {}, []
@@ -37,7 +42,7 @@ def parse_bind(path):
             descs.append((int(w[1]), int(w[2]), w[3]))
     return nodes, descs
 
-def build(idx, wave, workdir, threads=None):
+def build(idx, wave, workdir, threads=None, profile="mixed"):
     """returns (scenario lines, info dict) or raises Unsupported"""
     nodes, descs = parse_bind(ROOT + f"binds_all/{idx}.bind")
     rnd = random.Random(int(idx))
@@ -63,10 +68,10 @@ def build(idx, wave, workdir, threads=None):
         base = 100 + node
         if cls == "buf":
             p = os.path.join(workdir, f"data{data_id}.bin")
-            open(p, "wb").write(BLOB)
+            open(p, "wb").write(BLOBS[profile])
             lines.append(f"region {data_id} {DATA_BYTES} init {p}")
             lines += [f"ptrlo {base} {off} {data_id}", f"ptrhi {base} {off + 4} {data_id} {16 << 16}",
-                      f"poke {base} {off + 8} {DATA_BYTES // 16}", f"poke {base} {off + 12} 0x30027fac"]
+                      f"poke {base} {off + 8} {DATA_BYTES // 16}", f"poke {base} {off + 12} 0x1004dfac"]
             info["data"].append(data_id)
             data_id += 1
         elif cls == "img1":
