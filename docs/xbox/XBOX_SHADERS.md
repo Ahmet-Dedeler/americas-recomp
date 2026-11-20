@@ -103,8 +103,8 @@ interpolant count and FP16 interpolants are derived from the `v_interp*` instruc
 
 | stage | total | valid (`spirv-val`) | invalid |
 |---|---|---|---|
-| pixel, strict | 738 | 375 | 0 |
-| pixel, `XBOX_ALLOW_UNMEASURED_F16_INTERP=1` | 738 | 649 | 0 |
+| **pixel (headline, strict)** | 738 | **375** | 0 |
+| pixel, `XBOX_ALLOW_UNMEASURED_F16_INTERP=1` (approximation, off by default) | 738 | 649 | 0 |
 | vertex | 114 | 92 | 0 |
 | mesh | 640 | 559 | 0 |
 
@@ -115,6 +115,20 @@ over the location limit, 3 descriptor chains); vertex 21 (18 computed `s_swappc`
 statically, 2 Phi dominance, 1 sampler chain; 1 timeout); mesh 77 (66 descriptor sources reading through a null pointer, likely
 a user-data gap in the harness, 8 sampler chains, 3 Phi dominance; 4 timeouts). None of this was executed, no pipeline state
 was checked, and the mesh configuration is a guess, so a mesh shader passing here means only that the code translates.
+
+### FSSM header (partly decoded, `tools/xbox/fssm_header.py`)
+
+Verified against the code: the section directory at 0x120-0x130 and the pixel input table at 0x138 (8-byte entries: semantic,
+component mask, index, slot, flags). The table's entry count equals the number of interpolants the code reads in 719 of 738
+pixel shaders; the code's `v_interp` attribute number is the entry's position, and flag bit 4 marks 16-bit interpolants
+(736/738; bit 3 covers all 738 but also flags some 32-bit ones). Driving the recompiler from the table instead of from the
+instructions gives identical results on all 738 pixel shaders (375 valid either way). So the table adds no new information for
+the interpolants themselves; it confirms the code-derived defaults.
+
+Not decoded: the trailing sections (the directory points past the code), the register-like words at 0xd4/0xf8/0xfc/0x110/0x12c,
+flag values 1/9/10, the vertex/mesh output tables near 0x1d0. Their code-offset-like fields do not land on instruction
+boundaries, so they are not per-instruction annotations. No pipeline state (input enable, export formats, MODE) was found,
+so the defaults above for those remain defaults.
 
 ## Structurizer speed (ray-tracing loop graphs)
 
