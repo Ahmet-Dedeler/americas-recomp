@@ -11,6 +11,8 @@
 //   timg <regionId> <byteOffset> <imageId>          (writes an 8-dword 2D RGBA32F T# for the image into a region)
 //   user <sgpr> <targetId>              (user data pair: low, high dword of the region address)
 //   userval <sgpr> <u32>
+//   user32 <sgpr> <targetId>   (a single 32-bit pointer register: the guest address of the region)
+//   lowguest   (give every region a guest address below 4 GiB; the BDA page table maps guest to device addresses)
 //   threads <x> <y> <z>   (workgroup size, default <wave> 1 1)     lds <dwords>     userdwords <n>   (user SGPR count; the workgroup ids follow)
 // Supported bindings: guest buffers (V# bases must be region starts), shader data, flattened SRT, GDS/page-table/fault stubs.
 // Images and samplers are not implemented yet and make the run fail with a clear message.
@@ -42,7 +44,8 @@ struct Region {
     VkBuffer buffer = VK_NULL_HANDLE;
     VkDeviceMemory memory = VK_NULL_HANDLE;
     void* mapped = nullptr;
-    std::uint64_t address = 0;
+    std::uint64_t address = 0;   // device address
+    std::uint64_t guest = 0;     // address the guest code sees (equal to the device address unless `lowguest` is set)
 };
 
 struct ImageRes {
@@ -153,6 +156,7 @@ int main(int argc, char** argv) {
     try {
         std::uint32_t wave = 32;
         std::uint32_t groups[3] = {1, 1, 1};
+        bool lowGuest = false;
         std::uint32_t threads[3] = {0, 1, 1};
         std::uint32_t ldsDwords = 0, userCount = 16;
         std::string codePath, outDir = ".";
@@ -172,6 +176,7 @@ int main(int argc, char** argv) {
             if (l.w[0] == "wave") wave = static_cast<std::uint32_t>(Num(l.w[1]));
             else if (l.w[0] == "groups") for (int i = 0; i < 3; ++i) groups[i] = static_cast<std::uint32_t>(Num(l.w[1 + i]));
             else if (l.w[0] == "code") codePath = l.w[1];
+            else if (l.w[0] == "lowguest") lowGuest = true;
             else if (l.w[0] == "threads") for (int i = 0; i < 3; ++i) threads[i] = static_cast<std::uint32_t>(Num(l.w[1 + i]));
             else if (l.w[0] == "lds") ldsDwords = static_cast<std::uint32_t>(Num(l.w[1]));
             else if (l.w[0] == "userdwords") userCount = static_cast<std::uint32_t>(Num(l.w[1]));
@@ -189,7 +194,15 @@ int main(int argc, char** argv) {
                 std::memcpy(r.mapped, data.data(), std::min<std::size_t>(data.size(), r.size));
             }
         }
+        {
+            std::uint64_t next = 0x10000000ull;
+            for (auto& [rid, r] : regions) {
+                r.guest = lowGuest ? next : r.address;
+                next += 0x1000000ull;
+            }
+        }
         std::map<std::uint32_t, ImageRes> images;
+        lines.insert(lines.begin(), Line{{"image", "9999", "16", "16"}});   // dummy image for unpopulated descriptor array elements
         for (auto& l : lines) {
             if (l.w[0] != "image") continue;
             ImageRes& im = images[static_cast<std::uint32_t>(Num(l.w[1]))];
@@ -241,15 +254,16 @@ int main(int argc, char** argv) {
                 for (int k = 4; k < 8; ++k) dword(r, off + 4 * k) = 0;
             }
             else if (l.w[0] == "poke") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(Num(l.w[3]));
-            else if (l.w[0] == "ptrlo") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(region(l.w[3]).address + (l.w.size() > 4 ? Num(l.w[4]) : 0));
-            else if (l.w[0] == "ptr8lo") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(region(l.w[3]).address >> 8);
-            else if (l.w[0] == "ptr8hi") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(((region(l.w[3]).address >> 40) & 0xffu) | Num(l.w[4]));
-            else if (l.w[0] == "ptrhi") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(((region(l.w[3]).address >> 32) & 0xffffu) | Num(l.w[4]));
-            else if (l.w[0] == "user") { const auto k = Num(l.w[1]); userData.at(k) = static_cast<std::uint32_t>(region(l.w[2]).address); userData.at(k + 1) = static_cast<std::uint32_t>(region(l.w[2]).address >> 32); }
+            else if (l.w[0] == "ptrlo") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(region(l.w[3]).guest + (l.w.size() > 4 ? Num(l.w[4]) : 0));
+            else if (l.w[0] == "ptr8lo") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(region(l.w[3]).guest >> 8);
+            else if (l.w[0] == "ptr8hi") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(((region(l.w[3]).guest >> 40) & 0xffu) | Num(l.w[4]));
+            else if (l.w[0] == "ptrhi") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(((region(l.w[3]).guest >> 32) & 0xffffu) | Num(l.w[4]));
+            else if (l.w[0] == "user") { const auto k = Num(l.w[1]); userData.at(k) = static_cast<std::uint32_t>(region(l.w[2]).guest); userData.at(k + 1) = static_cast<std::uint32_t>(region(l.w[2]).guest >> 32); }
+            else if (l.w[0] == "user32") userData.at(Num(l.w[1])) = static_cast<std::uint32_t>(region(l.w[2]).guest);
             else if (l.w[0] == "userval") userData.at(Num(l.w[1])) = static_cast<std::uint32_t>(Num(l.w[2]));
         }
 
-        for (auto& [id, r] : regions) std::printf("region %u at 0x%llx size %llu\n", id, static_cast<unsigned long long>(r.address), static_cast<unsigned long long>(r.size));
+        for (auto& [id, r] : regions) std::printf("region %u guest 0x%llx device 0x%llx size %llu\n", id, static_cast<unsigned long long>(r.guest), static_cast<unsigned long long>(r.address), static_cast<unsigned long long>(r.size));
         // Compile against a snapshot of the real contents at the real addresses.
         const auto raw = ReadFile(codePath);
         std::vector<std::uint32_t> code(raw.size() / 4);
@@ -258,7 +272,7 @@ int main(int argc, char** argv) {
         std::vector<MemoryRegion> memory;
         for (auto& [id, r] : regions) {
             snapshots.emplace_back(static_cast<std::byte*>(r.mapped), static_cast<std::byte*>(r.mapped) + r.size);
-            memory.push_back({r.address, std::span<const std::byte>(snapshots.back())});
+            memory.push_back({r.guest, std::span<const std::byte>(snapshots.back())});
         }
         RecompileRequest request{};
         request.context.memory = MemoryRegionView(std::span<const MemoryRegion>(memory));
@@ -293,12 +307,16 @@ int main(int argc, char** argv) {
         extra.reserve(result.bindings.size() * 4 + 8);
         Region* faultBuffer = nullptr;
         const auto regionAt = [&](std::uint64_t addr) -> Region* {
-            for (auto& [id, r] : regions) if (addr >= r.address && addr < r.address + r.size) return &r;
+            for (auto& [id, r] : regions) if (addr >= r.guest && addr < r.guest + r.size) return &r;
             return nullptr;
         };
         for (std::size_t bi = 0; bi < result.bindings.size(); ++bi) {
             const auto& b = result.bindings[bi];
             if (b.descriptorSet != 0) throw std::runtime_error("descriptor sets other than 0 are not implemented");
+            if (b.kind == DescriptorKind::SampledImage || b.kind == DescriptorKind::StorageImage) {
+                if (b.guestDescriptor.size() < static_cast<std::size_t>(b.count) * 8u) throw std::runtime_error("binding " + std::to_string(b.binding) + ": image descriptor has " + std::to_string(b.guestDescriptor.size()) + " dwords for " + std::to_string(b.count) + " elements");
+            }
+            if (b.role == DescriptorRole::GuestBuffers && b.guestDescriptor.size() < static_cast<std::size_t>(b.count) * 4u) throw std::runtime_error("binding " + std::to_string(b.binding) + ": buffer descriptor has " + std::to_string(b.guestDescriptor.size()) + " dwords for " + std::to_string(b.count) + " elements");
             if (b.kind == DescriptorKind::SampledImage || b.kind == DescriptorKind::StorageImage || b.kind == DescriptorKind::Sampler) {
                 const VkDescriptorType type = b.kind == DescriptorKind::SampledImage ? VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE : b.kind == DescriptorKind::StorageImage ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE : VK_DESCRIPTOR_TYPE_SAMPLER;
                 layoutBindings.push_back({b.binding, type, b.count, VK_SHADER_STAGE_COMPUTE_BIT, nullptr});
@@ -315,7 +333,7 @@ int main(int argc, char** argv) {
                         const std::uint64_t base = (static_cast<std::uint64_t>(b.guestDescriptor[e * 8]) << 8) | (static_cast<std::uint64_t>(b.guestDescriptor[e * 8 + 1] & 0xffu) << 40);
                         ImageRes* found = nullptr;
                         for (auto& [iid, im] : images) if (im.fakeAddress == base) found = &im;
-                        if (found == nullptr) throw std::runtime_error("image element " + std::to_string(e) + " of binding " + std::to_string(b.binding) + " matches no image");
+                        if (found == nullptr) found = &images.at(9999);
                         ii.imageView = found->view;
                     }
                     imageInfos[bi].push_back(ii);
@@ -329,9 +347,15 @@ int main(int argc, char** argv) {
                 if (b.role == DescriptorRole::GuestBuffers) {
                     const std::uint64_t base = b.guestDescriptor[e * 4] | (static_cast<std::uint64_t>(b.guestDescriptor[e * 4 + 1] & 0xffffu) << 32);
                     Region* r = regionAt(base);
-                    if (r == nullptr) throw std::runtime_error("V# base 0x" + std::to_string(base) + " lies in no region");
-                    if (r->address != base) throw std::runtime_error("V# base is not a region start (unaligned element offsets are not implemented)");
-                    info.buffer = r->buffer;
+                    if (r == nullptr) {
+                        // a null or dangling V# (for example an unused slot in a descriptor array): bind a zeroed dummy buffer
+                        extra.emplace_back();
+                        MakeBuffer(dev, extra.back(), 1u << 16, 0);
+                        info.buffer = extra.back().buffer;
+                    } else {
+                        if (r->guest != base) throw std::runtime_error("V# base is not a region start (unaligned element offsets are not implemented)");
+                        info.buffer = r->buffer;
+                    }
                 } else if (b.role == DescriptorRole::ShaderData || b.role == DescriptorRole::FlattenedSrt) {
                     extra.emplace_back();
                     MakeBuffer(dev, extra.back(), std::max<std::size_t>(b.guestDescriptor.size() * 4, 16), 0);
@@ -341,7 +365,7 @@ int main(int argc, char** argv) {
                     // identity page table: every region maps to its own device address
                     extra.emplace_back();
                     std::vector<BdaAbi::Range> ranges;
-                    for (auto& [rid, r] : regions) ranges.push_back({r.address, r.address + r.size, r.address, BdaAbi::Read | BdaAbi::Write, 0});
+                    for (auto& [rid, r] : regions) ranges.push_back({r.guest, r.guest + r.size, r.address, BdaAbi::Read | BdaAbi::Write, 0});
                     std::sort(ranges.begin(), ranges.end(), [](const BdaAbi::Range& a, const BdaAbi::Range& c) { return a.begin < c.begin; });
                     MakeBuffer(dev, extra.back(), sizeof(BdaAbi::Header) + ranges.size() * sizeof(BdaAbi::Range), 0);
                     const BdaAbi::Header header{BdaAbi::Version, static_cast<std::uint32_t>(ranges.size()), static_cast<std::uint32_t>(sizeof(BdaAbi::Range)), 0};
@@ -375,6 +399,10 @@ int main(int argc, char** argv) {
         VK(vkCreatePipelineLayout(dev.device, &pli, nullptr, &pipelineLayout));
 
         const auto words = result.spirv.Words();
+        if (const char* dump = std::getenv("XBOX_EXEC_SPV")) {
+            std::ofstream o(dump, std::ios::binary);
+            o.write(reinterpret_cast<const char*>(words.data()), static_cast<std::streamsize>(words.size() * 4));
+        }
         VkShaderModuleCreateInfo smi{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
         smi.codeSize = words.size() * 4; smi.pCode = words.data();
         VkShaderModule module;

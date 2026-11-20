@@ -1,0 +1,148 @@
+"""Run recompiled real compute shaders on the host GPU (exec.exe) with synthetic inputs and compare configurations.
+
+There is no reference for a real shader's results, so the checks are:
+  * status: compiled / harness-unsupported / faulted / timed out / ran
+  * determinism: the same build run twice gives byte-identical memory and images
+  * equivalence: a build with the structurizer optimisations switched off (XBOX_NO_STABLE_IDS, XBOX_NO_SPLIT_CURSOR) gives the same bytes
+  * effect: whether the run changed any buffer or image at all (equality of untouched memory proves nothing)
+usage: run_real.py <out.json> [--max-bytes N] [--limit N] [--ids a,b,c] [--workers N] [--wave 32]
+"""
+import concurrent.futures as cf, csv, json, os, random, struct, subprocess, sys, tempfile, time
+
+ROOT = r"E:/Programming/rpf9shaders/out_disasm/anyps5/"
+EXEC = os.environ.get("XBOX_EXEC", r"E:/Programming/anyps5_src/build/exec.exe")
+USER_DWORDS = 10          # the wrapped compute shaders read the workgroup id from s10/s11
+NODE_BYTES = 1 << 16
+DATA_BYTES = 1 << 20
+IMG = 16
+
+def _blob():
+    rnd = random.Random(12345)
+    words = bytearray()
+    for i in range(DATA_BYTES // 4):
+        words += struct.pack('<f', rnd.random() * 2.0) if i % 2 == 0 else struct.pack('<I', rnd.randrange(256))
+    return bytes(words)
+
+BLOB = _blob()
+
+def parse_bind(path):
+    nodes, descs = {}, []
+    for line in open(path):
+        w = line.split()
+        if not w:
+            continue
+        if w[0] == "node":
+            nodes[int(w[1])] = ("user", int(w[3])) if w[2] == "user" else ("child", int(w[3]), int(w[4]))
+        elif w[0] == "desc":
+            descs.append((int(w[1]), int(w[2]), w[3]))
+    return nodes, descs
+
+def build(idx, wave, workdir):
+    """returns (scenario lines, info dict) or raises Unsupported"""
+    nodes, descs = parse_bind(ROOT + f"binds_all/{idx}.bind")
+    rnd = random.Random(int(idx))
+    user_dwords = max(USER_DWORDS, max([s[1] + 1 for s in nodes.values() if s[0] == "user"] or [0]))
+    lines = [f"wave {wave}", "groups 2 2 1", f"code {ROOT}bins_all/{idx}.bin", f"out {workdir}/out", f"userdwords {user_dwords}", "lds 4096", "lowguest"]
+    info = {"data": [], "images": []}
+    for nid in nodes:
+        lines.append(f"region {100 + nid} {NODE_BYTES}")
+    for kind in nodes.values():
+        pass
+    for nid, spec in nodes.items():
+        if spec[0] == "user":
+            lines.append(f"user32 {spec[1]} {100 + nid}")
+        else:
+            parent, off = spec[1], spec[2]
+            lines.append(f"ptrlo {100 + parent} {off} {100 + nid}")
+            lines.append(f"ptrhi {100 + parent} {off + 4} {100 + nid} 0")
+    data_id, image_id = 200, 1
+    for node, off, cls in descs:
+        if node not in nodes:
+            continue
+        base = 100 + node
+        if cls == "buf":
+            p = os.path.join(workdir, f"data{data_id}.bin")
+            open(p, "wb").write(BLOB)
+            lines.append(f"region {data_id} {DATA_BYTES} init {p}")
+            lines += [f"ptrlo {base} {off} {data_id}", f"ptrhi {base} {off + 4} {data_id} {16 << 16}",
+                      f"poke {base} {off + 8} {DATA_BYTES // 16}", f"poke {base} {off + 12} 0x30027fac"]
+            info["data"].append(data_id)
+            data_id += 1
+        elif cls == "img1":
+            lines += [f"image {image_id} {IMG} {IMG} clear 0.5 0.5 0.5 0.5", f"timg {base} {off} {image_id}"]
+            info["images"].append(image_id)
+            image_id += 1
+        elif cls.startswith("img"):
+            raise Unsupported("image class " + cls)
+        # samplers need no memory: the harness binds a default sampler
+    return lines, info
+
+class Unsupported(Exception):
+    pass
+
+def run_once(idx, wave, env_extra, timeout, tag):
+    d = tempfile.mkdtemp(prefix=f"real{idx}{tag}_")
+    try:
+        lines, info = build(idx, wave, d)
+    except Unsupported as e:
+        return {"status": "UNSUPPORTED", "detail": str(e)}
+    sc = os.path.join(d, "scenario.txt")
+    open(sc, "w").write("\n".join(lines) + "\n")
+    env = dict(os.environ, **env_extra)
+    t0 = time.time()
+    try:
+        p = subprocess.run([EXEC, sc], capture_output=True, text=True, timeout=timeout, env=env)
+    except subprocess.TimeoutExpired:
+        return {"status": "TIMEOUT", "detail": f">{timeout}s"}
+    out = p.stdout.strip()
+    secs = round(time.time() - t0, 2)
+    if out.splitlines()[-1:] == ["RAN"]:
+        res = {"status": "RAN", "secs": secs, "dir": d}
+        res["blob"] = b"".join(open(f"{d}/out/region{r}.bin", "rb").read() for r in info["data"]) + b"".join(open(f"{d}/out/image{i}.bin", "rb").read() for i in info["images"])
+        initial = b"".join(open(f"{d}/data{r}.bin", "rb").read() for r in info["data"]) + struct.pack('<f', 0.5) * (4 * IMG * IMG * len(info["images"]))
+        res["changed"] = res["blob"] != initial
+        return res
+    last = out.splitlines()[-1] if out else (p.stderr.strip()[-200:] or f"exit {p.returncode}")
+    if "FAULT" in out:
+        return {"status": "FAULT", "detail": [l for l in out.splitlines() if l.startswith("FAULT")][0][:120], "secs": secs}
+    return {"status": "COMPILE_FAIL" if "FAIL" in out else "CRASH", "detail": last[:300], "secs": secs}
+
+def one(idx, wave, timeout):
+    a = run_once(idx, wave, {}, timeout, "a")
+    rec = {"idx": idx, "status": a["status"], "detail": a.get("detail", ""), "secs": a.get("secs")}
+    if a["status"] != "RAN":
+        return rec
+    a2 = run_once(idx, wave, {}, timeout, "a2")
+    b = run_once(idx, wave, {"XBOX_NO_STABLE_IDS": "1", "XBOX_NO_SPLIT_CURSOR": "1"}, timeout, "b")
+    rec["changed"] = a["changed"]
+    rec["deterministic"] = a2["status"] == "RAN" and a2["blob"] == a["blob"]
+    rec["same_without_structurizer_opts"] = None if b["status"] != "RAN" else (b["blob"] == a["blob"])
+    if b["status"] != "RAN":
+        rec["b_status"] = b["status"]
+    return rec
+
+def main():
+    argv = sys.argv[1:]
+    out = argv[0]
+    opt = lambda name, default: argv[argv.index(name) + 1] if name in argv else default
+    max_bytes, limit, workers, wave = int(opt("--max-bytes", 20000)), int(opt("--limit", 100000)), int(opt("--workers", 6)), int(opt("--wave", 32))
+    timeout = int(opt("--timeout", 240))
+    rows = [r for r in csv.DictReader(open(ROOT + "manifest_all.csv")) if r["stage"] == "CS" and int(r["bytes"]) <= max_bytes]
+    ids = opt("--ids", "").split(",") if "--ids" in argv else [r["idx"] for r in rows]
+    ids = [i for i in ids if os.path.exists(ROOT + f"binds_all/{i}.bind")][:limit]
+    results = []
+    with cf.ThreadPoolExecutor(workers) as ex:
+        for rec in ex.map(lambda i: one(i, wave, timeout), ids):
+            results.append(rec)
+            if len(results) % 25 == 0:
+                print(len(results), "of", len(ids), flush=True)
+    json.dump(results, open(out, "w"))
+    import collections
+    c = collections.Counter(r["status"] for r in results)
+    print(dict(c))
+    ran = [r for r in results if r["status"] == "RAN"]
+    print("ran", len(ran), "changed memory", sum(1 for r in ran if r.get("changed")), "deterministic", sum(1 for r in ran if r.get("deterministic")),
+          "same without structurizer opts", sum(1 for r in ran if r.get("same_without_structurizer_opts")), "differ", [r["idx"] for r in ran if r.get("same_without_structurizer_opts") is False])
+
+if __name__ == "__main__":
+    main()

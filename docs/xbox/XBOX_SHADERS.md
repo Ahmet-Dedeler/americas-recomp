@@ -226,3 +226,21 @@ What this found: the harness's own mistakes (T# format 56 is `8_8_8_8_UNORM`, so
 
 Still open: box16 nodes, 64-bit node pointers, `a16` rays, multi-wave and multi-group dispatch, image formats other than RGBA32F, and any shader that needs image tables. The BVH tests use nodes laid out the way the emulation reads them, so they check the emulation against the ISA's traversal maths, not against the Xbox's own compressed BVH format.
 
+### Real shaders on the GPU
+
+`tools/xbox/run_real.py` builds a scenario from each shader's `.bind` file (SRT nodes with low 32-bit guest addresses behind a BDA page table, a 1 MiB buffer of seeded random data per V#, a 16x16 RGBA32F image per 2D T#, a dummy image or buffer for unpopulated array elements), dispatches 2x2 workgroups and compares runs. There is no reference for what a real shader should compute, so the checks are: did it run, is it deterministic (same build twice), and is the output identical with the structurizer optimisations switched off (`XBOX_NO_STABLE_IDS`, `XBOX_NO_SPLIT_CURSOR`).
+
+The 1,683 compute shaders of 20 KB or less (`docs/xbox/real_run.json`):
+
+| result | shaders |
+|---|---|
+| ran to completion on the GPU | 961 |
+| ... of which changed a buffer or image | 481 |
+| harness cannot build the inputs (images other than 2D: 3D, cube, array, 1D; atomic image formats) | 519 |
+| recompiler or harness failure | 178 |
+| BDA fault (unmapped address from random data used as a pointer) | 25 |
+
+Of the 961 that ran, 925 were deterministic and identical with and without the structurizer optimisations. The other 36 give different bytes between repeated runs of the same build (floating-point atomics whose order varies, and reads of workgroup memory that no thread wrote, because the real workgroup size is unknown and the harness uses one wave). Two of them (23165, 24311) looked like deterministic differences between the two builds, but repeating the same build also changes them by the same amount, so they are flaky, not an equivalence failure. No shader gives a different result because of the structurizer changes.
+
+What this does not show: that the results are right. Random inputs exercise code paths but a shader that runs and writes something has not been checked against the hardware's answer. The workgroup size and the number of user SGPRs are guesses (one wave; 10, or more when the `.bind` file uses a higher register). The 178 failures are mostly shaders whose descriptors sit behind pointers held in data the harness cannot invent (119), the `ImageTableMap` role (31), and the descriptor-chain shapes listed above.
+

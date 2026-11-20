@@ -182,7 +182,30 @@ def test_triangle_node64_a16():
     t = struct.unpack('<ff', struct.pack('<II', got[0], got[1]))
     assert abs(t[0] / t[1] - 5.0) < 1e-5 and got[2] == 0x1234, (got, t)
 
-TESTS = [test_box16_unsorted, test_box16_sorted, test_box32_node64, test_box32_a16, test_box16_node64_a16, test_triangle_node64_a16, test_box32_unsorted, test_box32_sorted, test_box32_extent_clips, test_triangle_hit, test_triangle_miss]
+def test_box32_low_guest_addresses():
+    # the node memory lives at a guest address below 4 GiB; the BDA page table maps it to the real device address
+    boxes = boxes_along_x([6.0, 2.0, 4.0, 0.0], miss=1)
+    node = box32_node(CHILDREN, boxes)
+    origin, direction = (-1.0, 0.5, 0.5), (1.0, 0.0, 0.0)
+    p = rdna_asm.Program()
+    p.smem('s_load_dwordx4', 8, 4, 0)
+    p.smem('s_load_dwordx4', 12, 4, 16)
+    p.sopp('s_waitcnt', 0)
+    p.vop2('v_lshlrev_b32', 1, 4, 'v0')
+    inv = inv_dir(direction)
+    vals = [node_id(0, 5), f2u(100.0)] + [f2u(c) for c in origin] + [f2u(c) for c in direction] + [f2u(c) for c in inv]
+    for i, v in enumerate(vals):
+        p.vop1('v_mov_b32', 8 + i, ('lit', v))
+    p.mimg('image_bvh_intersect_ray', 4, 8, 12, dmask=0xf, dim=0)
+    p.sopp('s_waitcnt', 0)
+    p.mubuf('buffer_store_dwordx4', 4, 1, 8, 128, 0)
+    p.sopp('s_endpgm')
+    pokes = T.vsharp(0, 0, 1, 1024) + ["ptr8lo 0 16 2", f"ptr8hi 0 20 2 {1 << 31}", "poke 0 24 0xffffffff", f"poke 0 28 {0x3ff | (0xb << 28)}"]
+    r = T.run(p.bytes(), {0: (256, None), 1: (1024, None), 2: (len(node), node)}, pokes, extra=["lowguest"])
+    got = struct.unpack('<4I', r[1][:16])
+    assert list(got) == ref_box(CHILDREN, boxes, origin, direction, 100.0, True), list(map(hex, got))
+
+TESTS = [test_box32_low_guest_addresses, test_box16_unsorted, test_box16_sorted, test_box32_node64, test_box32_a16, test_box16_node64_a16, test_triangle_node64_a16, test_box32_unsorted, test_box32_sorted, test_box32_extent_clips, test_triangle_hit, test_triangle_miss]
 
 if __name__ == "__main__":
     bad = 0
