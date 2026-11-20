@@ -7,6 +7,8 @@
 //   region <id> <bytes> [init <file>]   (a device-address buffer; its address is real)
 //   poke <id> <byteOffset> <u32>        ptrlo <id> <byteOffset> <targetId> [addBytes]
 //   ptrhi <id> <byteOffset> <targetId> <orMask>     ((address >> 32) & 0xffff) | orMask
+//   image <id> <width> <height> [clear r g b a]    (an R32G32B32A32_SFLOAT 2D image; it gets a fake 256-aligned guest address)
+//   timg <regionId> <byteOffset> <imageId>          (writes an 8-dword 2D RGBA32F T# for the image into a region)
 //   user <sgpr> <targetId>              (user data pair: low, high dword of the region address)
 //   userval <sgpr> <u32>
 // Supported bindings: guest buffers (V# bases must be region starts), shader data, flattened SRT, GDS/page-table/fault stubs.
@@ -39,6 +41,16 @@ struct Region {
     VkDeviceMemory memory = VK_NULL_HANDLE;
     void* mapped = nullptr;
     std::uint64_t address = 0;
+};
+
+struct ImageRes {
+    std::uint32_t id = 0;
+    std::uint32_t width = 0, height = 0;
+    std::uint64_t fakeAddress = 0;
+    VkImage image = VK_NULL_HANDLE;
+    VkDeviceMemory memory = VK_NULL_HANDLE;
+    VkImageView view = VK_NULL_HANDLE;
+    float clear[4] = {0, 0, 0, 0};
 };
 
 struct Device {
@@ -170,6 +182,32 @@ int main(int argc, char** argv) {
                 std::memcpy(r.mapped, data.data(), std::min<std::size_t>(data.size(), r.size));
             }
         }
+        std::map<std::uint32_t, ImageRes> images;
+        for (auto& l : lines) {
+            if (l.w[0] != "image") continue;
+            ImageRes& im = images[static_cast<std::uint32_t>(Num(l.w[1]))];
+            im.id = static_cast<std::uint32_t>(Num(l.w[1]));
+            im.width = static_cast<std::uint32_t>(Num(l.w[2])); im.height = static_cast<std::uint32_t>(Num(l.w[3]));
+            im.fakeAddress = 0x7000000000ull + 0x1000000ull * im.id;
+            if (l.w.size() >= 9 && l.w[4] == "clear") for (int c = 0; c < 4; ++c) im.clear[c] = std::stof(l.w[5 + c]);
+            VkImageCreateInfo ici{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+            ici.imageType = VK_IMAGE_TYPE_2D; ici.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+            ici.extent = {im.width, im.height, 1}; ici.mipLevels = 1; ici.arrayLayers = 1; ici.samples = VK_SAMPLE_COUNT_1_BIT;
+            ici.tiling = VK_IMAGE_TILING_OPTIMAL;
+            ici.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+            ici.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            VK(vkCreateImage(dev.device, &ici, nullptr, &im.image));
+            VkMemoryRequirements req{};
+            vkGetImageMemoryRequirements(dev.device, im.image, &req);
+            VkMemoryAllocateInfo ai{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+            ai.allocationSize = req.size; ai.memoryTypeIndex = FindMemory(dev, req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            VK(vkAllocateMemory(dev.device, &ai, nullptr, &im.memory));
+            VK(vkBindImageMemory(dev.device, im.image, im.memory, 0));
+            VkImageViewCreateInfo vi{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+            vi.image = im.image; vi.viewType = VK_IMAGE_VIEW_TYPE_2D; vi.format = ici.format;
+            vi.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+            VK(vkCreateImageView(dev.device, &vi, nullptr, &im.view));
+        }
         const auto region = [&](const std::string& id) -> Region& {
             const auto it = regions.find(static_cast<std::uint32_t>(Num(id)));
             if (it == regions.end()) throw std::runtime_error("unknown region " + id);
@@ -181,7 +219,20 @@ int main(int argc, char** argv) {
         };
         std::vector<std::uint32_t> userData(16, 0);
         for (auto& l : lines) {
-            if (l.w[0] == "poke") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(Num(l.w[3]));
+            if (l.w[0] == "timg") {
+                const auto it = images.find(static_cast<std::uint32_t>(Num(l.w[3])));
+                if (it == images.end()) throw std::runtime_error("unknown image " + l.w[3]);
+                const ImageRes& im = it->second;
+                Region& r = region(l.w[1]);
+                const auto off = Num(l.w[2]);
+                // word0 base>>8; word1 base_hi | format 77 (32_32_32_32_FLOAT; 56 would be 8_8_8_8_UNORM) << 20 | 3 << 30; word2 (w-1) | (h-1) << 14; word3 identity swizzle | type 2D (9) << 28
+                dword(r, off) = static_cast<std::uint32_t>(im.fakeAddress >> 8);
+                dword(r, off + 4) = static_cast<std::uint32_t>((im.fakeAddress >> 40) & 0xffu) | (77u << 20) | (3u << 30);
+                dword(r, off + 8) = (im.width - 1) | ((im.height - 1) << 14);
+                dword(r, off + 12) = 0xfacu | (9u << 28);
+                for (int k = 4; k < 8; ++k) dword(r, off + 4 * k) = 0;
+            }
+            else if (l.w[0] == "poke") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(Num(l.w[3]));
             else if (l.w[0] == "ptrlo") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(region(l.w[3]).address + (l.w.size() > 4 ? Num(l.w[4]) : 0));
             else if (l.w[0] == "ptrhi") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(((region(l.w[3]).address >> 32) & 0xffffu) | Num(l.w[4]));
             else if (l.w[0] == "user") { const auto k = Num(l.w[1]); userData.at(k) = static_cast<std::uint32_t>(region(l.w[2]).address); userData.at(k + 1) = static_cast<std::uint32_t>(region(l.w[2]).address >> 32); }
@@ -225,6 +276,7 @@ int main(int argc, char** argv) {
         // Descriptor layout + resources for each binding.
         std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
         std::vector<std::vector<VkDescriptorBufferInfo>> infos(result.bindings.size());
+        std::vector<std::vector<VkDescriptorImageInfo>> imageInfos(result.bindings.size());
         std::vector<Region> extra;
         extra.reserve(result.bindings.size() * 4 + 8);
         const auto regionAt = [&](std::uint64_t addr) -> Region* {
@@ -234,7 +286,30 @@ int main(int argc, char** argv) {
         for (std::size_t bi = 0; bi < result.bindings.size(); ++bi) {
             const auto& b = result.bindings[bi];
             if (b.descriptorSet != 0) throw std::runtime_error("descriptor sets other than 0 are not implemented");
-            if (b.kind != DescriptorKind::StorageBuffer) throw std::runtime_error("binding " + std::to_string(b.binding) + ": images/samplers/texel buffers are not implemented in the harness");
+            if (b.kind == DescriptorKind::SampledImage || b.kind == DescriptorKind::StorageImage || b.kind == DescriptorKind::Sampler) {
+                const VkDescriptorType type = b.kind == DescriptorKind::SampledImage ? VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE : b.kind == DescriptorKind::StorageImage ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE : VK_DESCRIPTOR_TYPE_SAMPLER;
+                layoutBindings.push_back({b.binding, type, b.count, VK_SHADER_STAGE_COMPUTE_BIT, nullptr});
+                for (std::uint32_t e = 0; e < b.count; ++e) {
+                    VkDescriptorImageInfo ii{};
+                    ii.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+                    if (b.kind == DescriptorKind::Sampler) {
+                        VkSamplerCreateInfo sci{VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+                        sci.magFilter = sci.minFilter = VK_FILTER_NEAREST;
+                        sci.addressModeU = sci.addressModeV = sci.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+                        sci.maxLod = 16.0f;
+                        VK(vkCreateSampler(dev.device, &sci, nullptr, &ii.sampler));
+                    } else {
+                        const std::uint64_t base = (static_cast<std::uint64_t>(b.guestDescriptor[e * 8]) << 8) | (static_cast<std::uint64_t>(b.guestDescriptor[e * 8 + 1] & 0xffu) << 40);
+                        ImageRes* found = nullptr;
+                        for (auto& [iid, im] : images) if (im.fakeAddress == base) found = &im;
+                        if (found == nullptr) throw std::runtime_error("image element " + std::to_string(e) + " of binding " + std::to_string(b.binding) + " matches no image");
+                        ii.imageView = found->view;
+                    }
+                    imageInfos[bi].push_back(ii);
+                }
+                continue;
+            }
+            if (b.kind != DescriptorKind::StorageBuffer) throw std::runtime_error("binding " + std::to_string(b.binding) + ": texel buffers are not implemented in the harness");
             layoutBindings.push_back({b.binding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, b.count, VK_SHADER_STAGE_COMPUTE_BIT, nullptr});
             for (std::uint32_t e = 0; e < b.count; ++e) {
                 VkDescriptorBufferInfo info{VK_NULL_HANDLE, 0, VK_WHOLE_SIZE};
@@ -287,9 +362,9 @@ int main(int argc, char** argv) {
         VkPipeline pipeline;
         VK(vkCreateComputePipelines(dev.device, VK_NULL_HANDLE, 1, &cpi, nullptr, &pipeline));
 
-        VkDescriptorPoolSize ps{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4096};
+        const std::array<VkDescriptorPoolSize, 4> ps{{{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4096}, {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4096}, {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 4096}, {VK_DESCRIPTOR_TYPE_SAMPLER, 4096}}};
         VkDescriptorPoolCreateInfo dpi{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
-        dpi.maxSets = 1; dpi.poolSizeCount = 1; dpi.pPoolSizes = &ps;
+        dpi.maxSets = 1; dpi.poolSizeCount = static_cast<std::uint32_t>(ps.size()); dpi.pPoolSizes = ps.data();
         VkDescriptorPool pool;
         VK(vkCreateDescriptorPool(dev.device, &dpi, nullptr, &pool));
         VkDescriptorSetAllocateInfo dsai{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
@@ -300,7 +375,8 @@ int main(int argc, char** argv) {
         for (std::size_t bi = 0; bi < result.bindings.size(); ++bi) {
             VkWriteDescriptorSet w{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             w.dstSet = set; w.dstBinding = result.bindings[bi].binding; w.descriptorCount = result.bindings[bi].count;
-            w.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER; w.pBufferInfo = infos[bi].data();
+            for (const auto& lb : layoutBindings) if (lb.binding == w.dstBinding) w.descriptorType = lb.descriptorType;
+            if (w.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) w.pBufferInfo = infos[bi].data(); else w.pImageInfo = imageInfos[bi].data();
             writes.push_back(w);
         }
         vkUpdateDescriptorSets(dev.device, static_cast<std::uint32_t>(writes.size()), writes.data(), 0, nullptr);
@@ -315,10 +391,33 @@ int main(int argc, char** argv) {
         VK(vkAllocateCommandBuffers(dev.device, &cbai, &cmd));
         VkCommandBufferBeginInfo bbi{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
         VK(vkBeginCommandBuffer(cmd, &bbi));
+        for (auto& [iid, im] : images) {
+            VkImageMemoryBarrier toTransfer{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+            toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; toTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED; toTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            toTransfer.srcQueueFamilyIndex = toTransfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; toTransfer.image = im.image; toTransfer.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+            vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &toTransfer);
+            VkClearColorValue color{}; std::memcpy(color.float32, im.clear, sizeof(im.clear));
+            VkImageSubresourceRange range{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+            vkCmdClearColorImage(cmd, im.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &color, 1, &range);
+            VkImageMemoryBarrier toGeneral = toTransfer;
+            toGeneral.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; toGeneral.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+            toGeneral.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL; toGeneral.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+            vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &toGeneral);
+        }
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
         vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &set, 0, nullptr);
         if (!result.pushConstants.empty()) vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, static_cast<std::uint32_t>(result.pushConstants.size()), result.pushConstants.data());
         vkCmdDispatch(cmd, groups[0], groups[1], groups[2]);
+        std::map<std::uint32_t, Region> readback;
+        for (auto& [iid, im] : images) {
+            Region& rb = readback[iid];
+            MakeBuffer(dev, rb, static_cast<std::uint64_t>(im.width) * im.height * 16, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            VkMemoryBarrier mb{VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT};
+            vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &mb, 0, nullptr, 0, nullptr);
+            VkBufferImageCopy copy{};
+            copy.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}; copy.imageExtent = {im.width, im.height, 1};
+            vkCmdCopyImageToBuffer(cmd, im.image, VK_IMAGE_LAYOUT_GENERAL, rb.buffer, 1, &copy);
+        }
         VK(vkEndCommandBuffer(cmd));
         VkSubmitInfo si{VK_STRUCTURE_TYPE_SUBMIT_INFO};
         si.commandBufferCount = 1; si.pCommandBuffers = &cmd;
@@ -329,6 +428,10 @@ int main(int argc, char** argv) {
         for (auto& [id, r] : regions) {
             std::ofstream o(outDir + "/region" + std::to_string(id) + ".bin", std::ios::binary);
             o.write(static_cast<const char*>(r.mapped), static_cast<std::streamsize>(r.size));
+        }
+        for (auto& [iid, rb] : readback) {
+            std::ofstream o(outDir + "/image" + std::to_string(iid) + ".bin", std::ios::binary);
+            o.write(static_cast<const char*>(rb.mapped), static_cast<std::streamsize>(rb.size));
         }
         std::printf("RAN\n");
         return 0;

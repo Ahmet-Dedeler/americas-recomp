@@ -8,7 +8,7 @@ def _inv(t):
     return {v: k for k, v in t.items()}
 
 SOPP, SMEM, VOP2, VOP1, MUBUF = (_inv(rdna2.SOPP), _inv(rdna2.SMEM), _inv(rdna2.VOP2), _inv(rdna2.VOP1), _inv(rdna2.MUBUF))
-SOP1, VOPC, SOP2 = _inv(rdna2.SOP1), _inv(rdna2.VOPC), _inv(rdna2.SOP2)
+SOP1, VOPC, SOP2, SOPC, MIMG = _inv(rdna2.SOP1), _inv(rdna2.VOPC), _inv(rdna2.SOP2), _inv(rdna2.SOPC), _inv(rdna2.MIMG)
 # rdna2.py's VOPC table is unreliable for the non-cmpx compares; RDNA2 u32 compares are 0xC0 + {f,lt,eq,le,gt,ne,ge,t}, cmpx adds 0x10.
 for _i, _c in enumerate(['f', 'lt', 'eq', 'le', 'gt', 'lg', 'ge', 'tru']):
     VOPC['v_cmp_%s_u32' % _c] = 0xC0 + _i
@@ -63,6 +63,22 @@ class Program:
         for lit in (l0, l1):
             if lit is not None:
                 self.words.append(lit)
+    def sopc(self, name, s0, s1):
+        c0, l0 = src(s0)
+        c1, l1 = src(s1)
+        self.words.append(0xBF000000 | (SOPC[name] << 16) | (c1 << 8) | c0)
+        for lit in (l0, l1):
+            if lit is not None:
+                self.words.append(lit)
+    def mimg(self, name, vdata, vaddr, srsrc, dmask=0xf, dim=1, ssamp=0):
+        op = MIMG[name]
+        self.words.append(0xF0000000 | ((op & 0x7f) << 18) | ((op >> 7) & 1) | (dim << 3) | (dmask << 8))
+        self.words.append((ssamp // 4 << 21) | ((srsrc // 4) << 16) | (vdata << 8) | vaddr)
+    def branch_fwd(self, name):
+        self.words.append(0xBF800000 | (SOPP[name] << 16))
+        return len(self.words) - 1
+    def patch_to_here(self, index):
+        self.words[index] = (self.words[index] & 0xffff0000) | ((len(self.words) - (index + 1)) & 0xffff)
     def label(self):
         return len(self.words)
     def branch_to(self, name, target):

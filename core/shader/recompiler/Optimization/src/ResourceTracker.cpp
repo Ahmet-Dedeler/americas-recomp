@@ -1215,7 +1215,7 @@ private:
             case IrOpcode::ImageQueryDimensions:
             case IrOpcode::ImageRead: return inst.Type() == IrType::U32x4;
             // XBOX-FORK: stores are split too; each arm's copy runs only for the lanes of its arm (EXEC is narrowed per arm).
-            case IrOpcode::ImageWrite: return inst.Type() == IrType::Void && inst.ArgumentCount() == 4u && inst.Argument(3u)->Type() == IrType::Bool;
+            case IrOpcode::ImageWrite: return std::getenv("XBOX_NO_STORE_SPLIT") == nullptr && inst.Type() == IrType::Void && inst.ArgumentCount() == 4u && inst.Argument(3u)->Type() == IrType::Bool;
             default: return false;
         }
     }

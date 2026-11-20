@@ -25,7 +25,9 @@ def run(program_bytes, regions, pokes=(), user=((4, 0),), groups=(1, 1, 1), wave
     out = p.stdout.strip()
     if "RAN" not in out:
         raise RuntimeError("exec failed: " + out[:700])
-    return {rid: open(f"{d}/out/region{rid}.bin", "rb").read() for rid in regions}
+    result = {rid: open(f"{d}/out/region{rid}.bin", "rb").read() for rid in regions}
+    result['out'] = f"{d}/out"
+    return result
 
 def vsharp(srt_region, off, target, size):
     """scenario lines writing a raw buffer V# for region `target` at byte `off` of region `srt_region`"""
@@ -90,7 +92,44 @@ def test_waterfall_loop():
     want = tuple(1005 + (i & 3) for i in range(32))
     assert got == want, ("got", got[:8], "want", want[:8])
 
-TESTS = [test_store_lane_ids, test_readfirstlane_after_narrowed_write, test_waterfall_loop]
+def _run_image_select(selector):
+    # SRT: T# A at 0, T# B at 32, selector at 64. The image T# is loaded into the same SGPRs on two paths and stored through after the join,
+    # so the recompiler has to split the store over the descriptor Phi.
+    p = rdna_asm.Program()
+    p.smem('s_load_dword', 0, 4, 64)
+    p.sopp('s_waitcnt', 0)
+    p.sopc('s_cmp_eq_u32', 's0', 0)
+    to_a = p.branch_fwd('s_cbranch_scc1')
+    p.smem('s_load_dwordx8', 8, 4, 32)               # selector != 0: image B
+    to_join = p.branch_fwd('s_branch')
+    p.patch_to_here(to_a)
+    p.smem('s_load_dwordx8', 8, 4, 0)                # selector == 0: image A
+    p.patch_to_here(to_join)
+    p.sopp('s_waitcnt', 0)
+    p.vop1('v_cvt_f32_u32', 4, 'v0')                 # r = lane
+    p.vop1('v_mov_b32', 5, ('lit', 0x40000000))      # g = 2.0
+    p.vop1('v_mov_b32', 6, ('lit', 0x40600000))      # b = 3.5
+    p.vop1('v_mov_b32', 7, ('lit', 0x3f800000))      # a = 1.0
+    p.vop1('v_mov_b32', 1, 0)                        # y = 0
+    p.mimg('image_store', 4, 0, 8)
+    p.sopp('s_endpgm')
+    pokes = ["image 1 32 1 clear -1 -1 -1 -1", "image 2 32 1 clear -1 -1 -1 -1", "timg 0 0 1", "timg 0 32 2", f"poke 0 64 {selector}"]
+    r = run(p.bytes(), {0: (256, None)}, [], extra=pokes)
+    return r
+
+def _image_pixels(out_dir, image_id):
+    return struct.unpack('<%df' % (32 * 4), open(os.path.join(out_dir, f"image{image_id}.bin"), 'rb').read())
+
+def test_image_store_phi_split():
+    for selector, written, untouched in ((0, 1, 2), (1, 2, 1)):
+        r = _run_image_select(selector)
+        d = os.path.dirname(r['dir']) if 'dir' in r else None
+        pixels = {i: _image_pixels(r['out'], i) for i in (1, 2)}
+        want = tuple(v for lane in range(32) for v in (float(lane), 2.0, 3.5, 1.0))
+        assert pixels[written] == want, ("selector", selector, "image", written, pixels[written][:8])
+        assert pixels[untouched] == tuple([-1.0] * 128), ("selector", selector, "image", untouched, "was written", pixels[untouched][:8])
+
+TESTS = [test_store_lane_ids, test_readfirstlane_after_narrowed_write, test_waterfall_loop, test_image_store_phi_split]
 
 if __name__ == "__main__":
     bad = 0
