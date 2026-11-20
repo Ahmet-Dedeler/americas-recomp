@@ -915,7 +915,18 @@ private:
         }
         if (!MatchAffineOffset(offset, key, stride, addend)) {
             if (!MatchMaskedOffset(offset, key, stride) && (address || !MatchFirstLaneOffset(offset, key, stride))) {
-                return false;
+                // XBOX-FORK (assumption; disable with XBOX_NO_OPAQUE_HEAP_INDEX=1): the heap offset is an opaque wave-uniform
+                // value (e.g. a validity test selecting between a loaded index and a fallback). The emitter indexes the table by
+                // the actual byte offset, so only a record size is needed: use the descriptor size, assuming heap entries are
+                // size-aligned (an unaligned offset falls outside the table at run time).
+                static const bool noOpaque = std::getenv("XBOX_NO_OPAQUE_HEAP_INDEX") != nullptr;
+                IrValue* lane = offset->Resolve();
+                if (noOpaque || !address || lane->Opcode() != IrOpcode::ReadFirstLane || lane->Type() != IrType::U32) {
+                    return false;
+                }
+                key = lane;
+                stride = words * static_cast<std::uint32_t>(sizeof(std::uint32_t));
+                addend = 0;
             }
             masked = true;
         }

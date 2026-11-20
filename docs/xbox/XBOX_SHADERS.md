@@ -39,7 +39,7 @@ Everything is marked `XBOX-FORK` where it is a behaviour change.
 
 ## Not done / caveats
 
-- Descriptor tables: `tools/xbox/bindings.py` derives a per-shader table layout from the s_load/MIMG/MUBUF instructions (straight-line scan, approximate) and `driver.exe <bin> <wave> <out> <bind>` builds matching fake memory (image dim from the instruction). With this, 172/300 validate at a 30 s limit (+8 slow BVH shaders), 23 gained vs the flat stub, 7 regressed. ~108 still fail because the image descriptor is selected by an index loaded from a buffer (bindless heap); static resolution cannot work, the recompiler would need a runtime descriptor-heap path. Root-signature ABI itself is still not modelled.
+- Descriptor tables: `tools/xbox/bindings.py` derives a per-shader table layout from the s_load/MIMG/MUBUF instructions (straight-line scan, approximate) and `driver.exe <bin> <wave> <out> <bind>` builds matching fake memory (image dim from the instruction). With this, 172/300 validate at a 30 s limit (+8 slow BVH shaders), 23 gained vs the flat stub, 7 regressed. the bindless (buffer-indexed) cases are handled by the runtime table path, see "Bindless descriptors" below (271/300). Root-signature ABI itself is still not modelled.
 - Graphics shaders (PS/VS/GS) not tried.
 - No execution or output comparison.
 
@@ -59,10 +59,15 @@ Two changes (marked `XBOX-FORK`):
   needs exec-flow analysis across different exec snapshots. It is the value the shader intends, but a shader that
   deliberately reads a stale lane would be mistranslated. `XBOX_NO_LANE_ASSUME=1` disables it.
 
-Result on the 300-shader set with the binding model: 172 -> 200 valid (`spirv-val`), 28 gained, 0 lost, 0 invalid.
-Still failing (~75): the heap index goes through real shader logic (e.g. a handle validity test selecting between a
-loaded index and a fallback), so the key is not a provable multiple of the descriptor stride. Enabling the first-lane key
-matcher for address heaps did not help (tried, reverted). Output remains unexecuted; "valid" means only `spirv-val`.
+- When the heap offset is an opaque wave-uniform value (e.g. a handle-validity test selecting between a loaded index and a
+  fallback), an address heap column now uses the descriptor size as record size (32 bytes for an image) with the whole offset
+  as key. The emitter already indexes the table by the byte offset, so only the record size was missing. **Assumption**: heap
+  entries are size-aligned; an unaligned offset falls outside the table at run time. `XBOX_NO_OPAQUE_HEAP_INDEX=1` disables it.
+
+Result on the 300-shader set with the binding model: 172 -> 200 (Phi + lane-active) -> 271 valid (`spirv-val`), 0 lost,
+0 invalid. Remaining: 10 timeouts at the 30 s limit (slow BVH shaders, two more than before because they now get further),
+8 `EvaluateRuntimeSources` failures, 4 Phi-chain descriptors, 2 atomic image format 56, 5 single oddities.
+Output remains unexecuted; "valid" means only `spirv-val`, and the three assumptions above are untested against hardware.
 
 ## Structurizer speed (ray-tracing loop graphs)
 
