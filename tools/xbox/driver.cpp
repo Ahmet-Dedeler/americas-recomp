@@ -17,6 +17,8 @@ int main(int argc, char** argv) {
     std::vector<std::uint32_t> code(raw.size() / 4);
     std::memcpy(code.data(), raw.data(), code.size() * 4);
     const std::uint32_t wave = std::stoul(argv[2]);
+    // argv[5]: fake buffer contents. 0 = unbacked, 1 = zeros, 2 = tiled 2D image T# records, 3 = tiled buffer V# records (default 1)
+    const int variant = argc > 5 ? std::atoi(argv[5]) : 1;
     RecompileRequest request{};
     const std::size_t nud = 16;
     std::vector<std::uint32_t> userData(nud);
@@ -63,7 +65,18 @@ int main(int argc, char** argv) {
                 const std::uint64_t base = 0x50000000ull + 0x10000ull * counter++;
                 const std::uint32_t d[4] = {static_cast<std::uint32_t>(base), static_cast<std::uint32_t>((base >> 32) & 0xffffu) | (16u << 16), 0x10000u, 0x30027facu};
                 std::copy(d, d + 4, m.begin() + w);
-                bufferBacking.push_back({base, std::vector<std::uint32_t>(0x4000)});
+                if (variant != 0) {
+                    std::vector<std::uint32_t> mem(0x4000);
+                    if (variant == 2) {  // tile with 32-byte 2D image T# records (format 56, as above)
+                        const std::uint64_t ib = 0x40000000ull;
+                        const std::uint32_t t[8] = {static_cast<std::uint32_t>(ib >> 8), static_cast<std::uint32_t>((ib >> 40) & 0xffu) | (56u << 20) | (3u << 30), 15u | (15u << 14), 0xfacu | (9u << 28), 0, 0, 0, 0};
+                        for (std::size_t k = 0; k + 8 <= mem.size(); k += 8) std::copy(t, t + 8, mem.begin() + k);
+                    } else if (variant == 3) {  // tile with 16-byte buffer V# records pointing at the first fake buffer
+                        const std::uint32_t v[4] = {0x50000000u, 16u << 16, 0x10000u, 0x30027facu};
+                        for (std::size_t k = 0; k + 4 <= mem.size(); k += 4) std::copy(v, v + 4, mem.begin() + k);
+                    }
+                    bufferBacking.push_back({base, std::move(mem)});
+                }
             }
         }
     } else {

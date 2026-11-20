@@ -86,6 +86,12 @@ Realistic constant-buffer contents are needed to judge shaders that build descri
 Remaining 175: 74 timeouts at 30 s, 101 failures (image interface/zeros, address-loaded or Phi-chain descriptors,
 16 atomic image format 56). Nothing was executed.
 
+Driver fake-buffer contents are selectable (`driver <bin> <wave> <out> <bind> <variant>`): 0 unbacked, 1 zeros, 2 tiled
+well-formed 2D image T# records (32 B, format 56), 3 tiled well-formed buffer V# records (16 B). `tools/xbox/run_variants.py`
+runs the shaders not yet valid under variants 2 and 3: only 8 more pass (167 still fail, 0 invalid). Union over the four
+models: **2,480 of 2,647 (93.7%)**. The remaining failures are structural, not test-memory artefacts: 66 timeouts at 30 s,
+descriptors loaded from computed addresses (35) or Phi chains (44), 18 atomic-image format failures.
+
 ## Structurizer speed (ray-tracing loop graphs)
 
 Profiling showed the slow ray-tracing shaders were not hung: `Structurizer` runs a cascade of up to 4 attempts
