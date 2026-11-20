@@ -11,6 +11,7 @@
 //   timg <regionId> <byteOffset> <imageId>          (writes an 8-dword 2D RGBA32F T# for the image into a region)
 //   user <sgpr> <targetId>              (user data pair: low, high dword of the region address)
 //   userval <sgpr> <u32>
+//   threads <x> <y> <z>   (workgroup size, default <wave> 1 1)     lds <dwords>     userdwords <n>   (user SGPR count; the workgroup ids follow)
 // Supported bindings: guest buffers (V# bases must be region starts), shader data, flattened SRT, GDS/page-table/fault stubs.
 // Images and samplers are not implemented yet and make the run fail with a clear message.
 #include "Recompiler.hpp"
@@ -152,6 +153,8 @@ int main(int argc, char** argv) {
     try {
         std::uint32_t wave = 32;
         std::uint32_t groups[3] = {1, 1, 1};
+        std::uint32_t threads[3] = {0, 1, 1};
+        std::uint32_t ldsDwords = 0, userCount = 16;
         std::string codePath, outDir = ".";
         struct Line { std::vector<std::string> w; };
         std::vector<Line> lines;
@@ -169,6 +172,9 @@ int main(int argc, char** argv) {
             if (l.w[0] == "wave") wave = static_cast<std::uint32_t>(Num(l.w[1]));
             else if (l.w[0] == "groups") for (int i = 0; i < 3; ++i) groups[i] = static_cast<std::uint32_t>(Num(l.w[1 + i]));
             else if (l.w[0] == "code") codePath = l.w[1];
+            else if (l.w[0] == "threads") for (int i = 0; i < 3; ++i) threads[i] = static_cast<std::uint32_t>(Num(l.w[1 + i]));
+            else if (l.w[0] == "lds") ldsDwords = static_cast<std::uint32_t>(Num(l.w[1]));
+            else if (l.w[0] == "userdwords") userCount = static_cast<std::uint32_t>(Num(l.w[1]));
             else if (l.w[0] == "out") outDir = l.w[1];
         }
         Device dev = CreateDevice(wave);
@@ -218,7 +224,8 @@ int main(int argc, char** argv) {
             if (off + 4 > r.size) throw std::runtime_error("patch outside region");
             return *reinterpret_cast<std::uint32_t*>(static_cast<std::byte*>(r.mapped) + off);
         };
-        std::vector<std::uint32_t> userData(16, 0);
+        if (threads[0] == 0) threads[0] = wave;
+        std::vector<std::uint32_t> userData(userCount, 0);
         for (auto& l : lines) {
             if (l.w[0] == "timg") {
                 const auto it = images.find(static_cast<std::uint32_t>(Num(l.w[3])));
@@ -261,7 +268,7 @@ int main(int argc, char** argv) {
         request.context.waveSize = wave;
         request.context.userDataBaseRegister = 0;
         request.context.userData = userData;
-        request.context.compute = ShaderComputeStageInfo{{wave, 1u, 1u}, 0u, {true, true, true}, false, 1u};
+        request.context.compute = ShaderComputeStageInfo{{threads[0], threads[1], threads[2]}, ldsDwords, {true, true, true}, false, 1u};
         request.target.vulkanVersion = 0x00403000u;
         request.target.spirvVersion = 0x00010600u;
         request.target.subgroupSize = wave;

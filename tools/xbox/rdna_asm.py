@@ -70,15 +70,19 @@ class Program:
         for lit in (l0, l1):
             if lit is not None:
                 self.words.append(lit)
-    def mimg(self, name, vdata, vaddr, srsrc, dmask=0xf, dim=1, ssamp=0):
+    def mimg(self, name, vdata, vaddr, srsrc, dmask=0xf, dim=1, ssamp=0, a16=False):
         op = MIMG[name]
         self.words.append(0xF0000000 | ((op & 0x7f) << 18) | ((op >> 7) & 1) | (dim << 3) | (dmask << 8))
-        self.words.append((ssamp // 4 << 21) | ((srsrc // 4) << 16) | (vdata << 8) | vaddr)
+        self.words.append((int(a16) << 30) | (ssamp // 4 << 21) | ((srsrc // 4) << 16) | (vdata << 8) | vaddr)
     def branch_fwd(self, name):
         self.words.append(0xBF800000 | (SOPP[name] << 16))
         return len(self.words) - 1
     def patch_to_here(self, index):
         self.words[index] = (self.words[index] & 0xffff0000) | ((len(self.words) - (index + 1)) & 0xffff)
+    def ds(self, name, vdst, addr, data0=0, data1=0, offset=0):
+        op = _inv(rdna2.DS)[name]
+        self.words.append(0xD8000000 | (op << 18) | (offset & 0xffff))
+        self.words.append((vdst << 24) | (data1 << 16) | (data0 << 8) | addr)
     def label(self):
         return len(self.words)
     def branch_to(self, name, target):

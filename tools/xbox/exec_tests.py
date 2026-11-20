@@ -129,7 +129,59 @@ def test_image_store_phi_split():
         assert pixels[written] == want, ("selector", selector, "image", written, pixels[written][:8])
         assert pixels[untouched] == tuple([-1.0] * 128), ("selector", selector, "image", untouched, "was written", pixels[untouched][:8])
 
-TESTS = [test_store_lane_ids, test_readfirstlane_after_narrowed_write, test_waterfall_loop, test_image_store_phi_split]
+def _group_prologue(p, threads):
+    # s[4:5] = SRT pointer, 6 user SGPRs, so the workgroup id x is s6. v2 = group id * threads + local id (global linear id)
+    p.smem('s_load_dwordx4', 8, 4, 0)
+    p.sopp('s_waitcnt', 0)
+    p.vop1('v_mov_b32', 2, 's6')
+    p.vop2('v_mul_u32_u24', 2, ('lit', threads), 'v2')
+    p.vop2('v_add_nc_u32', 2, 'v0', 'v2')
+    p.vop2('v_lshlrev_b32', 1, 2, 'v2')
+
+def test_multiwave_multigroup_global_id(wave=32):
+    threads, groups = 128, 4          # four waves (wave32) or two (wave64) per group, four groups
+    p = rdna_asm.Program()
+    _group_prologue(p, threads)
+    p.vop2('v_mul_u32_u24', 3, ('lit', 3), 'v2')
+    p.vop2('v_add_nc_u32', 3, 1, 'v3')                # value = 3 * gid + 1
+    p.mubuf('buffer_store_dword', 3, 1, 8, 128, 0)
+    p.sopp('s_endpgm')
+    n = threads * groups
+    r = run(p.bytes(), {0: (256, None), 1: (n * 4, None)}, vsharp(0, 0, 1, n * 4), groups=(groups, 1, 1), wave=wave,
+            extra=[f"threads {threads} 1 1", "userdwords 6"])
+    got = struct.unpack('<%dI' % n, r[1])
+    assert got == tuple(3 * i + 1 for i in range(n)), [i for i in range(n) if got[i] != 3 * i + 1][:8]
+
+def test_lds_reverse_across_waves(wave=32):
+    # every thread writes lds[tid] then reads lds[127 - tid] after a barrier: wrong unless the barrier covers all four waves
+    threads, groups = 128, 3
+    p = rdna_asm.Program()
+    _group_prologue(p, threads)
+    p.vop2('v_lshlrev_b32', 4, 2, 'v0')               # v4 = local id * 4
+    p.vop2('v_add_nc_u32', 5, 5000, 'v2')             # v5 = gid + 5000
+    p.ds('ds_write_b32', 0, 4, 5)
+    p.sopp('s_waitcnt', 0)
+    p.sopp('s_barrier')
+    p.vop2('v_sub_nc_u32', 6, ('lit', 127), 'v0')     # 127 - local id
+    p.vop2('v_lshlrev_b32', 6, 2, 'v6')
+    p.ds('ds_read_b32', 7, 6)
+    p.sopp('s_waitcnt', 0)
+    p.mubuf('buffer_store_dword', 7, 1, 8, 128, 0)
+    p.sopp('s_endpgm')
+    n = threads * groups
+    r = run(p.bytes(), {0: (256, None), 1: (n * 4, None)}, vsharp(0, 0, 1, n * 4), groups=(groups, 1, 1), wave=wave,
+            extra=[f"threads {threads} 1 1", "lds 128", "userdwords 6"])
+    got = struct.unpack('<%dI' % n, r[1])
+    want = tuple(5000 + (g * threads + (threads - 1 - t)) for g in range(groups) for t in range(threads))
+    assert got == want, [(i, got[i], want[i]) for i in range(n) if got[i] != want[i]][:6]
+
+def test_multiwave_wave64():
+    test_multiwave_multigroup_global_id(64)
+
+def test_lds_reverse_wave64():
+    test_lds_reverse_across_waves(64)
+
+TESTS = [test_multiwave_wave64, test_lds_reverse_wave64, test_multiwave_multigroup_global_id, test_lds_reverse_across_waves, test_store_lane_ids, test_readfirstlane_after_narrowed_write, test_waterfall_loop, test_image_store_phi_split]
 
 if __name__ == "__main__":
     bad = 0

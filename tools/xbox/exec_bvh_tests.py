@@ -61,18 +61,33 @@ def ref_triangle(v0, v1, v2, origin, direction):
     t, u, v = dot(e2, s2) / den, dot(e3, s1) / den, dot(direction, s2) / den
     return t if (0 <= u <= 1 and 0 <= v <= 1 and u + v <= 1) else None
 
-def run_query(bvh_bytes, node, origin, direction, extent, sort=False, grow=0):
-    """one ray, 32-bit node pointer; returns the four result dwords of lane 0"""
+def half_bits(x):
+    return struct.unpack('<H', struct.pack('<e', x))[0]
+
+def box16_node(children, boxes):
+    """bounds are fp16, two per dword (low half first): 16 dwords"""
+    d = list(children)
+    halves = [half_bits(v) for lo, hi in boxes for v in tuple(lo) + tuple(hi)]
+    d += [halves[i] | (halves[i + 1] << 16) for i in range(0, len(halves), 2)]
+    return struct.pack('<16I', *d)
+
+def run_query(bvh_bytes, node, origin, direction, extent, sort=False, grow=0, node64=False, a16=False):
+    """one ray; returns the four result dwords of lane 0"""
     p = rdna_asm.Program()
     p.smem('s_load_dwordx4', 8, 4, 0)       # output V#
     p.smem('s_load_dwordx4', 12, 4, 16)     # BVH descriptor
     p.sopp('s_waitcnt', 0)
     p.vop2('v_lshlrev_b32', 1, 4, 'v0')
     inv = inv_dir(direction)
-    vals = [node, f2u(extent)] + [f2u(c) for c in origin] + [f2u(c) for c in direction] + [f2u(c) for c in inv]
+    vals = [node] + ([0] if node64 else []) + [f2u(extent)] + [f2u(c) for c in origin]
+    if a16:
+        h = [half_bits(c) for c in tuple(direction) + tuple(inv)]
+        vals += [h[0] | (h[1] << 16), h[2] | (h[3] << 16), h[4] | (h[5] << 16)]
+    else:
+        vals += [f2u(c) for c in direction] + [f2u(c) for c in inv]
     for i, v in enumerate(vals):
         p.vop1('v_mov_b32', 8 + i, ('lit', v))
-    p.mimg('image_bvh_intersect_ray', 4, 8, 12, dmask=0xf, dim=0)
+    p.mimg('image_bvh64_intersect_ray' if node64 else 'image_bvh_intersect_ray', 4, 8, 12, dmask=0xf, dim=0, a16=a16)
     p.sopp('s_waitcnt', 0)
     p.mubuf('buffer_store_dwordx4', 4, 1, 8, 128, 0)
     p.sopp('s_endpgm')
@@ -134,7 +149,40 @@ def test_triangle_miss():
     t_num = struct.unpack('<f', struct.pack('<I', got[0]))[0]
     assert ref_triangle(v0, v1, v2, origin, direction) is None and t_num == INF, (got, t_num)
 
-TESTS = [test_box32_unsorted, test_box32_sorted, test_box32_extent_clips, test_triangle_hit, test_triangle_miss]
+def _box16_case(sort, **kw):
+    boxes = boxes_along_x([6.0, 2.0, 4.0, 0.0], miss=1)
+    node = box16_node(CHILDREN, boxes)
+    origin, direction = (-1.0, 0.5, 0.5), (1.0, 0.0, 0.0)
+    got = run_query(node, node_id(0, 4), origin, direction, 100.0, sort=sort, **kw)
+    want = ref_box(CHILDREN, boxes, origin, direction, 100.0, sort)
+    assert list(got) == want, (list(map(hex, got)), list(map(hex, want)))
+
+def test_box16_unsorted(): _box16_case(False)
+def test_box16_sorted(): _box16_case(True)
+def test_box32_node64(): 
+    boxes = boxes_along_x([6.0, 2.0, 4.0, 0.0], miss=2)
+    node = box32_node(CHILDREN, boxes)
+    origin, direction = (-1.0, 0.5, 0.5), (1.0, 0.0, 0.0)
+    got = run_query(node, node_id(0, 5), origin, direction, 100.0, sort=True, node64=True)
+    want = ref_box(CHILDREN, boxes, origin, direction, 100.0, True)
+    assert list(got) == want, (list(map(hex, got)), list(map(hex, want)))
+def test_box32_a16():
+    boxes = boxes_along_x([6.0, 2.0, 4.0, 0.0], miss=3)
+    node = box32_node(CHILDREN, boxes)
+    origin, direction = (-1.0, 0.5, 0.5), (1.0, 0.0, 0.0)
+    got = run_query(node, node_id(0, 5), origin, direction, 100.0, sort=True, a16=True)
+    want = ref_box(CHILDREN, boxes, origin, direction, 100.0, True)
+    assert list(got) == want, (list(map(hex, got)), list(map(hex, want)))
+def test_box16_node64_a16(): _box16_case(True, node64=True, a16=True)
+def test_triangle_node64_a16():
+    v0, v1, v2 = (5.0, 0.0, 0.0), (5.0, 2.0, 0.0), (5.0, 0.0, 2.0)
+    bvh = box32_node(CHILDREN, boxes_along_x([0, 2, 4, 6])) + triangle_node(v0, v1, v2, 0x1234)
+    origin, direction = (0.0, 0.5, 0.5), (1.0, 0.0, 0.0)
+    got = run_query(bvh, node_id(128, 0), origin, direction, 100.0, node64=True, a16=True)
+    t = struct.unpack('<ff', struct.pack('<II', got[0], got[1]))
+    assert abs(t[0] / t[1] - 5.0) < 1e-5 and got[2] == 0x1234, (got, t)
+
+TESTS = [test_box16_unsorted, test_box16_sorted, test_box32_node64, test_box32_a16, test_box16_node64_a16, test_triangle_node64_a16, test_box32_unsorted, test_box32_sorted, test_box32_extent_clips, test_triangle_hit, test_triangle_miss]
 
 if __name__ == "__main__":
     bad = 0
