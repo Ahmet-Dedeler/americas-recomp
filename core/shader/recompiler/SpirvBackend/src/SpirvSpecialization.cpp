@@ -584,7 +584,7 @@ private:
             }
             const bool nanTest = (op == spv::OpIsNan && instruction.size() == 4u) || (op == spv::OpFUnordNotEqual && instruction.size() == 5u && instruction[3] == instruction[4]);
             if (nanTest && !decoratedResults.contains(instruction[2])) {
-                const auto [found, inserted] = blockNanTests.try_emplace(std::array<std::uint32_t, 3>{op, instruction[1], instruction[3]}, instruction[2]);
+                const auto [found, inserted] = blockNanTests.try_emplace(std::array<std::uint32_t, 3>{static_cast<std::uint32_t>(op), instruction[1], instruction[3]}, instruction[2]);
                 if (!inserted) {
                     instruction = Make(spv::OpCopyObject, {instruction[1], instruction[2], found->second});
                     changed = true;

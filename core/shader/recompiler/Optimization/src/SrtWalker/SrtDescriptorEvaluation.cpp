@@ -226,7 +226,7 @@ bool evaluateRuntimeSources(const IrResourcePlan& program, std::span<const std::
 void prefetchCompactPlan(const CompactResourcePlan& compact) {
     const auto prefetch = [](const void* data, std::size_t bytes) {
         const auto* bytesData = static_cast<const char*>(data);
-        for (std::size_t offset = 0; offset < std::min<std::size_t>(bytes, 16384u); offset += 64) __builtin_prefetch(bytesData + offset);
+        for (std::size_t offset = 0; offset < std::min<std::size_t>(bytes, 16384u); offset += 64) (void)(bytesData + offset);
     };
     prefetch(compact.values.data(), compact.values.size() * sizeof(CompactPlanValue));
     prefetch(compact.arguments.data(), compact.arguments.size() * sizeof(std::uint32_t));

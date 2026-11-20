@@ -306,13 +306,13 @@ IrProgram PrepareResourceProgram(const RecompileRequest& request, ShaderPreparat
         std::fprintf(stderr, "==== IR 0x%s after %s\n%s\n", address, pass, ProgramToString(program).c_str());
     };
 
-    constexpr SsaBuilder ssaBuilder;
-    constexpr ConstantFolder constantFolder;
-    constexpr DeadCodeEliminator deadCodeEliminator;
-    constexpr ReadLaneEliminator readLaneEliminator;
-    constexpr MaskedSelectEliminator maskedSelectEliminator;
-    constexpr VectorWindowIndexNarrower vectorWindowIndexNarrower;
-    constexpr VectorWindowStoreEliminator vectorWindowStoreEliminator;
+    static constexpr SsaBuilder ssaBuilder;
+    static constexpr ConstantFolder constantFolder;
+    static constexpr DeadCodeEliminator deadCodeEliminator;
+    static constexpr ReadLaneEliminator readLaneEliminator;
+    static constexpr MaskedSelectEliminator maskedSelectEliminator;
+    static constexpr VectorWindowIndexNarrower vectorWindowIndexNarrower;
+    static constexpr VectorWindowStoreEliminator vectorWindowStoreEliminator;
     const auto simplify = [&] {
         dumpIr("translate");
         ssaBuilder.Rewrite(program);
@@ -791,12 +791,12 @@ auto recordEmissionFailure(std::exception_ptr* emissionFailure, TStep&& step) ->
 
 void prepareInterface(const RecompileRequest& request, IrProgram& program) {
     const auto inputInfo = RequestInputInfo(request);
-    constexpr DeadCodeEliminator deadCodeEliminator;
+    static constexpr DeadCodeEliminator deadCodeEliminator;
     constexpr ResourceMaterializer resourceMaterializer;
     const bool nativeSampleOffsets = request.target.nonConstantImageOffsets && std::find(request.target.supportedCapabilities.begin(), request.target.supportedCapabilities.end(), spv::CapabilityImageGatherExtended) != request.target.supportedCapabilities.end();
     resourceMaterializer.ApplyStaticInterface(program, nativeSampleOffsets);
 
-    constexpr ConstantFolder constantFolder;
+    static constexpr ConstantFolder constantFolder;
     if (request.shader.stage == ShaderStage::Vertex && constantFolder.FoldVertexLaneBounds(program, HostSubgroupSize(request), request.target.spirvVersion)) {
         constantFolder.Fold(program);
         ResolveControlFlowIdentities(program);
