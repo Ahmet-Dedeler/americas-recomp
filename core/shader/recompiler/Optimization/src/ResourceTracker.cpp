@@ -1214,6 +1214,8 @@ private:
             case IrOpcode::ImageQueryLod:
             case IrOpcode::ImageQueryDimensions:
             case IrOpcode::ImageRead: return inst.Type() == IrType::U32x4;
+            // XBOX-FORK: stores are split too; each arm's copy runs only for the lanes of its arm (EXEC is narrowed per arm).
+            case IrOpcode::ImageWrite: return inst.Type() == IrType::Void && inst.ArgumentCount() == 4u && inst.Argument(3u)->Type() == IrType::Bool;
             default: return false;
         }
     }
@@ -1544,6 +1546,20 @@ private:
                 }
                 arguments[slot] = EmitCopy(*handles[slot], dwords, inst);
             }
+            if (inst.Type() == IrType::Void) {
+                IrValue* active = inst.Argument(inst.ArgumentCount() - 1u);
+                for (std::uint32_t before = 0; before < arm && before < conditions.size(); ++before) {
+                    const std::array<IrValue*, 1> negate {conditions[before]};
+                    IrValue* other = EmitBefore(inst, IrOpcode::LogicalNot, IrType::Bool, negate);
+                    const std::array<IrValue*, 2> both {active, other};
+                    active = EmitBefore(inst, IrOpcode::LogicalAnd, IrType::Bool, both);
+                }
+                if (arm < conditions.size()) {
+                    const std::array<IrValue*, 2> both {active, conditions[arm]};
+                    active = EmitBefore(inst, IrOpcode::LogicalAnd, IrType::Bool, both);
+                }
+                arguments.back() = active;
+            }
             auto copyFlags = flags;
             if (arm != 0u) {
                 copyFlags.index = static_cast<std::uint32_t>(m_program.Resources().memoryInfo.size());
@@ -1565,6 +1581,11 @@ private:
             EmitDescriptorFault(inst, UndefinedImageWords(inst, selected), *selected[0], *selected[1]);
         }
 
+        if (inst.Type() == IrType::Void) {
+            inst.Invalidate();
+            inst.Parent()->RemoveInstruction(&inst);
+            return;
+        }
         IrValue* result = copies.back();
         if (copies.size() > 1u) {
             std::array<IrValue*, 4> components {};
