@@ -37,12 +37,13 @@ def parse_bind(path):
             descs.append((int(w[1]), int(w[2]), w[3]))
     return nodes, descs
 
-def build(idx, wave, workdir):
+def build(idx, wave, workdir, threads=None):
     """returns (scenario lines, info dict) or raises Unsupported"""
     nodes, descs = parse_bind(ROOT + f"binds_all/{idx}.bind")
     rnd = random.Random(int(idx))
-    user_dwords = max(USER_DWORDS, max([s[1] + 1 for s in nodes.values() if s[0] == "user"] or [0]))
-    lines = [f"wave {wave}", "groups 2 2 1", f"code {ROOT}bins_all/{idx}.bin", f"out {workdir}/out", f"userdwords {user_dwords}", "lds 4096", "lowguest"]
+    user_dwords = max([s[1] + 1 for s in nodes.values() if s[0] == "user"] or [0])   # workgroup ids follow the last user register
+    threads = threads or workgroup_threads(idx, wave)
+    lines = [f"wave {wave}", "groups 2 2 1", f"threads {threads} 1 1", f"code {ROOT}bins_all/{idx}.bin", f"out {workdir}/out", f"userdwords {user_dwords}", "lds 4096", "lowguest"]
     info = {"data": [], "images": []}
     for nid in nodes:
         lines.append(f"region {100 + nid} {NODE_BYTES}")
@@ -77,13 +78,26 @@ def build(idx, wave, workdir):
         # samplers need no memory: the harness binds a default sampler
     return lines, info
 
+_RDNA = None
+def workgroup_threads(idx, wave):
+    """The real numthreads is not recoverable from the container (PSV0 is zeroed, DXIL strings stripped).
+    Guess: two waves when the code uses LDS or a barrier, otherwise one wave."""
+    global _RDNA
+    if _RDNA is None:
+        sys.path.insert(0, ROOT + "../")
+        import rdna2
+        _RDNA = rdna2
+    d = open(ROOT + f"bins_all/{idx}.bin", "rb").read()
+    ins, _ = _RDNA.sweep(d, 0, len(d))
+    return 2 * wave if any(i.text.startswith(("ds_", "s_barrier")) for i in ins) else wave
+
 class Unsupported(Exception):
     pass
 
-def run_once(idx, wave, env_extra, timeout, tag):
+def run_once(idx, wave, env_extra, timeout, tag, threads=None):
     d = tempfile.mkdtemp(prefix=f"real{idx}{tag}_")
     try:
-        lines, info = build(idx, wave, d)
+        lines, info = build(idx, wave, d, threads)
     except Unsupported as e:
         return {"status": "UNSUPPORTED", "detail": str(e)}
     sc = os.path.join(d, "scenario.txt")
@@ -108,14 +122,28 @@ def run_once(idx, wave, env_extra, timeout, tag):
     return {"status": "COMPILE_FAIL" if "FAIL" in out else "CRASH", "detail": last[:300], "secs": secs}
 
 def one(idx, wave, timeout):
+    threads = None
     a = run_once(idx, wave, {}, timeout, "a")
     rec = {"idx": idx, "status": a["status"], "detail": a.get("detail", ""), "secs": a.get("secs")}
     if a["status"] != "RAN":
         return rec
     a2 = run_once(idx, wave, {}, timeout, "a2")
-    b = run_once(idx, wave, {"XBOX_NO_STABLE_IDS": "1", "XBOX_NO_SPLIT_CURSOR": "1"}, timeout, "b")
+    det = a2["status"] == "RAN" and a2["blob"] == a["blob"]
+    if not det:
+        # numthreads is not recoverable from the container: a shader that reads workgroup memory nobody wrote is
+        # flaky at the wrong size, so try larger workgroups and keep the first deterministic one
+        for t in (64, 128, 256, 512):
+            if t <= workgroup_threads(idx, wave):
+                continue
+            c = run_once(idx, wave, {}, timeout, "c", t)
+            c2 = run_once(idx, wave, {}, timeout, "c2", t) if c["status"] == "RAN" else None
+            if c["status"] == "RAN" and c2["status"] == "RAN" and c["blob"] == c2["blob"]:
+                a, det, threads = c, True, t
+                break
+    b = run_once(idx, wave, {"XBOX_NO_STABLE_IDS": "1", "XBOX_NO_SPLIT_CURSOR": "1"}, timeout, "b", threads)
     rec["changed"] = a["changed"]
-    rec["deterministic"] = a2["status"] == "RAN" and a2["blob"] == a["blob"]
+    rec["deterministic"] = det
+    rec["threads"] = threads or workgroup_threads(idx, wave)
     rec["same_without_structurizer_opts"] = None if b["status"] != "RAN" else (b["blob"] == a["blob"])
     if b["status"] != "RAN":
         rec["b_status"] = b["status"]
