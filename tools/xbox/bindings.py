@@ -1,0 +1,146 @@
+"""Static binding analysis for Xbox compute shaders (straight-line prologue approximation).
+
+For one code blob (<idx>.bin, prologue stripped) find the s_load descriptor/pointer loads from user-SGPR pointer
+tables, classify what each loaded range is used as (constant buffer, typed buffer, image, sampler, nested pointer)
+and write <idx>.bind for driver.exe:
+
+    node <id> user <sgpr>                 table reached through user SGPR <sgpr> (a 32-bit pointer)
+    node <id> child <parent> <byteoffset> table reached through a pointer loaded from parent+offset
+    desc <node> <byteoffset> <class>      class in {buf, img, samp}
+
+Approximations (documented, not hidden): linear scan from the entry, so registers overwritten later or loads in
+other basic blocks are not tracked precisely; unclassified loads are left zero.
+"""
+import sys, struct, os, collections
+sys.path.insert(0, '.')
+import rdna2
+
+SMEM_LOAD = {'s_load_dword': 1, 's_load_dwordx2': 2, 's_load_dwordx4': 4, 's_load_dwordx8': 8, 's_load_dwordx16': 16}
+SMEM_BUF = {'s_buffer_load_dword': 1, 's_buffer_load_dwordx2': 2, 's_buffer_load_dwordx4': 4, 's_buffer_load_dwordx8': 8, 's_buffer_load_dwordx16': 16}
+
+
+def analyse(path):
+    data = open(path, 'rb').read()
+    ins, _ = rdna2.sweep(data, 0, len(data))
+    tag = {r: ('user', r) for r in range(0, 16)}
+    nodes = {}          # key -> id
+    node_lines = []
+    loads = []          # dict(node, off, d, n)
+    out = set()
+    child_of = {}       # (node, off) -> node id
+
+    def use(reg, width, cls):
+        t = tag.get(reg)
+        if t is None or t[0] != 'data':
+            return
+        ld = loads[t[1]]
+        # the whole width must come from the same load, consecutive dwords
+        for j in range(width):
+            tj = tag.get(reg + j)
+            if tj is None or tj[0] != 'data' or tj[1] != t[1] or tj[2] != t[2] + j:
+                return
+        out.add((ld['node'], ld['off'] + 4 * t[2], cls))
+
+    def user_node(k):
+        key = ('user', k)
+        if key not in nodes:
+            nodes[key] = len(nodes)
+            node_lines.append(f'node {nodes[key]} user {k}')
+        return nodes[key]
+
+    def child_node(parent, off):
+        key = ('child', parent, off)
+        if key not in nodes:
+            nodes[key] = len(nodes)
+            node_lines.append(f'node {nodes[key]} child {parent} {off}')
+        return nodes[key]
+
+    def base_node(reg):
+        t = tag.get(reg)
+        if t is None:
+            return None
+        if t[0] == 'user':
+            return user_node(t[1])
+        if t[0] == 'data':
+            ld = loads[t[1]]
+            if t[2] == 0 and ld['n'] in (1, 2):
+                ld['ptr'] = True
+                return child_node(ld['node'], ld['off'])
+        return None
+
+    for i in ins:
+        w0 = i.words[0]
+        w1 = i.words[1] if len(i.words) > 1 else 0
+        name = i.name
+        fmt = i.fmt.split('+')[0]
+        if fmt == 'SMEM':
+            if name in SMEM_LOAD:
+                n = SMEM_LOAD[name]
+                sbase = (w0 & 0x3f) * 2
+                sdata = (w0 >> 6) & 0x7f
+                off = w1 & 0x1fffff
+                node = base_node(sbase)
+                if node is not None:
+                    loads.append(dict(node=node, off=off, d=sdata, n=n))
+                    for k in range(n):
+                        tag[sdata + k] = ('data', len(loads) - 1, k)
+                else:
+                    for k in range(n):
+                        tag.pop(sdata + k, None)
+            elif name in SMEM_BUF:
+                n = SMEM_BUF[name]
+                sbase = (w0 & 0x3f) * 2
+                sdata = (w0 >> 6) & 0x7f
+                use(sbase, 4, 'buf')
+                for k in range(n):
+                    tag.pop(sdata + k, None)
+            continue
+        if fmt in ('MUBUF', 'MTBUF'):
+            use(((w1 >> 16) & 0x1f) * 4, 4, 'buf')
+            continue
+        if fmt == 'MIMG':
+            srsrc = ((w1 >> 16) & 0x1f) * 4
+            ssamp = ((w1 >> 21) & 0x1f) * 4
+            if 'bvh' in name:
+                continue
+            use(srsrc, 8, 'img%d' % ((w0 >> 3) & 7))
+            if 'sample' in name or 'gather' in name or 'get_lod' in name:
+                use(ssamp, 4, 'samp')
+            continue
+        if fmt == 'SOP1' and name in ('s_mov_b32',):
+            dst = (w0 >> 16) & 0x7f
+            src = w0 & 0xff
+            if src == 128:
+                tag[dst] = ('zero',)
+            elif src in tag:
+                tag[dst] = tag[src]
+            else:
+                tag.pop(dst, None)
+            continue
+        if fmt in ('SOP1', 'SOP2', 'SOPK'):
+            dst = (w0 >> 16) & 0x7f
+            if fmt == 'SOPK':
+                dst = (w0 >> 16) & 0x7f
+            tag.pop(dst, None)
+            if name.endswith('b64'):
+                tag.pop(dst + 1, None)
+
+    lines = list(node_lines)
+    for node, off, cls in sorted(out):
+        lines.append(f'desc {node} {off} {cls}')
+    stats = collections.Counter(c for _, _, c in out)
+    return lines, stats, len(loads), len(nodes)
+
+
+if __name__ == '__main__':
+    src, dst = sys.argv[1], sys.argv[2]
+    os.makedirs(dst, exist_ok=True)
+    total = collections.Counter()
+    nloads = 0
+    names = [f for f in os.listdir(src) if f.endswith('.bin')]
+    for f in names:
+        lines, st, nl, nn = analyse(os.path.join(src, f))
+        open(os.path.join(dst, f[:-4] + '.bind'), 'w').write('\n'.join(lines) + '\n')
+        total.update(st)
+        nloads += nl
+    print(len(names), 'shaders;', nloads, 'descriptor/pointer loads; classified descriptors:', dict(total))

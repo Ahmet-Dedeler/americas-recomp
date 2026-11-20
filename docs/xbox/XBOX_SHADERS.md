@@ -39,7 +39,7 @@ Everything is marked `XBOX-FORK` where it is a behaviour change.
 
 ## Not done / caveats
 
-- Descriptor tables / Xbox root-signature ABI are not modelled. AnyPS5 assumes PS5 user-data conventions.
+- Descriptor tables: `tools/xbox/bindings.py` derives a per-shader table layout from the s_load/MIMG/MUBUF instructions (straight-line scan, approximate) and `driver.exe <bin> <wave> <out> <bind>` builds matching fake memory (image dim from the instruction). With this, 172/300 validate at a 30 s limit (+8 slow BVH shaders), 23 gained vs the flat stub, 7 regressed. ~108 still fail because the image descriptor is selected by an index loaded from a buffer (bindless heap); static resolution cannot work, the recompiler would need a runtime descriptor-heap path. Root-signature ABI itself is still not modelled.
 - Graphics shaders (PS/VS/GS) not tried.
 - No execution or output comparison.
 
