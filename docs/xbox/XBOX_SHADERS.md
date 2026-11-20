@@ -31,10 +31,11 @@ Everything is marked `XBOX-FORK` where it is a behaviour change.
 
 ## Results on 300 compute shaders (51 ray tracing + 249 random), wave 32, stubbed bindings
 
-- 165 produce SPIR-V accepted by `spirv-val` (Vulkan 1.3); 0 invalid.
-- ~100 fail on image descriptor resolution: caused by the stub memory, not (known) ISA gaps.
-- 24 ray-tracing shaders are extremely slow in `Structurizer` (534-3,748 blocks; 534 blocks = 32 s; superlinear).
-  Not a hang for the smallest; larger ones unmeasured.
+- 182 produce SPIR-V accepted by `spirv-val` (Vulkan 1.3); 0 invalid. (165 on the first pass + 17 of the 24 slow
+  ray-tracing shaders once the structurizer fix below let them finish.)
+- ~100 fail on image/sampler descriptor resolution: caused by the stub memory, not (known) ISA gaps.
+- 2 ray-tracing shaders (23206, 23207; 3.7k blocks) still exceed a 15 minute limit in the structurizer.
+- The valid ray-tracing modules are very large (0.6-1.9M SPIR-V words each).
 
 ## Not done / caveats
 
