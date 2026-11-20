@@ -156,3 +156,19 @@ A per-scan cache of reachability sets was tried and removed: identical output, n
 Remaining cost per large shader is spread out: analysis recompute (~0.8 ms per split at 1.8k blocks), the
 `findSelectionMerge` scan over all selection headers (~2 s of 8 s) and `splitOneLoopMerge`.
 `tools/xbox/structurizer_corpus.py` + `stages.exe` reproduce the comparison (`stages` prints a graph hash).
+
+## Ray-tracing traversal shaders
+
+64 of the 2,647 compute shaders contain `image_bvh_intersect_ray` / `image_bvh64_intersect_ray` (counted by decoding instructions, not by scanning raw words, which gives false positives). AnyPS5 already emulates that instruction in SPIR-V by reading the BVH nodes from memory (triangle nodes 0/1, box16 type 4, box32 type 5), and its node layouts match what the Xbox builder's rehydration shaders write.
+
+| Result | Shaders |
+|---|---|
+| valid at the 30 s limit | 55 |
+| valid with a 15 min limit (100 to 456 s each) | 7 |
+| error: descriptor chain (`CS_RTShadowTrace32HQ_Tiled`) | 1 |
+| error: sampler chain (`CS_RTShadowTrace32TemporalHQ_OneOver8RPP`) | 1 |
+
+62 of 64 pass `spirv-val`. The traversal loop has never been run, so this says nothing about correctness. A BVH in the hardware node format has to exist in memory; `XboxBvhBuilder.dll` ships its 52 builder shaders as DXIL only (no RDNA2 code), so they would need a separate DXIL path.
+
+The stored BVH format is described in [BVH_CONTAINER.md](BVH_CONTAINER.md).
+

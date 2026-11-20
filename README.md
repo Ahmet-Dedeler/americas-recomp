@@ -40,6 +40,10 @@ Float mode, export mapping, mesh configuration and descriptor contents are harne
 - Vertex: computed `s_swappc`/`s_setpc` targets, phi dominance errors.
 - Mesh: descriptor sources read through a null pointer (likely a harness gap), sampler chains.
 
+### Ray tracing and BVH
+- 62 of 64 compute shaders that use the hardware BVH instruction recompile and pass `spirv-val` (7 of them only with a 15 minute limit). Nothing was traversed.
+- The 8.3 GB BVH dump holds 1,260 nested archives of compressed BVHs. The builder's rehydration shaders rebuild the box nodes and rebuild the triangle leaves from the game's own vertex and index buffers, so the files hold topology and indices, not vertex positions. The bit layout is not decoded. See [`docs/xbox/BVH_CONTAINER.md`](docs/xbox/BVH_CONTAINER.md).
+
 ### Where to look
 - [`docs/xbox/XBOX_SHADERS.md`](docs/xbox/XBOX_SHADERS.md): full write-up, with the harness defaults.
 - [`tools/xbox`](tools/xbox): driver, runners, binding analysis, header decoder.
