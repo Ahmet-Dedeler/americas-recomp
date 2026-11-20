@@ -1115,11 +1115,40 @@ bool splitOneReturnJoin(ControlFlowGraph& graph, bool relaxReturnJoins) {
     return false;
 }
 
-bool splitOneLoopMerge(ControlFlowGraph& graph) {
-    for (const auto& loop : graph.naturalLoops) {
+bool splitOneLoopMerge(ControlFlowGraph& graph, std::size_t& cursor) {
+    // XBOX-FORK: resume at the loop that acted last (the caller rescans from 0 when a resumed scan finds nothing).
+    for (std::size_t loopIndex = std::min(cursor, graph.naturalLoops.size()); loopIndex < graph.naturalLoops.size(); ++loopIndex) {
+        const auto& loop = graph.naturalLoops[loopIndex];
+        // XBOX-FORK: skip the O(blocks) construct walk when splitSharedMergeBlock cannot act. It returns false for an
+        // invalid merge, for a merge without predecessors, and for a merge with exactly one predecessor unless forceSplit
+        // is set (one predecessor cannot be both inside and outside the construct).
+        if (loop.mergeBlock == InvalidControlFlowId || loop.mergeBlock >= graph.blocks.size()) {
+            continue;
+        }
+        const auto& mergePredecessors = graph.FindBlock(loop.mergeBlock).predecessors;
+        const auto predecessorCount = mergePredecessors.size();
+        if (predecessorCount == 0u) {
+            continue;
+        }
+        // A predecessor can only be inside the construct (blocks dominated by the header) if the header dominates it.
+        if (std::none_of(mergePredecessors.begin(), mergePredecessors.end(), [&](std::uint32_t predecessor) { return graph.Dominates(loop.headerBlock, predecessor); })) {
+            continue;
+        }
+        bool forceSplit = false;
+        bool forceKnown = false;
+        if (predecessorCount == 1u) {
+            forceSplit = mergeLeavesContainingLoop(graph, loop.headerBlock, loop.mergeBlock);
+            if (!forceSplit) {
+                continue;
+            }
+            forceKnown = true;
+        }
         const auto constructBlocks = dominatedBlocks(graph, loop.headerBlock, loop.mergeBlock);
-        const auto forceSplit = mergeLeavesContainingLoop(graph, loop.headerBlock, loop.mergeBlock);
+        if (!forceKnown) {
+            forceSplit = mergeLeavesContainingLoop(graph, loop.headerBlock, loop.mergeBlock);
+        }
         if (splitSharedMergeBlock(graph, loop.mergeBlock, constructBlocks, forceSplit)) {
+            cursor = loopIndex;
             return true;
         }
     }
@@ -1660,30 +1689,46 @@ bool structurizeEnteredRegion(ControlFlowGraph& graph, std::uint32_t header, std
     throw std::runtime_error("selection header block " + std::to_string(header) + " has externally entered region block " + std::to_string(entryEdges.front().second) + " (from block " + std::to_string(entryEdges.front().first) + "): " + cloneReason + "; " + junctionReason);
 }
 
-bool splitOneSelectionMerge(ControlFlowGraph& graph, SplitBudget& budget, const std::function<void(ControlFlowGraph&)>& recompute, bool routeLeavingExits, bool routeSharedExits) {
+// XBOX-FORK: the scan over selection headers used to restart from the deepest header after every split, so a graph with
+// thousands of splits re-evaluated (mostly unchanged) headers millions of times. `cursor` is the position (in the sorted
+// header order) of the header that acted last; the next scan resumes there. When a resumed scan finds nothing, the caller
+// rescans from 0, so the fixed point reached is the same kind of state: no header has an action left.
+bool splitOneSelectionMerge(ControlFlowGraph& graph, SplitBudget& budget, const std::function<void(ControlFlowGraph&)>& recompute, bool routeLeavingExits, bool routeSharedExits, std::size_t& cursor, std::vector<std::uint32_t>& headerOrder) {
+    // XBOX-FORK: the header order (deeper first, then lower id) is built from plain integer keys. It is rebuilt on every
+    // call: block ids are renumbered by each split (moveBlockBefore), so an order cached across calls would name other blocks.
     std::vector<std::uint32_t> loopHeaders;
     loopHeaders.reserve(graph.naturalLoops.size());
     for (const auto& loop : graph.naturalLoops) {
         loopHeaders.push_back(loop.headerBlock);
     }
     sortUnique(loopHeaders);
-
-    std::vector<std::uint32_t> selectionHeaders;
-    for (const auto& block : graph.blocks) {
-        if (block.terminator.kind == TerminatorKind::ConditionalBranch && !containsSorted(loopHeaders, block.id)) {
-            selectionHeaders.push_back(block.id);
+    headerOrder.clear();
+    {
+        std::vector<std::uint64_t> headerKeys;
+        for (const auto& block : graph.blocks) {
+            if (block.terminator.kind == TerminatorKind::ConditionalBranch && !containsSorted(loopHeaders, block.id)) {
+                headerKeys.push_back((static_cast<std::uint64_t>(~static_cast<std::uint32_t>(block.dominators.size())) << 32) | block.id);
+            }
         }
+        std::sort(headerKeys.begin(), headerKeys.end());
+        headerOrder.clear();
+        headerOrder.reserve(headerKeys.size());
+        for (const auto key : headerKeys) headerOrder.push_back(static_cast<std::uint32_t>(key & 0xffffffffu));
     }
+    const auto& selectionHeaders = headerOrder;
     StructProf::Scope pTop("sel:total");
-    const bool dominanceConstructs = constructsFollowDominance(graph);
-    std::sort(selectionHeaders.begin(), selectionHeaders.end(), [&](std::uint32_t lhs, std::uint32_t rhs) {
-        const auto lhsDepth = graph.FindBlock(lhs).dominators.size();
-        const auto rhsDepth = graph.FindBlock(rhs).dominators.size();
-        return lhsDepth != rhsDepth ? lhsDepth > rhsDepth : lhs < rhs;
-    });
+    std::optional<bool> dominanceConstructsCache;
+    const auto dominanceConstructsNow = [&] {
+        if (!dominanceConstructsCache) dominanceConstructsCache = constructsFollowDominance(graph);
+        return *dominanceConstructsCache;
+    };
 
-    for (const auto blockId : selectionHeaders) {
+    for (std::size_t headerIndex = std::min(cursor, selectionHeaders.size()); headerIndex < selectionHeaders.size(); ++headerIndex) {
+        const auto blockId = selectionHeaders[headerIndex];
         const auto& block = graph.FindBlock(blockId);
+        if (block.terminator.kind != TerminatorKind::ConditionalBranch || containsSorted(loopHeaders, blockId)) {
+            continue;
+        }
         bool loopExit;
         { StructProf::Scope p0("sel:isStructuredLoopExit"); loopExit = isStructuredLoopExit(graph, block, routeLeavingExits); }
         if (loopExit) {
@@ -1701,13 +1746,15 @@ bool splitOneSelectionMerge(ControlFlowGraph& graph, SplitBudget& budget, const 
         bool entered;
         { StructProf::Scope p3("sel:structurizeEnteredRegion"); entered = structurizeEnteredRegion(graph, blockId, merge, region, budget, recompute); }
         if (entered) {
+            cursor = headerIndex;
             return true;
         }
 
-        if (dominanceConstructs && merge != blockId && graph.Dominates(blockId, blockId) && !graph.Dominates(merge, blockId)) {
+        if (merge != blockId && dominanceConstructsNow() && graph.Dominates(blockId, blockId) && !graph.Dominates(merge, blockId)) {
             const auto inConstruct = [&](std::uint32_t member) { return member != merge && graph.Dominates(blockId, member) && !graph.Dominates(merge, member); };
                 const bool splitDone = splitSharedMergeBlock(graph, merge, inConstruct, mergeLeavesContainingLoop(graph, blockId, merge));
             if (splitDone) {
+                cursor = headerIndex;
                 return true;
             }
             continue;
@@ -1717,6 +1764,7 @@ bool splitOneSelectionMerge(ControlFlowGraph& graph, SplitBudget& budget, const 
         const auto forceSplit = mergeLeavesContainingLoop(graph, blockId, merge);
         const bool splitDone2 = splitSharedMergeBlock(graph, merge, constructBlocks, forceSplit);
         if (splitDone2) {
+            cursor = headerIndex;
             return true;
         }
     }
@@ -2659,13 +2707,34 @@ void Structurizer::splitSharedMergeBlocks(ControlFlowGraph& graph, bool routeLea
     const auto growthBudget = std::max<std::uint32_t>(SplitGrowthFloor, originalBlockCount * SplitGrowthFactor);
     const auto programWords = estimatedSpirvWords(graph, allBlockIds(originalBlockCount));
     SplitBudget budget{programWords, std::max(CloneWordLimit, programWords / CloneBudgetDivisor), std::max(CloneWordLimit, programWords), nextGotoVariable(graph)};
+    static const bool useCursor = std::getenv("XBOX_NO_SPLIT_CURSOR") == nullptr;
+    std::size_t cursor = 0;
+    std::size_t loopCursor = 0;
+    std::vector<std::uint32_t> headerOrder;
     for (std::uint32_t splits = 0; splits < splitBudget; ++splits) {
         StructProf::Scope profSplit("splitOne*(search+apply)");
+        // XBOX-FORK: both scans resume at the item that acted last. When neither finds anything the scans restart from 0
+        // once (a completeness pass); only when that also finds nothing is the graph at the fixed point.
         bool loopMerge;
-        { StructProf::Scope pl("split:splitOneLoopMerge"); loopMerge = splitOneLoopMerge(graph); }
-        if (!loopMerge && !splitOneSelectionMerge(graph, budget, [this](ControlFlowGraph& candidate) { recomputeAnalyses(candidate); }, routeLeavingExits, routeSharedExits) && !splitOneReturnJoin(graph, relaxReturnJoins)) {
-            if (StructProf::enabled()) std::fprintf(stderr, "[struct] splits=%u orig=%u\n", splits, originalBlockCount);
-            return;
+        { StructProf::Scope pl("split:splitOneLoopMerge"); loopMerge = splitOneLoopMerge(graph, loopCursor); }
+        bool selection = false;
+        if (!loopMerge) {
+            selection = splitOneSelectionMerge(graph, budget, [this](ControlFlowGraph& candidate) { recomputeAnalyses(candidate); }, routeLeavingExits, routeSharedExits, cursor, headerOrder);
+        }
+        if (!loopMerge && !selection) {
+            if (useCursor && (cursor != 0u || loopCursor != 0u)) {
+                cursor = 0;
+                loopCursor = 0;
+                continue;
+            }
+            if (!splitOneReturnJoin(graph, relaxReturnJoins)) {
+                if (StructProf::enabled()) std::fprintf(stderr, "[struct] splits=%u orig=%u\n", splits, originalBlockCount);
+                return;
+            }
+        }
+        if (!useCursor) {
+            cursor = 0;
+            loopCursor = 0;
         }
         if (graph.blocks.size() > growthBudget) {
             throw std::runtime_error("CFG shared merge splitting exceeded growth budget: originalBlocks=" + std::to_string(originalBlockCount) + " currentBlocks=" + std::to_string(graph.blocks.size()) + " growthBudget=" + std::to_string(growthBudget));

@@ -185,3 +185,16 @@ The stored BVH format is described in [BVH_CONTAINER.md](BVH_CONTAINER.md).
 
 All still `spirv-val` only; nothing executed. Details of each change are in the README. Descriptor chains are the main remaining recompiler-side group (about 82 compute): the descriptor index is a value loaded from a buffer at run time and used as a waterfall key, so there is no static table to build; each shape differs. The vertex `s_swappc`/`s_setpc` cases and the mesh null-pointer cases depend on the real vertex fetch shader / user-data layout and are not recompiler problems.
 
+## Compile time: structurizer
+
+Profile of the slowest shader (`CS_ScreenProbes_TraceRays…`, 486 KB, 14,346 blocks to 19,831): the structurizer is about 95% of the compile. It does 5,483 shared-merge splits and, after each one, re-scans every selection header from the deepest one (22.9 million header evaluations) and recomputes all analyses.
+
+Changes (all in `ControlFlow/src/Structurizer.cpp`, marked XBOX-FORK):
+- The header scan and the loop-merge scan resume at the item that acted last. When a resumed scan finds nothing, both restart from 0 once, so the stop condition is still "no header has an action left". The scan order can differ from before, so the output graph can differ (`XBOX_NO_SPLIT_CURSOR=1` restores the old order).
+- `splitOneLoopMerge` skips loops where `splitSharedMergeBlock` cannot act (no predecessor, one predecessor without force, or no predecessor dominated by the header). That part is exact.
+- The header order is built from integer keys instead of a comparator that walks the dominator sets; `constructsFollowDominance` is computed lazily.
+
+Result on 281 shaders (the 25 slowest plus 250 random): total structurizer time 1,795 s to 881 s, nothing slower, 238 of 281 graphs identical, one output 3 blocks bigger. The 43 graphs that changed were run end to end through the recompiler: all 43 have the same status (40 valid, 3 identical errors). The slowest shader went from 91 s to 59 s, with an identical graph.
+
+What is left: each split still moves and renumbers every block (`moveBlockBefore`/`applyBlockOrder`) and recomputes the dominator and post-dominator sets, both linear in the block count, so the cost per split stays proportional to program size. Block ids change on every split, so results cannot be cached across splits; fixing that would need stable ids or incremental analyses, which is a larger change.
+
