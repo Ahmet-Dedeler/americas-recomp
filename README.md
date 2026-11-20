@@ -6,6 +6,10 @@ An experiment: can the RDNA2 shaders from an Xbox Series game go through [AnyPS5
 
 ## Progress
 
+![Xbox shader progress map: one cell per shader](docs/xbox/progress.svg)
+
+<sub>Regenerate with `python tools/xbox/make_progress_svg.py` (reads `docs/xbox/results.json`).</sub>
+
 Corpus: 24,804 shaders from an RPF9 archive (2,647 compute, 738 pixel, 114 vertex, 8 geometry, 640 mesh).
 
 | Stage | Shaders | Valid SPIR-V | Notes |
