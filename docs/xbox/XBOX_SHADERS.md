@@ -92,6 +92,30 @@ runs the shaders not yet valid under variants 2 and 3: only 8 more pass (167 sti
 models: **2,480 of 2,647 (93.7%)**. The remaining failures are structural, not test-memory artefacts: 66 timeouts at 30 s,
 descriptors loaded from computed addresses (35) or Phi chains (44), 18 atomic-image format failures.
 
+## Graphics stages (first sample; wave 32, 30 s limit, binding model, fake buffers zero-backed)
+
+`driver <bin> <wave> <out> <bind> 1 <ps|vs|ms> [inputAddr] [interpolators] [fp16mask]`, runners `run_graphics.py`, `run_mesh.py`.
+**Everything the shader blob does not state is a default** (no register state is parsed; the FSSM header has an attribute table at
++0x130 that is not decoded). Defaults: float mode 0xc0 (fp32 denorm flush, fp16/64 preserve, DX10 clamp; the shader's own
+`s_setreg` then ORs in its MODE bits), pixel inputs = perspective center only, export target i -> i, mode 4, no blend/merge state;
+interpolant count and FP16 interpolants are derived from the `v_interp*` instructions; mesh = triangle list, 128-thread group,
+42 primitives / 126 vertices per group, ESGS item size 4. Target capabilities include ClipDistance/CullDistance/MeshShadingEXT.
+
+| stage | total | valid (`spirv-val`) | invalid |
+|---|---|---|---|
+| pixel, strict | 738 | 375 | 0 |
+| pixel, `XBOX_ALLOW_UNMEASURED_F16_INTERP=1` | 738 | 649 | 0 |
+| vertex | 114 | 92 | 0 |
+| mesh | 640 | 559 | 0 |
+
+The pixel relaxation is an **approximation**: Xbox pixel shaders set fp16/fp64 rounding to round-toward-zero in MODE, and upstream
+refuses 16-bit interpolation under non-default rounding ("not measured"). With the opt-in the rounding bits are ignored, so f16
+interpolants may differ in the last bit. Remaining failures: pixel 89 (56 atomic-image format, 30 emulated barycentric inputs
+over the location limit, 3 descriptor chains); vertex 21 (18 computed `s_swappc`/`s_setpc` targets the recompiler cannot resolve
+statically, 2 Phi dominance, 1 sampler chain; 1 timeout); mesh 77 (66 descriptor sources reading through a null pointer, likely
+a user-data gap in the harness, 8 sampler chains, 3 Phi dominance; 4 timeouts). None of this was executed, no pipeline state
+was checked, and the mesh configuration is a guess, so a mesh shader passing here means only that the code translates.
+
 ## Structurizer speed (ray-tracing loop graphs)
 
 Profiling showed the slow ray-tracing shaders were not hung: `Structurizer` runs a cascade of up to 4 attempts

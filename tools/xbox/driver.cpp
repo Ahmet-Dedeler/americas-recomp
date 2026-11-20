@@ -86,13 +86,46 @@ int main(int argc, char** argv) {
     for (auto& [id, n] : nodes) regions.push_back({n.base, std::as_bytes(std::span<const std::uint32_t>(n.mem))});
     for (auto& [base, mem] : bufferBacking) regions.push_back({base, std::as_bytes(std::span<const std::uint32_t>(mem))});
     request.context.memory = MemoryRegionView(std::span<const MemoryRegion>(regions));
-    const std::vector<std::uint32_t> caps{1u,9u,10u,11u,22u,39u,61u,62u,63u,64u,65u,66u,67u,68u,4427u,4433u,4434u,4435u,4436u,4437u,4438u,4445u,4447u,4448u,4449u,4450u,5345u,5346u,5347u,5301u,5302u,5303u,5304u,5305u,6u,38u,41u,5u,17u,18u,19u,3u,2u,4u,7u,8u,45u,5249u};
-    const std::array<std::string_view, 6> ext{"SPV_KHR_storage_buffer_storage_class", "SPV_KHR_physical_storage_buffer", "SPV_KHR_16bit_storage", "SPV_KHR_8bit_storage", "SPV_KHR_vulkan_memory_model", "SPV_KHR_shader_ballot"};
-    request.shader = {ShaderStage::Compute, 0x20000u, code, 0, {}};
+    const std::vector<std::uint32_t> caps{1u,32u,33u,5283u,9u,10u,11u,22u,39u,61u,62u,63u,64u,65u,66u,67u,68u,4427u,4433u,4434u,4435u,4436u,4437u,4438u,4445u,4447u,4448u,4449u,4450u,5345u,5346u,5347u,5301u,5302u,5303u,5304u,5305u,6u,38u,41u,5u,17u,18u,19u,3u,2u,4u,7u,8u,45u,5249u};
+    const std::array<std::string_view, 7> ext{"SPV_EXT_mesh_shader", "SPV_KHR_storage_buffer_storage_class", "SPV_KHR_physical_storage_buffer", "SPV_KHR_16bit_storage", "SPV_KHR_8bit_storage", "SPV_KHR_vulkan_memory_model", "SPV_KHR_shader_ballot"};
+    // argv[6] stage: cs (default), ps, vs. argv[7] pixel input address mask (hex), argv[8] interpolator count.
+    // Everything not derivable from the code (export mapping/mode, target merges, vertex fetch) is a documented default.
+    const std::string stage = argc > 6 ? argv[6] : "cs";
+    if (stage == "ps") {
+        ShaderPixelStageInfo px{};
+        px.interpolatorCount = argc > 8 ? std::stoul(argv[8]) : 0;
+        px.wave32 = wave == 32;
+        px.inputAddr = argc > 7 ? std::stoul(argv[7], nullptr, 16) : 0x2u;
+        px.hasPerspectiveCenterVgpr = (px.inputAddr & 0x2u) != 0;
+        px.posX = (px.inputAddr & PixelInputBit(PixelInput::PositionX)) != 0;
+        px.posY = (px.inputAddr & PixelInputBit(PixelInput::PositionY)) != 0;
+        px.posZ = (px.inputAddr & PixelInputBit(PixelInput::PositionZ)) != 0;
+        px.posW = (px.inputAddr & PixelInputBit(PixelInput::PositionW)) != 0;
+        px.frontFace = (px.inputAddr & PixelInputBit(PixelInput::FrontFace)) != 0;
+        for (std::uint32_t i = 0; i < 8; i++) { px.targetExportMapping[i] = static_cast<std::uint8_t>(i); px.targetOutputMode[i] = 4; px.targetExportPacking[i] = ColorExportPacking::None; }
+        // argv[9]: hex mask of attributes the code reads with 16-bit interpolation (FP16_INTERP_MODE = bit 19 of the setting).
+        const std::uint32_t fp16Mask = argc > 9 ? std::stoul(argv[9], nullptr, 16) : 0u;
+        for (std::uint32_t i = 0; i < px.interpolatorCount && i < 32; i++) px.interpolatorSettings[i] = i | (((fp16Mask >> i) & 1u) ? 0x80000u : 0u);
+        request.context.pixel = px;
+    } else if (stage == "vs" || stage == "ms") {
+        ShaderVertexStageInfo vx{};
+        request.context.vertex = vx;
+    }
+    if (stage != "cs") request.context.floatMode = ShaderFloatMode{0xc0u, true, false, false};  // default: fp32 denorm flush, fp16/64 preserve, DX10 clamp
+    if (stage == "ms") {
+        // Default NGG/mesh configuration (nothing here is read from the shader): triangle list, one 128-thread group.
+        GraphicsCompileContext g{};
+        g.firstUserSgpr = 0;
+        g.mesh = MeshConfiguration{3u, 42u, 126u, 126u, 42u, 128u, 0u, 0u, 4u, 3u};
+        g.draw = GraphicsDrawParameters{0x30000000ull, 3u, 4u, 1u};
+        request.graphics = g;
+        request.target.mesh = MeshTargetLimits{{128u, 128u, 128u}, 128u, 32768u, 256u, 256u, 128u, 32768u, 1u, 1u};
+    }
+    request.shader = {stage == "ms" ? ShaderStage::Mesh : stage == "ps" ? ShaderStage::Fragment : stage == "vs" ? ShaderStage::Vertex : ShaderStage::Compute, 0x20000u, code, 0, {}};
     request.context.waveSize = wave;
     request.context.userDataBaseRegister = 0;
     request.context.userData = userData;
-    request.context.compute = ShaderComputeStageInfo{{wave, 1u, 1u}, 0u, {true, true, true}, false, 1u};
+    if (stage == "cs") request.context.compute = ShaderComputeStageInfo{{wave, 1u, 1u}, 0u, {true, true, true}, false, 1u};
     request.target.vulkanVersion = 0x00403000u;
     request.target.spirvVersion = 0x00010600u;
     request.target.subgroupSize = wave;
