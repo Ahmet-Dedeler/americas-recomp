@@ -9,6 +9,7 @@
 #include <iterator>
 #include <map>
 #include <optional>
+#include <tuple>
 #include <stdexcept>
 
 #include <chrono>
@@ -502,6 +503,40 @@ bool isEnclosingLinearExit(const ControlFlowGraph& graph, std::uint32_t header, 
     });
 }
 
+// XBOX-FORK: post-dominator dataflow restricted to `domain` (blocks that can reach `root`), on dense indices.
+// The original allocated count x count bits per call and converted every set to an id list; the fixpoint is the same
+// because every post-dominator set of a domain block is a subset of the domain. Output keeps the original shape
+// (indexed by block id, filled for domain blocks only).
+std::vector<std::vector<std::uint32_t>> densePostDominators(const ControlFlowGraph& graph, const std::vector<std::uint32_t>& order, const std::vector<bool>& inDomain, const std::vector<std::uint32_t>& domain, std::uint32_t root) {
+    StructProf::Scope prof("h:densePostDominators");
+    const auto count = static_cast<std::uint32_t>(graph.blocks.size());
+    const auto size = static_cast<std::uint32_t>(domain.size());
+    std::vector<std::uint32_t> dense(count, 0xffffffffu);
+    for (std::uint32_t i = 0; i < size; ++i) dense[domain[i]] = i;
+    const auto universe = BlockSet::all(size);
+    std::vector<BlockSet> sets(size, universe);
+    sets[dense[root]] = BlockSet::only(size, dense[root]);
+    for (bool changed = true; changed;) {
+        changed = false;
+        for (const auto blockId : order) {
+            if (!inDomain[blockId] || blockId == root) continue;
+            auto next = universe;
+            for (const auto successor : graph.FindBlock(blockId).successors) {
+                if (inDomain[successor]) next.intersect(sets[dense[successor]]);
+            }
+            next.add(dense[blockId]);
+            changed = replaceSet(sets[dense[blockId]], std::move(next)) || changed;
+        }
+    }
+    std::vector<std::vector<std::uint32_t>> result(count);
+    for (std::uint32_t i = 0; i < size; ++i) {
+        auto ids = sets[i].ids();
+        for (auto& id : ids) id = domain[id];
+        result[domain[i]] = std::move(ids);
+    }
+    return result;
+}
+
 bool canReachBefore(const ControlFlowGraph& graph, std::uint32_t start, std::uint32_t target, std::uint32_t stop) {
     std::vector<std::uint32_t> pending = {start};
     std::vector<bool> visited(graph.blocks.size(), false);
@@ -543,6 +578,7 @@ bool reachesWithinIteration(const ControlFlowGraph& graph, const NaturalLoop& lo
 }
 
 std::uint32_t joinWithinIteration(const ControlFlowGraph& graph, const NaturalLoop& loop, std::uint32_t trueTarget, std::uint32_t falseTarget, std::uint32_t globalMerge) {
+    StructProf::Scope prof_joinWithinIteration("h:joinWithinIteration");
     std::vector<bool> reached(graph.blocks.size(), false);
     std::vector<std::uint32_t> pending = {trueTarget, falseTarget};
     while (!pending.empty()) {
@@ -574,22 +610,7 @@ std::uint32_t joinWithinIteration(const ControlFlowGraph& graph, const NaturalLo
     std::vector<std::vector<std::uint32_t>> postDominators(count);
     const auto order = analysisOrder(graph, true);
     if (inPlaceIntersections()) {
-        const auto universe = BlockSet::fromIds(count, joining);
-        std::vector<BlockSet> sets(count, BlockSet::none(count));
-        for (const auto blockId : joining) sets[blockId] = blockId == globalMerge ? BlockSet::only(count, globalMerge) : universe;
-        for (bool changed = true; changed;) {
-            changed = false;
-            for (const auto blockId : order) {
-                if (!joins[blockId] || blockId == globalMerge) continue;
-                auto next = universe;
-                for (const auto successor : graph.FindBlock(blockId).successors) {
-                    if (joins[successor]) next.intersect(sets[successor]);
-                }
-                next.add(blockId);
-                changed = replaceSet(sets[blockId], std::move(next)) || changed;
-            }
-        }
-        postDominators = analysisVectors(sets);
+        postDominators = densePostDominators(graph, order, joins, joining, globalMerge);
     } else {
         for (const auto blockId : joining) postDominators[blockId] = blockId == globalMerge ? std::vector<std::uint32_t>{globalMerge} : joining;
         for (bool changed = true; changed;) {
@@ -629,6 +650,7 @@ std::vector<std::uint32_t> linearTail(const ControlFlowGraph& graph, std::uint32
 }
 
 std::uint32_t mergeBesideReturns(const ControlFlowGraph& graph, const BasicBlock& header) {
+    StructProf::Scope prof_mergeBesideReturns("h:mergeBesideReturns");
     const auto reach = [&](std::uint32_t start) {
         std::vector<std::uint32_t> reached;
         std::vector<std::uint32_t> pending = {start};
@@ -758,6 +780,7 @@ std::uint32_t mergeBesideReturns(const ControlFlowGraph& graph, const BasicBlock
 }
 
 std::uint32_t iterationSelectionMerge(const ControlFlowGraph& graph, const NaturalLoop& loop, const BasicBlock& header, std::uint32_t join) {
+    StructProf::Scope prof_iterationSelectionMerge("h:iterationSelectionMerge");
     const auto count = static_cast<std::uint32_t>(graph.blocks.size());
     static const bool reuse = std::getenv("APS5_NO_PERF_ITERATION_SELECTION") == nullptr;
     const auto escapes = [&](std::uint32_t blockId) { return blockId == loop.continueBlock || blockId == loop.mergeBlock; };
@@ -782,30 +805,11 @@ std::uint32_t iterationSelectionMerge(const ControlFlowGraph& graph, const Natur
     const auto order = analysisOrder(graph, true);
     std::vector<std::vector<std::uint32_t>> postDominators;
     if (reuse && inPlaceIntersections()) {
-        std::vector<BlockSet> sets(count, BlockSet::all(count));
-        sets[join] = BlockSet::only(count, join);
-        for (bool changed = true; changed;) {
-            changed = false;
-            for (const auto blockId : order) {
-                const auto& block = graph.blocks[blockId];
-                if (!joins[block.id] || block.id == join) continue;
-                bool seeded = false;
-                auto next = BlockSet::none(count);
-                for (const auto successor : block.successors) {
-                    if (!joins[successor]) continue;
-                    if (!seeded) {
-                        next = sets[successor];
-                        seeded = true;
-                    } else {
-                        next.intersect(sets[successor]);
-                    }
-                }
-                if (!seeded) next = BlockSet::all(count);
-                next.add(block.id);
-                changed = replaceSet(sets[block.id], std::move(next)) || changed;
-            }
+        std::vector<std::uint32_t> domain;
+        for (std::uint32_t id = 0; id < count; ++id) {
+            if (joins[id]) domain.push_back(id);
         }
-        postDominators = analysisVectors(sets);
+        postDominators = densePostDominators(graph, order, joins, domain, join);
     } else {
         postDominators.assign(count, allBlockIds(count));
         postDominators[join] = {join};
@@ -853,8 +857,11 @@ std::uint32_t iterationSelectionMerge(const ControlFlowGraph& graph, const Natur
 }
 
 std::uint32_t findSelectionMerge(const ControlFlowGraph& graph, const BasicBlock& block, bool routeLeavingExits = false, bool routeSharedExits = false) {
-    const auto globalMerge = graph.FindNearestCommonPostDominator(block.terminator.trueBlock, block.terminator.falseBlock);
-    const auto* loop = findInnermostContainingLoop(graph, block.id);
+    std::uint32_t globalMerge;
+    { StructProf::Scope q1("fsm:nearestCommonPostDom"); globalMerge = graph.FindNearestCommonPostDominator(block.terminator.trueBlock, block.terminator.falseBlock); }
+    const NaturalLoop* loop;
+    { StructProf::Scope q2("fsm:innermostLoop"); loop = findInnermostContainingLoop(graph, block.id); }
+    StructProf::Scope q0("fsm:rest");
     const auto trueTarget = block.terminator.trueBlock;
     const auto falseTarget = block.terminator.falseBlock;
     if (loop == nullptr) {
@@ -1662,6 +1669,7 @@ bool splitOneSelectionMerge(ControlFlowGraph& graph, SplitBudget& budget, const 
             selectionHeaders.push_back(block.id);
         }
     }
+    StructProf::Scope pTop("sel:total");
     const bool dominanceConstructs = constructsFollowDominance(graph);
     std::sort(selectionHeaders.begin(), selectionHeaders.end(), [&](std::uint32_t lhs, std::uint32_t rhs) {
         const auto lhsDepth = graph.FindBlock(lhs).dominators.size();
@@ -1671,30 +1679,39 @@ bool splitOneSelectionMerge(ControlFlowGraph& graph, SplitBudget& budget, const 
 
     for (const auto blockId : selectionHeaders) {
         const auto& block = graph.FindBlock(blockId);
-        if (isStructuredLoopExit(graph, block, routeLeavingExits)) {
+        bool loopExit;
+        { StructProf::Scope p0("sel:isStructuredLoopExit"); loopExit = isStructuredLoopExit(graph, block, routeLeavingExits); }
+        if (loopExit) {
             continue;
         }
 
-        const auto merge = findSelectionMerge(graph, block, routeLeavingExits, routeSharedExits);
+        std::uint32_t merge;
+        { StructProf::Scope p1("sel:findSelectionMerge"); merge = findSelectionMerge(graph, block, routeLeavingExits, routeSharedExits); }
         if (merge == InvalidControlFlowId) {
             continue;
         }
 
-        const auto region = selectionRegion(graph, block, merge);
-        if (structurizeEnteredRegion(graph, blockId, merge, region, budget, recompute)) {
+        std::vector<std::uint32_t> region;
+        { StructProf::Scope p2("sel:selectionRegion"); region = selectionRegion(graph, block, merge); }
+        bool entered;
+        { StructProf::Scope p3("sel:structurizeEnteredRegion"); entered = structurizeEnteredRegion(graph, blockId, merge, region, budget, recompute); }
+        if (entered) {
             return true;
         }
 
         if (dominanceConstructs && merge != blockId && graph.Dominates(blockId, blockId) && !graph.Dominates(merge, blockId)) {
             const auto inConstruct = [&](std::uint32_t member) { return member != merge && graph.Dominates(blockId, member) && !graph.Dominates(merge, member); };
-            if (splitSharedMergeBlock(graph, merge, inConstruct, mergeLeavesContainingLoop(graph, blockId, merge))) {
+                const bool splitDone = splitSharedMergeBlock(graph, merge, inConstruct, mergeLeavesContainingLoop(graph, blockId, merge));
+            if (splitDone) {
                 return true;
             }
             continue;
         }
+        StructProf::Scope p4("sel:dominated+splitShared");
         const auto constructBlocks = dominatedBlocks(graph, blockId, merge);
         const auto forceSplit = mergeLeavesContainingLoop(graph, blockId, merge);
-        if (splitSharedMergeBlock(graph, merge, constructBlocks, forceSplit)) {
+        const bool splitDone2 = splitSharedMergeBlock(graph, merge, constructBlocks, forceSplit);
+        if (splitDone2) {
             return true;
         }
     }
@@ -2638,7 +2655,9 @@ void Structurizer::splitSharedMergeBlocks(ControlFlowGraph& graph, bool routeLea
     SplitBudget budget{programWords, std::max(CloneWordLimit, programWords / CloneBudgetDivisor), std::max(CloneWordLimit, programWords), nextGotoVariable(graph)};
     for (std::uint32_t splits = 0; splits < splitBudget; ++splits) {
         StructProf::Scope profSplit("splitOne*(search+apply)");
-        if (!splitOneLoopMerge(graph) && !splitOneSelectionMerge(graph, budget, [this](ControlFlowGraph& candidate) { recomputeAnalyses(candidate); }, routeLeavingExits, routeSharedExits) && !splitOneReturnJoin(graph, relaxReturnJoins)) {
+        bool loopMerge;
+        { StructProf::Scope pl("split:splitOneLoopMerge"); loopMerge = splitOneLoopMerge(graph); }
+        if (!loopMerge && !splitOneSelectionMerge(graph, budget, [this](ControlFlowGraph& candidate) { recomputeAnalyses(candidate); }, routeLeavingExits, routeSharedExits) && !splitOneReturnJoin(graph, relaxReturnJoins)) {
             if (StructProf::enabled()) std::fprintf(stderr, "[struct] splits=%u orig=%u\n", splits, originalBlockCount);
             return;
         }

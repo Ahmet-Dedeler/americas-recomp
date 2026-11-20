@@ -58,6 +58,14 @@ On a 4,147 shader corpus (all 2,647 compute + 1,500 other) no completed split lo
 - 20 shaders that exceeded 90 s now finish (8 still exceed 90 s); slowest finishing shader 69 s -> 2 s;
 - total time on shaders finishing in both: 593 s -> 274 s.
 
-Remaining cost is the per-iteration search in `splitOneSelectionMerge` (~4 ms at ~1.5k blocks: every iteration
-rescans all selection headers). Caching non-splittable headers across iterations would be the next step.
+A second change targets the large graphs: `joinWithinIteration` and `iterationSelectionMerge` allocated a
+count x count bit matrix per call (~24,000 calls on a 1.4k block shader) and converted every set to an id list.
+`densePostDominators` runs the same fixpoint over only the blocks that reach the join point (dense indices; the
+sets are subsets of that domain, so the greatest fixpoint is identical). Same graph hash on all 4,119 shaders;
+a 1,372-block shader went 15.3 s -> 8.1 s.
+
+A per-scan cache of reachability sets was tried and removed: identical output, no measurable speedup.
+
+Remaining cost per large shader is spread out: analysis recompute (~0.8 ms per split at 1.8k blocks), the
+`findSelectionMerge` scan over all selection headers (~2 s of 8 s) and `splitOneLoopMerge`.
 `tools/xbox/structurizer_corpus.py` + `stages.exe` reproduce the comparison (`stages` prints a graph hash).
