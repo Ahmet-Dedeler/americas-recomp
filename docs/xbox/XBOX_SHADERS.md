@@ -69,6 +69,23 @@ Result on the 300-shader set with the binding model: 172 -> 200 (Phi + lane-acti
 8 `EvaluateRuntimeSources` failures, 4 Phi-chain descriptors, 2 atomic image format 56, 5 single oddities.
 Output remains unexecuted; "valid" means only `spirv-val`, and the three assumptions above are untested against hardware.
 
+## Full compute corpus (2,647 shaders, wave 32, 30 s limit, binding model)
+
+`tools/xbox/run_corpus_bind.py` (needs `bindings.py` output for `bins_all`). Two fake-memory models, because the fake memory
+decides what the recompiler sees when a shader derives a descriptor from constant-buffer contents:
+
+| model | valid (`spirv-val`) | invalid |
+|---|---|---|
+| fake buffers unbacked | 2,336 | 0 |
+| fake buffers backed by 64 KB of zeros | 2,409 | 0 |
+| compiles under either | **2,472 (93.4%)** | 0 |
+
+Each model rejects shaders the other accepts (63 lost / 136 gained going to the backed model): zeros read as a descriptor give
+"incompatible image interface" or "unsupported buffer type". So these are properties of the test memory, not the shaders.
+Realistic constant-buffer contents are needed to judge shaders that build descriptors from buffer data.
+Remaining 175: 74 timeouts at 30 s, 101 failures (image interface/zeros, address-loaded or Phi-chain descriptors,
+16 atomic image format 56). Nothing was executed.
+
 ## Structurizer speed (ray-tracing loop graphs)
 
 Profiling showed the slow ray-tracing shaders were not hung: `Structurizer` runs a cascade of up to 4 attempts

@@ -22,6 +22,7 @@ int main(int argc, char** argv) {
     std::vector<std::uint32_t> userData(nud);
     struct Node { std::uint32_t id = 0; std::int64_t parent = -1; std::uint32_t off = 0; std::vector<std::uint32_t> mem = std::vector<std::uint32_t>(0x10000); std::uint32_t base = 0; };
     std::map<std::uint32_t, Node> nodes;
+    std::vector<std::pair<std::uint64_t, std::vector<std::uint32_t>>> bufferBacking;  // zeroed memory behind each fake V# base
     std::map<std::pair<std::uint32_t, std::uint32_t>, int> descs;  // (node,offset) -> class, higher wins: img 3 > buf 2 > samp 1
     if (argc > 4) {
         std::ifstream bf(argv[4]);
@@ -62,6 +63,7 @@ int main(int argc, char** argv) {
                 const std::uint64_t base = 0x50000000ull + 0x10000ull * counter++;
                 const std::uint32_t d[4] = {static_cast<std::uint32_t>(base), static_cast<std::uint32_t>((base >> 32) & 0xffffu) | (16u << 16), 0x10000u, 0x30027facu};
                 std::copy(d, d + 4, m.begin() + w);
+                bufferBacking.push_back({base, std::vector<std::uint32_t>(0x4000)});
             }
         }
     } else {
@@ -69,6 +71,7 @@ int main(int argc, char** argv) {
     }
     std::vector<MemoryRegion> regions;
     for (auto& [id, n] : nodes) regions.push_back({n.base, std::as_bytes(std::span<const std::uint32_t>(n.mem))});
+    for (auto& [base, mem] : bufferBacking) regions.push_back({base, std::as_bytes(std::span<const std::uint32_t>(mem))});
     request.context.memory = MemoryRegionView(std::span<const MemoryRegion>(regions));
     const std::vector<std::uint32_t> caps{1u,9u,10u,11u,22u,39u,61u,62u,63u,64u,65u,66u,67u,68u,4427u,4433u,4434u,4435u,4436u,4437u,4438u,4445u,4447u,4448u,4449u,4450u,5345u,5346u,5347u,5301u,5302u,5303u,5304u,5305u,6u,38u,41u,5u,17u,18u,19u,3u,2u,4u,7u,8u,45u,5249u};
     const std::array<std::string_view, 6> ext{"SPV_KHR_storage_buffer_storage_class", "SPV_KHR_physical_storage_buffer", "SPV_KHR_16bit_storage", "SPV_KHR_8bit_storage", "SPV_KHR_vulkan_memory_model", "SPV_KHR_shader_ballot"};
