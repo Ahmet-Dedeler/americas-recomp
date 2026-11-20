@@ -484,6 +484,8 @@ bool isFetchCall(const RdnaProgram& program, std::uint32_t index, const SwappcIn
     const bool userDataPair = swappc != nullptr && targetRegister != NoScalarRegister &&
         targetRegister >= swappc->userDataBaseRegister && targetRegister + 1u < swappc->userDataBaseRegister + swappc->userDataCount &&
         std::none_of(program.instructions.begin(), GcnGuestShaders() ? program.instructions.begin() + index : program.instructions.end(), [&](const RdnaInstruction& other) {
+            // XBOX-FORK: `s_swappc_b64 sN, sN` reads its target before it writes the link, so the call's own link write does not make the target pair computed.
+            if (&other == &instruction) return false;
             return writesScalar(other, targetRegister) || writesScalar(other, targetRegister + 1u);
         });
     return swappc != nullptr && swappc->fetchCallAllowed && positional && (userDataPair || outsideProgram);

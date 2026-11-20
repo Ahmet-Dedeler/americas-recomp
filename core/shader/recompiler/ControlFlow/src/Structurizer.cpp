@@ -18,6 +18,11 @@
 
 namespace ShaderRecompiler {
 
+// XBOX-FORK: per-thread request to use flag structurization (see Recompile's retry on IR verification failure).
+static thread_local bool g_forcedFlagStructurization = false;
+void SetForcedFlagStructurization(bool value) { g_forcedFlagStructurization = value; }
+bool ForcedFlagStructurization() { return g_forcedFlagStructurization; }
+
 // XBOX-FORK: optional profiling, enabled with XBOX_STRUCT_PROF=1 (prints to stderr at exit).
 namespace StructProf {
 struct Entry { double ms = 0; unsigned long calls = 0; };
@@ -1832,9 +1837,10 @@ void tarjanVisit(TarjanState& state, std::uint32_t root) {
     }
 }
 
+// XBOX-FORK: a retry hook so Recompile can fall back to flag structurization when the structured result fails IR verification.
 bool forcedFlagStructurization() {
     static const bool forced = std::getenv("APS5_FORCE_STRUCTURIZER_FALLBACK") != nullptr;
-    return forced;
+    return forced || ForcedFlagStructurization();
 }
 
 std::vector<std::uint32_t> terminatorTargets(const Terminator& terminator) {

@@ -1,6 +1,7 @@
 #include "Recompiler.hpp"
 #include <array>
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <iterator>
 #include <algorithm>
@@ -40,7 +41,9 @@ int main(int argc, char** argv) {
                 std::uint32_t id, off; std::string cls; bf >> id >> off >> cls;
                 const int rank = cls.rfind("img",0)==0 ? 3 : cls == "buf" ? 2 : 1;
                 auto& slot = descs[{id, off}];
-                if (rank > (slot & 0xff)) slot = rank | (rank == 3 ? (cls[3]-'0') << 8 : 0);
+                const int atomicBit = (rank == 3 && cls.back() == 'a') ? 0x1000 : (rank == 3 && cls.back() == 'b') ? 0x3000 : 0;  // class "img<dim>a": used by an atomic image op
+                if (rank > (slot & 0xff)) slot = rank | (rank == 3 ? (cls[3]-'0') << 8 : 0) | atomicBit;
+                else slot |= atomicBit;
             }
         }
         for (auto& [id, n] : nodes) {
@@ -56,10 +59,10 @@ int main(int argc, char** argv) {
             if (it == nodes.end()) continue;
             auto& m = it->second.mem;
             const std::size_t w = key.second / 4;
-            const int dim = rank >> 8; rank &= 0xff;
+            const bool atomicImage = (rank & 0x1000) != 0; const bool atomic64 = (rank & 0x2000) != 0; const int dim = (rank >> 8) & 0xf; rank &= 0xff;
             if (rank == 3 && w + 8 <= m.size()) {
                 const std::uint64_t base = 0x40000000ull + 0x10000ull * counter++;
-                const std::uint32_t d[8] = {static_cast<std::uint32_t>(base >> 8), static_cast<std::uint32_t>((base >> 40) & 0xffu) | (56u << 20) | (3u << 30), 15u | (15u << 14), 0xfacu | ((8u + dim) << 28), 0, 0, 0, 0};
+                const std::uint32_t d[8] = {static_cast<std::uint32_t>(base >> 8), static_cast<std::uint32_t>((base >> 40) & 0xffu) | ((atomic64 ? 62u : atomicImage ? 20u : 56u) << 20) | (3u << 30), 15u | (15u << 14), 0xfacu | ((8u + dim) << 28), 0, 0, 0, 0};
                 std::copy(d, d + 8, m.begin() + w);
             } else if (rank == 2 && w + 4 <= m.size()) {
                 const std::uint64_t base = 0x50000000ull + 0x10000ull * counter++;
@@ -86,7 +89,7 @@ int main(int argc, char** argv) {
     for (auto& [id, n] : nodes) regions.push_back({n.base, std::as_bytes(std::span<const std::uint32_t>(n.mem))});
     for (auto& [base, mem] : bufferBacking) regions.push_back({base, std::as_bytes(std::span<const std::uint32_t>(mem))});
     request.context.memory = MemoryRegionView(std::span<const MemoryRegion>(regions));
-    const std::vector<std::uint32_t> caps{1u,32u,33u,5283u,9u,10u,11u,22u,39u,61u,62u,63u,64u,65u,66u,67u,68u,4427u,4433u,4434u,4435u,4436u,4437u,4438u,4445u,4447u,4448u,4449u,4450u,5345u,5346u,5347u,5301u,5302u,5303u,5304u,5305u,6u,38u,41u,5u,17u,18u,19u,3u,2u,4u,7u,8u,45u,5249u};
+    const std::vector<std::uint32_t> caps{1u,55u,56u,32u,33u,5283u,9u,10u,11u,22u,39u,61u,62u,63u,64u,65u,66u,67u,68u,4427u,4433u,4434u,4435u,4436u,4437u,4438u,4445u,4447u,4448u,4449u,4450u,5345u,5346u,5347u,5301u,5302u,5303u,5304u,5305u,6u,38u,41u,5u,17u,18u,19u,3u,2u,4u,7u,8u,45u,5249u};
     const std::array<std::string_view, 7> ext{"SPV_EXT_mesh_shader", "SPV_KHR_storage_buffer_storage_class", "SPV_KHR_physical_storage_buffer", "SPV_KHR_16bit_storage", "SPV_KHR_8bit_storage", "SPV_KHR_vulkan_memory_model", "SPV_KHR_shader_ballot"};
     // argv[6] stage: cs (default), ps, vs. argv[7] pixel input address mask (hex), argv[8] interpolator count.
     // Everything not derivable from the code (export mapping/mode, target merges, vertex fetch) is a documented default.
@@ -130,8 +133,17 @@ int main(int argc, char** argv) {
     request.target.spirvVersion = 0x00010600u;
     request.target.subgroupSize = wave;
     request.target.bdaAbiVersion = 1;
-    request.target.supportedCapabilities = caps;
-    request.target.supportedExtensions = ext;
+    // XBOX_FRAGMENT_BARY=1: model a host with VK_KHR_fragment_shader_barycentric (no geometry-shader barycentric emulation).
+    std::vector<std::uint32_t> capsLocal = caps;
+    std::vector<std::string_view> extLocal(ext.begin(), ext.end());
+    if (std::getenv("XBOX_FRAGMENT_BARY")) {
+        request.target.fragmentShaderBarycentricEnabled = true;
+        request.target.fragmentBarycentricBuiltins = true;
+        capsLocal.push_back(5284u);
+        extLocal.push_back("SPV_KHR_fragment_shader_barycentric");
+    }
+    request.target.supportedCapabilities = capsLocal;
+    request.target.supportedExtensions = extLocal;
     request.target.maxWorkgroupSize = {1024u, 1024u, 64u};
     request.target.maxWorkgroupInvocations = 1024;
     request.target.maxWorkgroupSharedMemoryBytes = 65536;

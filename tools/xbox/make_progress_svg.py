@@ -17,13 +17,13 @@ for key, title in SECTIONS:
     n = len(items)
     good = sum(1 for s in items if s in ("valid", "strict"))
     rel = sum(1 for s in items if s == "relaxed")
-    label = f"{title}: {good} / {n} valid ({100*good/n:.1f}%)" + (f", +{rel} with opt-in f16 approximation" if rel else "")
+    label = f"{title}: {good} / {n} valid ({100*good/n:.1f}%)" + (f", +{rel} with an opt-in" if rel else "")
     parts.append(f'<text x="{PAD}" y="{y}" class="t">{html.escape(label)}</text>')
     y += 8
     for i, s in enumerate(items):
         parts.append(f'<rect x="{PAD+(i%cols)*step}" y="{y+(i//cols)*step}" width="{CELL}" height="{CELL}" rx="1.5" fill="{COL[s]}"/>')
     y += ((n + cols - 1) // cols) * step + 26
-legend = [("#2da44e", "valid SPIR-V (spirv-val)"), ("#d4a72c", "valid only with opt-in approximation"), ("#cf222e", "fails")]
+legend = [("#2da44e", "valid SPIR-V (spirv-val)"), ("#d4a72c", "valid only with an opt-in (host barycentric extension or f16 approximation)"), ("#cf222e", "fails")]
 x = PAD
 for c, t in legend:
     parts.append(f'<rect x="{x}" y="{y-9}" width="10" height="10" rx="2" fill="{c}"/><text x="{x+15}" y="{y}" class="l">{t}</text>')

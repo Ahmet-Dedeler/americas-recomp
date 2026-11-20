@@ -201,7 +201,7 @@ struct PreparedControlFlow {
     PreparedControlFlow& operator=(const PreparedControlFlow&) = delete;
 
     bool Matches(const RecompileRequest& request, const SwappcInfo& swappcInfo) const {
-        return stage == request.shader.stage && mergedHull == MergedHullStage(request) && vertexHalf == CapturesGeometryInput(request) && swappc.fetchCallAllowed == swappcInfo.fetchCallAllowed &&
+        return forcedFlags == ForcedFlagStructurization() && stage == request.shader.stage && mergedHull == MergedHullStage(request) && vertexHalf == CapturesGeometryInput(request) && swappc.fetchCallAllowed == swappcInfo.fetchCallAllowed &&
                swappc.userDataBaseRegister == swappcInfo.userDataBaseRegister && swappc.userDataCount == swappcInfo.userDataCount && swappc.waveSize == swappcInfo.waveSize &&
                std::ranges::equal(fallbacks, swappcInfo.linkedCallFallbacks) && std::ranges::equal(code, request.shader.code);
     }
@@ -214,6 +214,7 @@ struct PreparedControlFlow {
     ShaderStage stage;
     bool mergedHull;
     std::vector<std::uint32_t> fallbacks;
+    bool forcedFlags = ForcedFlagStructurization();  // XBOX-FORK: part of the cache identity
     SwappcInfo swappc;
     std::vector<std::uint32_t> code;
     bool vertexHalf;
@@ -2557,6 +2558,15 @@ std::shared_ptr<const ResourceCapture> CaptureResources(const RecompileRequest& 
 }
 
 RecompileResult Recompile(const RecompileRequest& request) {
+    // XBOX-FORK: the structured control-flow result can fail IR verification (Phi incoming definition not dominating its edge);
+    // retry once with the flag-based structurizer, which does not have that shape.
+    try {
+        return recompileReporting(request, [&] { return RecompileImpl(request); });
+    } catch (const std::exception& error) {
+        if (std::string_view(error.what()).find("does not dominate its edge") == std::string_view::npos || ForcedFlagStructurization()) throw;
+    }
+    SetForcedFlagStructurization(true);
+    struct Reset { ~Reset() { SetForcedFlagStructurization(false); } } reset;
     return recompileReporting(request, [&] { return RecompileImpl(request); });
 }
 

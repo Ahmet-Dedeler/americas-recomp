@@ -103,7 +103,10 @@ def analyse(path):
             ssamp = ((w1 >> 21) & 0x1f) * 4
             if 'bvh' in name:
                 continue
-            use(srsrc, 8, 'img%d' % ((w0 >> 3) & 7))
+            # XBOX-FORK: atomic image ops need a 32-bit uint/sint/float format; mark the class so the driver builds one
+            dmask = (w0 >> 8) & 0xf
+            atomic64 = 'atomic' in name and ((dmask == 0xf) if 'cmpswap' in name else (dmask == 0x3))  # 64-bit data: 2 dwords (4 for cmpswap)
+            use(srsrc, 8, 'img%d%s' % ((w0 >> 3) & 7, 'b' if atomic64 else 'a' if 'atomic' in name else ''))
             if 'sample' in name or 'gather' in name or 'get_lod' in name:
                 use(ssamp, 4, 'samp')
             continue

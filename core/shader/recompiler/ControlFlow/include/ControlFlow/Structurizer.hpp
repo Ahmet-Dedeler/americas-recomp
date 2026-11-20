@@ -5,6 +5,9 @@
 
 namespace ShaderRecompiler {
 
+void SetForcedFlagStructurization(bool value);
+bool ForcedFlagStructurization();
+
 class Structurizer {
 public:
     void Structurize(ControlFlowGraph& graph) const;

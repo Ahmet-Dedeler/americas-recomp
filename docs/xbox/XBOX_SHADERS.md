@@ -172,3 +172,16 @@ Remaining cost per large shader is spread out: analysis recompute (~0.8 ms per s
 
 The stored BVH format is described in [BVH_CONTAINER.md](BVH_CONTAINER.md).
 
+## Second pass (fixing the recompiler-side failures)
+
+| Stage | Before | After |
+|---|---|---|
+| Compute | 2,480 / 2,647 | 2,559 / 2,647 |
+| Pixel, strict (default host) | 375 / 738 | 395 / 738 |
+| Pixel, strict + `VK_KHR_fragment_shader_barycentric` host | n/a | 410 / 738 |
+| Pixel, with host extension and f16 approximation | 649 | 735 |
+| Vertex | 92 / 114 | 92 / 114 |
+| Mesh | 559 / 640 | 559 / 640 |
+
+All still `spirv-val` only; nothing executed. Details of each change are in the README. Descriptor chains are the main remaining recompiler-side group (about 82 compute): the descriptor index is a value loaded from a buffer at run time and used as a waterfall key, so there is no static table to build; each shape differs. The vertex `s_swappc`/`s_setpc` cases and the mesh null-pointer cases depend on the real vertex fetch shader / user-data layout and are not recompiler problems.
+

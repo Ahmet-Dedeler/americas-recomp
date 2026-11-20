@@ -14,8 +14,8 @@ Corpus: 24,804 shaders from an RPF9 archive (2,647 compute, 738 pixel, 114 verte
 
 | Stage | Shaders | Valid SPIR-V | Notes |
 |---|---|---|---|
-| Compute | 2,647 | **2,480 (93.7%)** | union of four fake-memory variants; 0 invalid |
-| Pixel | 738 | **375 (strict)** | 649 with an opt-in approximation (below) |
+| Compute | 2,647 | **2,559 (96.7%)** | union of four fake-memory variants, 78 of 81 former timeouts passed with a longer limit; 0 invalid |
+| Pixel | 738 | **395 (strict)** | 410 if the host has `VK_KHR_fragment_shader_barycentric`; 735 with that and the f16 approximation (below) |
 | Vertex | 114 | 92 | |
 | Mesh | 640 | 559 | mesh configuration is a guess |
 
@@ -30,15 +30,22 @@ All SPIR-V that was produced validates (0 invalid). Pixel, vertex and mesh are a
 ### Assumptions (not verified on hardware)
 1. A lane-active select arm in waterfall loops is assumed active (`XBOX_NO_LANE_ASSUME` turns it off).
 2. Descriptor heap entries are assumed to be size-aligned (`XBOX_NO_OPAQUE_HEAP_INDEX` turns it off).
-3. Opt-in only: 16-bit interpolation ignores fp16 rounding bits (`XBOX_ALLOW_UNMEASURED_F16_INTERP`). Xbox pixel shaders set round-toward-zero, so results may differ in the last bit. It is off by default, which is why 375 is the headline.
+3. Opt-in only: 16-bit interpolation ignores fp16 rounding bits (`XBOX_ALLOW_UNMEASURED_F16_INTERP`). Xbox pixel shaders set round-toward-zero, so results may differ in the last bit. It is off by default, which is why the strict 395 is the headline.
 
 Float mode, export mapping, mesh configuration and descriptor contents are harness defaults, not read from the game.
 
 ### Remaining failures
-- Compute (167): 66 timeouts at 30 s, 79 descriptors loaded through address chains, 18 atomic image format failures.
-- Pixel: atomic image formats, emulated barycentrics over the location limit, descriptor chains.
-- Vertex: computed `s_swappc`/`s_setpc` targets, phi dominance errors.
-- Mesh: descriptor sources read through a null pointer (likely a harness gap), sampler chains.
+- Compute (88): about 82 descriptor chains (descriptors reached through a runtime index loaded from a buffer, or through address-loaded pointers), 3 timeouts, 2 64-bit image atomics under other memory variants, 1 phi-dominance case.
+- Pixel (3 with all opt-ins): descriptor and sampler chains.
+- Vertex (22): 12 computed `s_swappc` targets and 4 dynamic `s_setpc` that need the real vertex fetch shader / vertex input layout, 2 fetch calls with no fetch-shader plan, descriptor chains.
+- Mesh (81): 66 descriptor sources read through a null pointer (likely a harness gap), descriptor and sampler chains, 1 timeout.
+
+### What changed since the first pass
+- **Atomic image failures were a harness gap:** atomic image ops need 32-bit (or, for 64-bit atomics, 32_32) formats, but the fake descriptors used an 8-bit format. The binding analysis now marks atomic images and the driver builds matching descriptors. Compute 16 of 16 and pixel 20 more now pass.
+- **Barycentric limit:** the 30 pixel shaders over the 32-location limit pass when the host has `VK_KHR_fragment_shader_barycentric` (no emulation). Reported separately, not folded into the strict number.
+- **Timeouts were mostly my limit:** 78 of 81 passed given up to 616 s; the slow ones are a structurizer cost problem, not a hang.
+- **Phi dominance errors:** a pre-existing structurizer bug (the original upstream structurizer fails the same way). `Recompile` now retries once with the flag-based structurizer when it sees that error.
+- **`s_swappc sN, sN`:** the call's own link write no longer makes the fetch-call target look computed.
 
 ### Ray tracing and BVH
 - 62 of 64 compute shaders that use the hardware BVH instruction recompile and pass `spirv-val` (7 of them only with a 15 minute limit). Nothing was traversed.
