@@ -566,12 +566,30 @@ private:
         return true;
     }
 
+    // XBOX-FORK (assumption, not a proof; disable with XBOX_NO_LANE_ASSUME=1): a waterfall loop reads
+    // v_readfirstlane(v) while exec is narrowed by v_cmpx. The SSA form of v is "lane was active at the write ? new : old",
+    // i.e. Select(((execMask >> (lane & 31)) & 1) != 0, new, old). Proving the loop mask is a subset of that write-time mask needs
+    // exec-flow analysis across different exec snapshots; instead take the "lane was active" arm, the value the shader intends.
+    static bool AssumeLaneActive(const IrValue* condition) {
+        static const bool disabled = std::getenv("XBOX_NO_LANE_ASSUME") != nullptr;
+        if (disabled) return false;
+        condition = condition->Resolve();
+        if (condition->Opcode() != IrOpcode::INotEqual32 || condition->ArgumentCount() != 2u) return false;
+        const IrValue* test = condition->Argument(0)->Resolve();
+        if (test->Opcode() != IrOpcode::BitwiseAnd32 || test->ArgumentCount() != 2u) return false;
+        const IrValue* shifted = test->Argument(0)->Resolve();
+        if (shifted->Opcode() != IrOpcode::ShiftRightLogical32 || shifted->ArgumentCount() != 2u) return false;
+        const IrValue* amount = shifted->Argument(1)->Resolve();
+        if (amount->Opcode() != IrOpcode::BitwiseAnd32 || amount->ArgumentCount() != 2u) return false;
+        return amount->Argument(0)->Resolve()->Opcode() == IrOpcode::LaneId || amount->Argument(1)->Resolve()->Opcode() == IrOpcode::LaneId;
+    }
+
     bool MatchAffineOffset(IrValue* value, IrValue*& key, std::uint32_t& stride, std::uint32_t& addend) const {
         value = value->Resolve();
         if (value->Opcode() == IrOpcode::ReadFirstLane && value->ArgumentCount() == 2u) {
             const auto* activeMask = value->Argument(1)->Resolve();
             value = value->Argument(0)->Resolve();
-            while (value->Opcode() == IrOpcode::SelectU32 && value->ArgumentCount() == 3u && Detail::ActiveMaskImplies(m_program.Resources(), activeMask, value->Argument(0))) {
+            while (value->Opcode() == IrOpcode::SelectU32 && value->ArgumentCount() == 3u && (Detail::ActiveMaskImplies(m_program.Resources(), activeMask, value->Argument(0)) || AssumeLaneActive(value->Argument(0)))) {
                 value = value->Argument(1)->Resolve();
             }
         }

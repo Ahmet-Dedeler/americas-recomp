@@ -43,6 +43,27 @@ Everything is marked `XBOX-FORK` where it is a behaviour change.
 - Graphics shaders (PS/VS/GS) not tried.
 - No execution or output comparison.
 
+## Bindless descriptors (waterfall loops)
+
+The recompiler already had a runtime descriptor-table path (`TableColumn`: an image/sampler descriptor selected by an
+index read from a buffer or pointer). Most Xbox "bindless" shaders did not match it because of how the index reaches the
+`s_load`: `v_readfirstlane` inside a waterfall loop (`v_cmpx_eq` narrows exec each iteration), then
+`s_load_dwordx8 s[16:23], s[10:11], s16` (heap pointer in a user SGPR, byte offset in an SGPR).
+
+Two changes (marked `XBOX-FORK`):
+
+- `ActiveMaskImplies` now looks through Phis (loop-carried masks): a Phi implies a condition when all incoming values do; a
+  path back to a Phi under examination counts as implied. This is sound (the loop only narrows the mask).
+- `MatchAffineOffset` takes the "lane was active at the write" arm of a `Select(((exec >> (lane & 31)) & 1) != 0, new, old)`
+  under `ReadFirstLane`. **This is an assumption, not a proof**: showing the waterfall mask is a subset of the write-time exec
+  needs exec-flow analysis across different exec snapshots. It is the value the shader intends, but a shader that
+  deliberately reads a stale lane would be mistranslated. `XBOX_NO_LANE_ASSUME=1` disables it.
+
+Result on the 300-shader set with the binding model: 172 -> 200 valid (`spirv-val`), 28 gained, 0 lost, 0 invalid.
+Still failing (~75): the heap index goes through real shader logic (e.g. a handle validity test selecting between a
+loaded index and a fallback), so the key is not a provable multiple of the descriptor stride. Enabling the first-lane key
+matcher for address heaps did not help (tried, reverted). Output remains unexecuted; "valid" means only `spirv-val`.
+
 ## Structurizer speed (ray-tracing loop graphs)
 
 Profiling showed the slow ray-tracing shaders were not hung: `Structurizer` runs a cascade of up to 4 attempts

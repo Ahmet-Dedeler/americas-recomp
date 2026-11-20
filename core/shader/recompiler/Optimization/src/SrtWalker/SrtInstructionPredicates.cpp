@@ -55,16 +55,39 @@ bool IsRuntimeSelect(IrOpcode opcode) {
     return opcode == IrOpcode::SelectU1 || opcode == IrOpcode::SelectU32 || opcode == IrOpcode::SelectF32;
 }
 
-bool ActiveMaskImplies(const IrResourcePlan& program, const IrValue* mask, const IrValue* condition) {
+namespace {
+
+// XBOX-FORK: a loop-carried mask (waterfall loops: exec narrowed by v_cmpx each iteration) is a Phi whose incoming
+// values are the entry mask and "previous mask AND something". It implies `condition` when every incoming value does;
+// a path that returns to a Phi already being examined only narrows the mask, so it counts as implied (greatest fixpoint).
+bool activeMaskImplies(const IrResourcePlan& program, const IrValue* mask, const IrValue* condition, std::vector<const IrValue*>& visiting, std::uint32_t depth) {
     if (mask == nullptr || condition == nullptr) return false;
     mask = mask->Resolve();
     condition = condition->Resolve();
     if (mask == condition) return true;
     if (EquivalentValue(program, mask, condition)) return true;
+    if (depth == 0u) return false;
     if (mask->Opcode() == IrOpcode::LogicalAnd && mask->ArgumentCount() == 2) {
-        return ActiveMaskImplies(program, mask->Argument(0), condition) || ActiveMaskImplies(program, mask->Argument(1), condition);
+        return activeMaskImplies(program, mask->Argument(0), condition, visiting, depth - 1u) || activeMaskImplies(program, mask->Argument(1), condition, visiting, depth - 1u);
+    }
+    if (mask->IsPhi() && mask->ArgumentCount() != 0u) {
+        if (std::find(visiting.begin(), visiting.end(), mask) != visiting.end()) return true;
+        visiting.push_back(mask);
+        bool all = true;
+        for (std::size_t index = 0; all && index < mask->ArgumentCount(); ++index) {
+            all = activeMaskImplies(program, mask->Argument(index), condition, visiting, depth - 1u);
+        }
+        visiting.pop_back();
+        return all;
     }
     return false;
+}
+
+}
+
+bool ActiveMaskImplies(const IrResourcePlan& program, const IrValue* mask, const IrValue* condition) {
+    std::vector<const IrValue*> visiting;
+    return activeMaskImplies(program, mask, condition, visiting, 24u);
 }
 
 bool IsRuntimeUniformOp(IrOpcode opcode) {
