@@ -1,0 +1,83 @@
+"""Tiny RDNA2 assembler for execution-harness test programs (inputs, not a general assembler).
+Opcode numbers come from the decoder tables in rdna2.py (out_disasm); every program is checked by decoding it back."""
+import struct, sys
+sys.path.insert(0, r"E:/Programming/rpf9shaders/out_disasm")
+import rdna2
+
+def _inv(t):
+    return {v: k for k, v in t.items()}
+
+SOPP, SMEM, VOP2, VOP1, MUBUF = (_inv(rdna2.SOPP), _inv(rdna2.SMEM), _inv(rdna2.VOP2), _inv(rdna2.VOP1), _inv(rdna2.MUBUF))
+SOP1, VOPC, SOP2 = _inv(rdna2.SOP1), _inv(rdna2.VOPC), _inv(rdna2.SOP2)
+# rdna2.py's VOPC table is unreliable for the non-cmpx compares; RDNA2 u32 compares are 0xC0 + {f,lt,eq,le,gt,ne,ge,t}, cmpx adds 0x10.
+for _i, _c in enumerate(['f', 'lt', 'eq', 'le', 'gt', 'lg', 'ge', 'tru']):
+    VOPC['v_cmp_%s_u32' % _c] = 0xC0 + _i
+    VOPC['v_cmpx_%s_u32' % _c] = 0xD0 + _i
+EXEC_LO, VCC_LO = ('r', 126), ('r', 106)
+
+def src(x):
+    """operand: 'sN', 'vN', integer inline constant (-16..64) or ('lit', value)"""
+    if isinstance(x, tuple):
+        return (x[1], None) if x[0] == 'r' else (255, x[1])
+    if isinstance(x, int):
+        if 0 <= x <= 64:
+            return 128 + x, None
+        if -16 <= x < 0:
+            return 192 - x, None
+        return 255, x & 0xffffffff
+    if x[0] == 's':
+        return int(x[1:]), None
+    if x[0] == 'v':
+        return 256 + int(x[1:]), None
+    raise ValueError(x)
+
+class Program:
+    def __init__(self):
+        self.words = []
+    def sopp(self, name, imm=0):
+        self.words.append(0xBF800000 | (SOPP[name] << 16) | (imm & 0xffff))
+    def smem(self, name, sdata, sbase, offset=0):
+        self.words.append(0xF4000000 | (SMEM[name] << 18) | (sdata << 6) | (sbase >> 1))
+        self.words.append((0x7D << 25) | offset)
+    def vop2(self, name, vdst, s0, vsrc1):
+        code, lit = src(s0)
+        self.words.append((VOP2[name] << 25) | (vdst << 17) | (int(vsrc1[1:]) << 9) | code)
+        if lit is not None:
+            self.words.append(lit)
+    def vop1(self, name, vdst, s0):
+        code, lit = src(s0)
+        self.words.append(0x7E000000 | (vdst << 17) | (VOP1[name] << 9) | code)
+        if lit is not None:
+            self.words.append(lit)
+    def sop1(self, name, sdst, s0):
+        sdst = sdst[1] if isinstance(sdst, tuple) else sdst
+        code, lit = src(s0)
+        self.words.append(0xBE800000 | (sdst << 16) | (SOP1[name] << 8) | code)
+        if lit is not None:
+            self.words.append(lit)
+    def sop2(self, name, sdst, s0, s1):
+        sdst = sdst[1] if isinstance(sdst, tuple) else sdst
+        c0, l0 = src(s0)
+        c1, l1 = src(s1)
+        self.words.append(0x80000000 | (SOP2[name] << 23) | (sdst << 16) | (c1 << 8) | c0)
+        for lit in (l0, l1):
+            if lit is not None:
+                self.words.append(lit)
+    def label(self):
+        return len(self.words)
+    def branch_to(self, name, target):
+        # simm16 is relative to the instruction after the branch, in dwords
+        self.words.append(0xBF800000 | (SOPP[name] << 16) | ((target - (len(self.words) + 1)) & 0xffff))
+    def vopc(self, name, s0, vsrc1):
+        code, lit = src(s0)
+        self.words.append(0x7C000000 | (VOPC[name] << 17) | (int(vsrc1[1:]) << 9) | code)
+        if lit is not None:
+            self.words.append(lit)
+    def mubuf(self, name, vdata, vaddr, srsrc, soffset=128, offset=0, offen=True, idxen=False):
+        self.words.append(0xE0000000 | (MUBUF[name] << 18) | (int(idxen) << 13) | (int(offen) << 12) | offset)
+        self.words.append((soffset << 24) | ((srsrc // 4) << 16) | (vdata << 8) | vaddr)
+    def bytes(self):
+        return struct.pack('<%dI' % len(self.words), *self.words)
+    def disasm(self):
+        ins, _ = rdna2.sweep(self.bytes(), 0, len(self.words) * 4)
+        return [str(i.text) for i in ins]
