@@ -103,6 +103,9 @@ struct ControlFlowGraph {
         std::vector<std::uint64_t> values;
     };
     std::vector<BasicBlock> blocks;
+    // XBOX-FORK: while the structurizer splits shared merges, block ids stay stable (blocks[id].id == id) and the layout order
+    // lives here (a permutation of block ids). Empty means the order of `blocks` is the layout, as everywhere else.
+    std::vector<std::uint32_t> layoutOrder;
     std::vector<NaturalLoop> naturalLoops;
     std::vector<BackEdge> backEdges;
     std::vector<StronglyConnectedComponent> components;

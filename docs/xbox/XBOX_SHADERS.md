@@ -196,5 +196,6 @@ Changes (all in `ControlFlow/src/Structurizer.cpp`, marked XBOX-FORK):
 
 Result on 281 shaders (the 25 slowest plus 250 random): total structurizer time 1,795 s to 881 s, nothing slower, 238 of 281 graphs identical, one output 3 blocks bigger. The 43 graphs that changed were run end to end through the recompiler: all 43 have the same status (40 valid, 3 identical errors). The slowest shader went from 91 s to 59 s, with an identical graph.
 
-What is left: each split still moves and renumbers every block (`moveBlockBefore`/`applyBlockOrder`) and recomputes the dominator and post-dominator sets, both linear in the block count, so the cost per split stays proportional to program size. Block ids change on every split, so results cannot be cached across splits; fixing that would need stable ids or incremental analyses, which is a larger change.
+Stable block ids (second step): while splitting shared merges, block ids no longer change; the layout order lives in `ControlFlowGraph::layoutOrder` and is applied once at the end (`XBOX_NO_STABLE_IDS=1` disables it). This removes the per-split renumbering (13 s of the 59 s on the slowest shader). Same 281-shader set: total 881 s to 488 s, 280 of 281 graphs identical to the previous step (the other has the same size and is valid end to end); slowest shader 91 s originally, 41 s now.
 
+What is left: `recomputeAnalyses` (dominators, post-dominators, SCC from scratch after every split) is now about 34 of the 41 s on the slowest shader. Making it incremental is the next step.

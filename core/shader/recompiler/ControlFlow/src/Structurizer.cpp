@@ -8,6 +8,7 @@
 #include <functional>
 #include <iterator>
 #include <map>
+#include <numeric>
 #include <optional>
 #include <tuple>
 #include <stdexcept>
@@ -331,6 +332,7 @@ std::vector<std::uint32_t> applyBlockOrder(ControlFlowGraph& graph, std::vector<
     }
 
     graph.blocks = std::move(blocks);
+    graph.layoutOrder.clear();
     graph.entryBlock = remapId(graph.entryBlock, idMap);
     for (auto& block : graph.blocks) {
         block.id = remapId(block.id, idMap);
@@ -359,6 +361,14 @@ std::uint32_t moveBlockBefore(ControlFlowGraph& graph, std::uint32_t blockId, st
         return blockId;
     }
 
+    if (!graph.layoutOrder.empty()) {
+        // XBOX-FORK: stable-id mode: only the layout order changes, no block is moved or renumbered.
+        auto& order = graph.layoutOrder;
+        order.erase(std::find(order.begin(), order.end(), blockId));
+        order.insert(std::find(order.begin(), order.end(), beforeId), blockId);
+        return blockId;
+    }
+
     const auto blockPos = blockId;
     const auto beforePos = beforeId;
     std::vector<BasicBlock> oldBlocks = std::move(graph.blocks);
@@ -376,6 +386,28 @@ std::uint32_t moveBlockBefore(ControlFlowGraph& graph, std::uint32_t blockId, st
 
     const auto idMap = applyBlockOrder(graph, std::move(newBlocks));
     return remapId(blockId, idMap);
+}
+
+// XBOX-FORK: leave stable-id mode: lay the blocks out in `layoutOrder` (renumbering them once). Analyses must be recomputed after.
+void materializeLayout(ControlFlowGraph& graph) {
+    if (graph.layoutOrder.empty()) {
+        return;
+    }
+    std::vector<bool> placed(graph.blocks.size(), false);
+    std::vector<BasicBlock> ordered;
+    ordered.reserve(graph.blocks.size());
+    for (const auto blockId : graph.layoutOrder) {
+        if (blockId < graph.blocks.size() && !placed[blockId]) {
+            placed[blockId] = true;
+            ordered.push_back(std::move(graph.blocks[blockId]));
+        }
+    }
+    for (std::uint32_t blockId = 0; blockId < graph.blocks.size(); ++blockId) {
+        if (!placed[blockId]) {
+            ordered.push_back(std::move(graph.blocks[blockId]));
+        }
+    }
+    applyBlockOrder(graph, std::move(ordered));
 }
 
 std::vector<std::uint32_t> dominatedBlocks(const ControlFlowGraph& graph, std::uint32_t headerBlock, std::uint32_t stopBlock = InvalidControlFlowId) {
@@ -424,6 +456,7 @@ std::uint32_t appendSyntheticBranchBlock(ControlFlowGraph& graph, std::uint32_t 
     block.terminator.condition = BranchCondition::Always;
     block.terminator.trueBlock = target;
     graph.blocks.push_back(std::move(block));
+    if (!graph.layoutOrder.empty()) graph.layoutOrder.push_back(graph.blocks.back().id);
     return graph.blocks.back().id;
 }
 
@@ -1066,7 +1099,7 @@ bool splitSharedMergeBlock(ControlFlowGraph& graph, std::uint32_t merge, InConst
     addUnique(oldMerge.predecessors, syntheticMerge);
     sortUnique(oldMerge.predecessors);
 
-    moveBlockBefore(graph, syntheticMerge, merge);
+    { StructProf::Scope pm("split:moveBlockBefore"); moveBlockBefore(graph, syntheticMerge, merge); }
     return true;
 }
 
@@ -1344,6 +1377,20 @@ void cloneBlocks(ControlFlowGraph& graph, const std::vector<std::uint32_t>& bloc
     rebuildPredecessors(graph);
 
     const auto firstClone = static_cast<std::uint32_t>(graph.blocks.size() - blocks.size());
+    if (!graph.layoutOrder.empty()) {
+        // XBOX-FORK: stable-id mode: the clones keep their ids and are laid out after every existing block, in reverse post-order.
+        std::size_t placed = 0;
+        for (const auto blockId : reversePostOrder(graph)) {
+            if (blockId >= firstClone) {
+                graph.layoutOrder.push_back(blockId);
+                ++placed;
+            }
+        }
+        if (placed != blocks.size()) {
+            throw std::runtime_error("a cloned control flow block is unreachable");
+        }
+        return;
+    }
     std::vector<BasicBlock> ordered;
     ordered.reserve(graph.blocks.size());
     for (std::uint32_t blockId = 0; blockId < firstClone; ++blockId) {
@@ -2616,11 +2663,11 @@ void Structurizer::computeStronglyConnectedComponents(ControlFlowGraph& graph) c
 
 void Structurizer::recomputeAnalyses(ControlFlowGraph& graph) const {
     StructProf::Scope prof("recomputeAnalyses");
-    computeDominatorTree(graph);
-    computePostDominators(graph);
-    computeBackEdges(graph);
-    detectNaturalLoops(graph);
-    computeStronglyConnectedComponents(graph);
+    { StructProf::Scope p1("ra:dominators"); computeDominatorTree(graph); }
+    { StructProf::Scope p2("ra:postDominators"); computePostDominators(graph); }
+    { StructProf::Scope p3("ra:backEdges"); computeBackEdges(graph); }
+    { StructProf::Scope p4("ra:naturalLoops"); detectNaturalLoops(graph); }
+    { StructProf::Scope p5("ra:scc"); computeStronglyConnectedComponents(graph); }
 }
 
 void Structurizer::canonicalizeNaturalLoops(ControlFlowGraph& graph, bool routeLeavingExits, bool routeSharedExits) const {
@@ -2708,6 +2755,16 @@ void Structurizer::splitSharedMergeBlocks(ControlFlowGraph& graph, bool routeLea
     const auto programWords = estimatedSpirvWords(graph, allBlockIds(originalBlockCount));
     SplitBudget budget{programWords, std::max(CloneWordLimit, programWords / CloneBudgetDivisor), std::max(CloneWordLimit, programWords), nextGotoVariable(graph)};
     static const bool useCursor = std::getenv("XBOX_NO_SPLIT_CURSOR") == nullptr;
+    // XBOX-FORK: stable block ids while splitting (the layout order is kept separately and applied once at the end).
+    static const bool stableIds = std::getenv("XBOX_NO_STABLE_IDS") == nullptr;
+    if (stableIds && graph.layoutOrder.empty()) {
+        graph.layoutOrder.resize(graph.blocks.size());
+        std::iota(graph.layoutOrder.begin(), graph.layoutOrder.end(), 0u);
+    }
+    struct LayoutGuard {
+        ControlFlowGraph& graph;
+        ~LayoutGuard() { try { materializeLayout(graph); } catch (...) {} }
+    } layoutGuard{graph};
     std::size_t cursor = 0;
     std::size_t loopCursor = 0;
     std::vector<std::uint32_t> headerOrder;
@@ -2728,6 +2785,9 @@ void Structurizer::splitSharedMergeBlocks(ControlFlowGraph& graph, bool routeLea
                 continue;
             }
             if (!splitOneReturnJoin(graph, relaxReturnJoins)) {
+                const bool wasStable = !graph.layoutOrder.empty();
+                { StructProf::Scope pf("split:materializeLayout"); materializeLayout(graph); }
+                if (wasStable) recomputeAnalyses(graph);
                 if (StructProf::enabled()) std::fprintf(stderr, "[struct] splits=%u orig=%u\n", splits, originalBlockCount);
                 return;
             }
