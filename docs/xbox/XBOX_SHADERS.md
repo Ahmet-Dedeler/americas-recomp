@@ -24,6 +24,7 @@ Status of the `xbox-series` branch. Everything here comes from one title's `shad
 | `RdnaVectorOpDecoder.cpp` | allow op_sel bits 2-3 on `v_permlane16/x16_b32` | Xbox shaders set op_sel[3]. Assumed to have no effect on a 32-bit op. **Unverified.** |
 | `RdnaVectorOpDecoder.cpp` | opcode/modifier numbers in two error messages | diagnostics |
 | `RoundingMode.cpp` | ignore `s_setreg*` writes to hwreg 20/21 (`FLAT_SCRATCH_LO/HI`) | Xbox shaders zero these at entry. Ignored, so a shader that really uses scratch via flat_scratch would be wrong. |
+| `Structurizer.cpp` | fast shared-merge split budget (default 60% of blocks, min 64 splits, `XBOX_SPLIT_PCT`), full 400% cascade as fallback; `XBOX_STRUCT_PROF=1` prints timing and attempts | see below |
 | `Recompiler.cpp`, `SrtDescriptorEvaluation.cpp`, `SpirvSpecialization.cpp` | MSVC build fixes (`static constexpr`, no `__builtin_prefetch`, narrowing cast) | upstream builds with MinGW GCC only |
 
 Everything is marked `XBOX-FORK` where it is a behaviour change.
@@ -40,3 +41,22 @@ Everything is marked `XBOX-FORK` where it is a behaviour change.
 - Descriptor tables / Xbox root-signature ABI are not modelled. AnyPS5 assumes PS5 user-data conventions.
 - Graphics shaders (PS/VS/GS) not tried.
 - No execution or output comparison.
+
+## Structurizer speed (ray-tracing loop graphs)
+
+Profiling showed the slow ray-tracing shaders were not hung: `Structurizer` runs a cascade of up to 4 attempts
+(8 with `relaxReturnJoins`); on these graphs attempts 1-3 each ran the whole split budget (4x the block count,
+~1 block cloned per split, graph grows to 5x) and threw, and the 4th succeeded after ~0.16x splits. Each split
+recomputes all analyses.
+
+On a 4,147 shader corpus (all 2,647 compute + 1,500 other) no completed split loop needed more than 0.72x blocks
+(0.37x for graphs over ~250 blocks). The cascade now runs with 60% (min 64) first and reruns with the original
+400% only if that fails. Measured against the original budget:
+
+- 4,119 shaders finish in both: identical structured-graph hash for all, no success/failure changed;
+- 20 shaders that exceeded 90 s now finish (8 still exceed 90 s); slowest finishing shader 69 s -> 2 s;
+- total time on shaders finishing in both: 593 s -> 274 s.
+
+Remaining cost is the per-iteration search in `splitOneSelectionMerge` (~4 ms at ~1.5k blocks: every iteration
+rescans all selection headers). Caching non-splittable headers across iterations would be the next step.
+`tools/xbox/structurizer_corpus.py` + `stages.exe` reproduce the comparison (`stages` prints a graph hash).

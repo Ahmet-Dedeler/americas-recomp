@@ -11,7 +11,47 @@
 #include <optional>
 #include <stdexcept>
 
+#include <chrono>
+#include <cstdio>
+#include <string>
+
 namespace ShaderRecompiler {
+
+// XBOX-FORK: optional profiling, enabled with XBOX_STRUCT_PROF=1 (prints to stderr at exit).
+namespace StructProf {
+struct Entry { double ms = 0; unsigned long calls = 0; };
+inline bool enabled() { static const bool e = std::getenv("XBOX_STRUCT_PROF") != nullptr; return e; }
+inline std::map<std::string, Entry>& table() { static std::map<std::string, Entry> t; return t; }
+inline void report() {
+    for (const auto& [k, v] : table()) std::fprintf(stderr, "  %-28s %10.1f ms %8lu calls\n", k.c_str(), v.ms, v.calls);
+}
+struct Scope {
+    const char* name; std::chrono::steady_clock::time_point t;
+    explicit Scope(const char* n) : name(n), t(std::chrono::steady_clock::now()) {}
+    ~Scope() {
+        if (!enabled()) return;
+        (void)table(); static const bool reg = (std::atexit(report), true); (void)reg;
+        auto& e = table()[name]; e.calls++;
+        e.ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t).count();
+    }
+};
+}
+
+// XBOX-FORK: the shared-merge split budget was 4x the block count. Failing attempts always ran all of it (the graph
+// grows ~1 block per split) before the next attempt started. On a 4,147 shader corpus no completed split loop needed
+// more than 0.72x (large graphs: <0.37x), so the cascade first runs with a fast budget and, only if that fails, reruns
+// with the original 400%. XBOX_SPLIT_PCT overrides the fast budget (400 = original behaviour).
+namespace StructBudget {
+inline thread_local std::uint32_t percent = 400u;
+inline std::uint32_t fastPercent() {
+    static const std::uint32_t value = [] {
+        const char* text = std::getenv("XBOX_SPLIT_PCT");
+        const long parsed = text != nullptr ? std::strtol(text, nullptr, 10) : 60;
+        return static_cast<std::uint32_t>(parsed < 1 ? 60 : parsed);
+    }();
+    return value;
+}
+}
 
 namespace {
 
@@ -2091,6 +2131,27 @@ void emitFlagRegion(FlagEmission& emission, const std::vector<std::uint32_t>& me
 }
 
 void Structurizer::Structurize(ControlFlowGraph& graph) const {
+    const auto fast = StructBudget::fastPercent();
+    if (fast >= 400u) {
+        StructBudget::percent = 400u;
+        structurizeCascade(graph);
+        return;
+    }
+    const auto before = graph;
+    StructBudget::percent = fast;
+    try {
+        structurizeCascade(graph);
+        StructBudget::percent = 400u;
+        return;
+    } catch (const std::runtime_error&) {
+        if (StructProf::enabled()) std::fprintf(stderr, "[struct] fast budget failed, rerunning with 400%%\n");
+    }
+    StructBudget::percent = 400u;
+    graph = before;
+    structurizeCascade(graph);
+}
+
+void Structurizer::structurizeCascade(ControlFlowGraph& graph) const {
     const auto original = graph;
     const bool flagsSupported = supportsFlagStructurization(original);
     if (flagsSupported && forcedFlagStructurization()) {
@@ -2191,23 +2252,27 @@ void Structurizer::structurizeAttempts(ControlFlowGraph& graph, bool relaxReturn
     try {
         structurize(graph, false, false, false, relaxReturnJoins);
         if (!hasStructuredConstructs(graph)) throw std::runtime_error("CFG does not have structured constructs");
-    } catch (const std::runtime_error&) {
+    } catch (const std::runtime_error& attemptError) {
+        if (StructProf::enabled()) std::fprintf(stderr, "[struct] attempt failed: %.300s\n", attemptError.what());
         graph = original;
         try {
             structurize(graph, true, false, false, relaxReturnJoins);
             if (!hasStructuredConstructs(graph)) throw std::runtime_error("CFG does not have structured constructs");
-        } catch (const std::runtime_error&) {
+        } catch (const std::runtime_error& attemptError) {
+        if (StructProf::enabled()) std::fprintf(stderr, "[struct] attempt failed: %.300s\n", attemptError.what());
             const auto error = std::current_exception();
             graph = original;
             try {
                 structurize(graph, false, true, false, relaxReturnJoins);
                 if (hasStructuredConstructs(graph)) return;
-            } catch (const std::runtime_error&) {
+            } catch (const std::runtime_error& attemptError) {
+        if (StructProf::enabled()) std::fprintf(stderr, "[struct] attempt failed: %.300s\n", attemptError.what());
             }
             graph = original;
             try {
                 structurize(graph, false, true, true, relaxReturnJoins);
-            } catch (const std::runtime_error&) {
+            } catch (const std::runtime_error& attemptError) {
+        if (StructProf::enabled()) std::fprintf(stderr, "[struct] attempt failed: %.300s\n", attemptError.what());
                 std::rethrow_exception(error);
             }
             if (!hasStructuredConstructs(graph)) {
@@ -2229,6 +2294,9 @@ void Structurizer::privatizeSharedReturns(ControlFlowGraph& graph) const {
 }
 
 void Structurizer::structurize(ControlFlowGraph& graph, bool privatizeReturns, bool routeLeavingExits, bool routeSharedExits, bool relaxReturnJoins) const {
+    StructProf::Scope prof("structurize(attempt)");
+    if (StructProf::enabled()) std::fprintf(stderr, "[struct] attempt privatize=%d leave=%d shared=%d relax=%d blocks=%zu\n", privatizeReturns, routeLeavingExits, routeSharedExits, relaxReturnJoins, graph.blocks.size());
+    const auto startBlocks = graph.blocks.size();
     recomputeAnalyses(graph);
     verifyReducibility(graph);
     if (privatizeReturns) {
@@ -2289,6 +2357,7 @@ void Structurizer::structurize(ControlFlowGraph& graph, bool privatizeReturns, b
         reserveMergeBlock(header, merge);
         graph.FindBlock(header).terminator.mergeBlock = merge;
     }
+    if (StructProf::enabled()) std::fprintf(stderr, "[struct] ok start=%zu end=%zu\n", startBlocks, graph.blocks.size());
 }
 
 void Structurizer::computeDominatorTree(ControlFlowGraph& graph) const {
@@ -2475,6 +2544,7 @@ void Structurizer::computeStronglyConnectedComponents(ControlFlowGraph& graph) c
 }
 
 void Structurizer::recomputeAnalyses(ControlFlowGraph& graph) const {
+    StructProf::Scope prof("recomputeAnalyses");
     computeDominatorTree(graph);
     computePostDominators(graph);
     computeBackEdges(graph);
@@ -2483,6 +2553,7 @@ void Structurizer::recomputeAnalyses(ControlFlowGraph& graph) const {
 }
 
 void Structurizer::canonicalizeNaturalLoops(ControlFlowGraph& graph, bool routeLeavingExits, bool routeSharedExits) const {
+    StructProf::Scope prof("canonicalizeNaturalLoops");
     const auto rewriteBudget = graph.blocks.size() * 2u + 16u;
     for (std::size_t rewrite = 0; rewrite < rewriteBudget; ++rewrite) {
         bool changed = false;
@@ -2559,13 +2630,16 @@ void Structurizer::canonicalizeNaturalLoops(ControlFlowGraph& graph, bool routeL
 }
 
 void Structurizer::splitSharedMergeBlocks(ControlFlowGraph& graph, bool routeLeavingExits, bool routeSharedExits, bool relaxReturnJoins) const {
+    StructProf::Scope prof("splitSharedMergeBlocks");
     const auto originalBlockCount = static_cast<std::uint32_t>(graph.blocks.size());
-    const auto splitBudget = std::max<std::uint32_t>(16u, originalBlockCount * 4u);
+    const auto splitBudget = std::max<std::uint32_t>(StructBudget::percent < 400u ? 64u : 16u, static_cast<std::uint32_t>(static_cast<std::uint64_t>(originalBlockCount) * StructBudget::percent / 100u));
     const auto growthBudget = std::max<std::uint32_t>(SplitGrowthFloor, originalBlockCount * SplitGrowthFactor);
     const auto programWords = estimatedSpirvWords(graph, allBlockIds(originalBlockCount));
     SplitBudget budget{programWords, std::max(CloneWordLimit, programWords / CloneBudgetDivisor), std::max(CloneWordLimit, programWords), nextGotoVariable(graph)};
     for (std::uint32_t splits = 0; splits < splitBudget; ++splits) {
+        StructProf::Scope profSplit("splitOne*(search+apply)");
         if (!splitOneLoopMerge(graph) && !splitOneSelectionMerge(graph, budget, [this](ControlFlowGraph& candidate) { recomputeAnalyses(candidate); }, routeLeavingExits, routeSharedExits) && !splitOneReturnJoin(graph, relaxReturnJoins)) {
+            if (StructProf::enabled()) std::fprintf(stderr, "[struct] splits=%u orig=%u\n", splits, originalBlockCount);
             return;
         }
         if (graph.blocks.size() > growthBudget) {
@@ -2627,6 +2701,7 @@ void Structurizer::clearStructuredTerminators(ControlFlowGraph& graph) const {
 }
 
 void Structurizer::verifyReducibility(const ControlFlowGraph& graph) const {
+    StructProf::Scope prof("verifyReducibility");
     if (graph.unsupported || graph.irreducible) {
         throw std::runtime_error(graph.unsupportedReason.empty() ? std::string("unsupported CFG") : graph.unsupportedReason);
     }

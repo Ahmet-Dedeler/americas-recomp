@@ -20,5 +20,14 @@ int main(int argc, char** argv) {
     auto graph = GraphBuilder{}.Build(decoded);
     std::printf("build %.0fms blocks=%zu\n", ms(t), graph.blocks.size()); std::fflush(stdout); t = C::now();
     Structurizer{}.Structurize(graph);
-    std::printf("structurize %.0fms blocks=%zu\n", ms(t), graph.blocks.size());
+    std::uint64_t h = 1469598103934665603ull;
+    const auto mix = [&](std::uint64_t v) { h = (h ^ v) * 1099511628211ull; };
+    for (const auto& b : graph.blocks) {
+        mix(b.id); mix(b.startProgramCounter); mix(b.endProgramCounter); mix(b.instructionBegin); mix(b.instructionEnd);
+        const auto& tm = b.terminator;
+        mix(static_cast<std::uint64_t>(tm.kind)); mix(static_cast<std::uint64_t>(tm.condition)); mix(tm.trueBlock); mix(tm.falseBlock);
+        mix(tm.mergeBlock); mix(tm.continueBlock); mix(tm.gotoVariable); mix(static_cast<std::uint64_t>(tm.gotoValue)); mix(tm.loopHeader);
+        for (auto x : b.successors) mix(x);
+    }
+    std::printf("structurize %.0fms blocks=%zu hash=%016llx\n", ms(t), graph.blocks.size(), static_cast<unsigned long long>(h));
 }
