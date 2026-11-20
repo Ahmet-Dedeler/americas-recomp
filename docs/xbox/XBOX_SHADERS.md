@@ -199,3 +199,15 @@ Result on 281 shaders (the 25 slowest plus 250 random): total structurizer time 
 Stable block ids (second step): while splitting shared merges, block ids no longer change; the layout order lives in `ControlFlowGraph::layoutOrder` and is applied once at the end (`XBOX_NO_STABLE_IDS=1` disables it). This removes the per-split renumbering (13 s of the 59 s on the slowest shader). Same 281-shader set: total 881 s to 488 s, 280 of 281 graphs identical to the previous step (the other has the same size and is valid end to end); slowest shader 91 s originally, 41 s now.
 
 What is left: `recomputeAnalyses` (dominators, post-dominators, SCC from scratch after every split) is now about 34 of the 41 s on the slowest shader. Making it incremental is the next step.
+
+## Descriptor Phis (third pass)
+
+Of the 157 compute shaders that threw in the first full run, 139 still failed after the second pass. Two changes in `ResourceTracker.cpp` fix 45 of them, with no regression on 559 re-run shaders (all 157 plus every sixth previously valid one):
+
+- Image stores are split over descriptor Phis the same way reads already were. Each arm gets its own copy of the store, and EXEC is narrowed to the lanes of that arm (`LogicalAnd(exec, arm condition)`), so only one arm writes per lane. 30 shaders; this was the largest remaining single shape (a Phi of two SRT descriptor loads feeding an `image_store`).
+- A Phi inside the pointer of an address load (`GetAddressResource` / `LoadAddressU32`) is now collected, so the load is rebuilt per arm. These are the flag-structurizer joins: one path carries the user-data high dword and the other a constant. 15 shaders.
+
+Descriptor-chain failures went from 82 to 36. The others in that group are: Phi chains over ballot/lane masks (4), webs over 512 states (2), loop-carried indices loaded from a buffer (4), and a few single cases. The remaining 50 throws are not matcher problems: the harness's fake T# format is incompatible with the image interface the shader uses.
+
+Not done: a general "heap base + index * stride" lowering to a runtime-sized Vulkan descriptor array kept in sync by the host. The existing table mechanism already does this when the index is a function of register state; Phi splitting extends it to merged heap bases. A buffer-loaded index that varies per loop iteration needs the host side described in the design note and is not covered by validity-only testing.
+
