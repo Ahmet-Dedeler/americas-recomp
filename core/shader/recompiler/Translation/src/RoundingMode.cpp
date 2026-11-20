@@ -378,6 +378,7 @@ void TranslationContext::setRounding(const RoundingState& state) {
 void TranslationContext::writeRounding(const RdnaInstruction& inst) {
     const auto write = DecodeRoundingWrite(inst);
     const char* name = inst.op == RdnaOpcode::SRoundMode ? "s_round_mode" : inst.op == RdnaOpcode::SDenormMode ? "s_denorm_mode" : inst.op == RdnaOpcode::SSetregB32 ? "s_setreg_b32" : "s_setreg_imm32_b32";
+    if (!write.has_value() && (inst.op == RdnaOpcode::SSetregImm32B32 || inst.op == RdnaOpcode::SSetregB32) && ((inst.source1.value & 0x3fu) == 20u || (inst.source1.value & 0x3fu) == 21u)) return;
     if (!write.has_value()) {
         throw std::runtime_error(std::string(name) + " at pc " + std::to_string(inst.programCounter) + " writes a hardware register field other than the MODE round and denormal fields");
     }

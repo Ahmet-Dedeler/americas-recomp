@@ -620,7 +620,7 @@ template <typename TEntry, std::size_t Size>
 RdnaOpcode lookupVectorOpcode(const TEntry (&table)[Size], std::uint32_t encoding, const char* notSupportedReason) {
     const auto* entry = findVectorOpcodeEntry(table, encoding);
     if (entry == nullptr) {
-        throw std::invalid_argument(notSupportedReason);
+        throw std::invalid_argument(std::string(notSupportedReason) + " enc=" + std::to_string(encoding));
     }
     return entry->opcode;
 }
@@ -2015,6 +2015,9 @@ bool isF32DivisionStepOpcode(RdnaOpcode opcode) {
 }
 
 bool supportsNativeVop3Clamp(RdnaOpcode opcode) {
+    if (opcode == RdnaOpcode::VMadLegacyF32) {
+        return true;
+    }
     if (isNativeVop3F16TernaryOpcode(opcode)) {
         return true;
     }
@@ -2028,8 +2031,9 @@ bool readsVop2Accumulator(RdnaOpcode opcode) {
 
 void checkNativeVop3Modifiers(RdnaOpcode opcode, std::uint32_t encodedOpcode, bool permlane, bool carryInOut, bool scalarDst, std::uint32_t abs, std::uint32_t opSel, std::uint32_t clamp, std::uint32_t omod, std::uint32_t neg) {
     if (permlane) {
-        if (abs != 0u || (opSel & ~0x3u) != 0u || clamp != 0u || omod != 0u || neg != 0u) {
-            throw std::invalid_argument("VOP3 perm-lane op_sel bits are not implemented");
+        // XBOX-FORK: Xbox shaders set op_sel[3] on v_permlane*; assumed to have no effect on a 32-bit op (unverified on hardware).
+        if (abs != 0u || (opSel & ~0xfu) != 0u || clamp != 0u || omod != 0u || neg != 0u) {
+            throw std::invalid_argument("VOP3 perm-lane op_sel bits are not implemented op=" + std::to_string(encodedOpcode) + " abs=" + std::to_string(abs) + " neg=" + std::to_string(neg) + " opsel=" + std::to_string(opSel) + " clamp=" + std::to_string(clamp) + " omod=" + std::to_string(omod));
         }
         return;
     }
@@ -2038,19 +2042,19 @@ void checkNativeVop3Modifiers(RdnaOpcode opcode, std::uint32_t encodedOpcode, bo
     }
     if (isNativeVop3I16TernaryOpcode(opcode)) {
         if (abs != 0u || omod != 0u || neg != 0u) {
-            throw std::invalid_argument("VOP3 source modifiers are not implemented");
+            throw std::invalid_argument("VOP3 source modifiers are not implemented op=" + std::to_string(encodedOpcode) + " abs=" + std::to_string(abs) + " neg=" + std::to_string(neg) + " opsel=" + std::to_string(opSel) + " clamp=" + std::to_string(clamp) + " omod=" + std::to_string(omod));
         }
         return;
     }
     if (isNativeVop3AlignOpcode(opcode)) {
         if (abs != 0u || omod != 0u || neg != 0u) {
-            throw std::invalid_argument("VOP3 source modifiers are not implemented");
+            throw std::invalid_argument("VOP3 source modifiers are not implemented op=" + std::to_string(encodedOpcode) + " abs=" + std::to_string(abs) + " neg=" + std::to_string(neg) + " opsel=" + std::to_string(opSel) + " clamp=" + std::to_string(clamp) + " omod=" + std::to_string(omod));
         }
         return;
     }
     if (isNativeVop3B16BinaryOpcode(opcode)) {
         if (abs != 0u || omod != 0u || neg != 0u) {
-            throw std::invalid_argument("VOP3 source modifiers are not implemented");
+            throw std::invalid_argument("VOP3 source modifiers are not implemented op=" + std::to_string(encodedOpcode) + " abs=" + std::to_string(abs) + " neg=" + std::to_string(neg) + " opsel=" + std::to_string(opSel) + " clamp=" + std::to_string(clamp) + " omod=" + std::to_string(omod));
         }
         return;
     }
@@ -2058,43 +2062,43 @@ void checkNativeVop3Modifiers(RdnaOpcode opcode, std::uint32_t encodedOpcode, bo
         const bool floatCompare = scalarDst && isVopcFloatCompareOpcode(opcode);
         const bool divScale = opcode == RdnaOpcode::VDivScaleF32 || opcode == RdnaOpcode::VDivScaleF64;
         if ((clamp != 0u && !isVop3BMadU64Opcode(opcode) && !floatCompare) || (omod != 0u && !divScale) || (neg != 0u && !floatCompare && !divScale)) {
-            throw std::invalid_argument("VOP3 source modifiers are not implemented");
+            throw std::invalid_argument("VOP3 source modifiers are not implemented op=" + std::to_string(encodedOpcode) + " abs=" + std::to_string(abs) + " neg=" + std::to_string(neg) + " opsel=" + std::to_string(opSel) + " clamp=" + std::to_string(clamp) + " omod=" + std::to_string(omod));
         }
         return;
     }
     if (usesIntegerSaturateClamp(opcode)) {
         if (abs != 0u || opSel != 0u || omod != 0u || neg != 0u) {
-            throw std::invalid_argument("VOP3 source modifiers are not implemented");
+            throw std::invalid_argument("VOP3 source modifiers are not implemented op=" + std::to_string(encodedOpcode) + " abs=" + std::to_string(abs) + " neg=" + std::to_string(neg) + " opsel=" + std::to_string(opSel) + " clamp=" + std::to_string(clamp) + " omod=" + std::to_string(omod));
         }
         return;
     }
     if (opcode == RdnaOpcode::VLdexpF32 || opcode == RdnaOpcode::VLdexpF64 || opcode == RdnaOpcode::VTrigPreopF64) {
         if ((abs & ~1u) != 0u || opSel != 0u || (neg & ~1u) != 0u) {
-            throw std::invalid_argument("VOP3 source modifiers are not implemented");
+            throw std::invalid_argument("VOP3 source modifiers are not implemented op=" + std::to_string(encodedOpcode) + " abs=" + std::to_string(abs) + " neg=" + std::to_string(neg) + " opsel=" + std::to_string(opSel) + " clamp=" + std::to_string(clamp) + " omod=" + std::to_string(omod));
         }
         return;
     }
     if (opcode == RdnaOpcode::VCvtPkU8F32) {
         if ((abs & ~1u) != 0u || opSel != 0u || clamp != 0u || omod != 0u || (neg & ~1u) != 0u) {
-            throw std::invalid_argument("VOP3 source modifiers are not implemented");
+            throw std::invalid_argument("VOP3 source modifiers are not implemented op=" + std::to_string(encodedOpcode) + " abs=" + std::to_string(abs) + " neg=" + std::to_string(neg) + " opsel=" + std::to_string(opSel) + " clamp=" + std::to_string(clamp) + " omod=" + std::to_string(omod));
         }
         return;
     }
     if (opcode == RdnaOpcode::VLdexpF16) {
         if ((abs & ~1u) != 0u || opSel != 0u || (neg & ~1u) != 0u) {
-            throw std::invalid_argument("VOP3 source modifiers are not implemented");
+            throw std::invalid_argument("VOP3 source modifiers are not implemented op=" + std::to_string(encodedOpcode) + " abs=" + std::to_string(abs) + " neg=" + std::to_string(neg) + " opsel=" + std::to_string(opSel) + " clamp=" + std::to_string(clamp) + " omod=" + std::to_string(omod));
         }
         return;
     }
     if (opcode == RdnaOpcode::VCndmaskB32) {
         if ((abs & ~0x3u) != 0u || opSel != 0u || clamp != 0u || omod != 0u || (neg & ~0x3u) != 0u) {
-            throw std::invalid_argument("VOP3 source modifiers are not implemented");
+            throw std::invalid_argument("VOP3 source modifiers are not implemented op=" + std::to_string(encodedOpcode) + " abs=" + std::to_string(abs) + " neg=" + std::to_string(neg) + " opsel=" + std::to_string(opSel) + " clamp=" + std::to_string(clamp) + " omod=" + std::to_string(omod));
         }
         return;
     }
     if (isNativeVop3F16PackOpcode(opcode)) {
         if ((abs & ~0x3u) != 0u || (opSel & ~0x3u) != 0u || clamp != 0u || omod != 0u || (neg & ~0x3u) != 0u) {
-            throw std::invalid_argument("VOP3 source modifiers are not implemented");
+            throw std::invalid_argument("VOP3 source modifiers are not implemented op=" + std::to_string(encodedOpcode) + " abs=" + std::to_string(abs) + " neg=" + std::to_string(neg) + " opsel=" + std::to_string(opSel) + " clamp=" + std::to_string(clamp) + " omod=" + std::to_string(omod));
         }
         return;
     }
@@ -2105,18 +2109,18 @@ void checkNativeVop3Modifiers(RdnaOpcode opcode, std::uint32_t encodedOpcode, bo
     if (sourceModifiers) {
         const bool unmeasuredAccumulatorModifiers = ((abs | neg) & 0x4u) != 0u && readsVop2Accumulator(opcode) && encodedOpcode != 0x12bu && encodedOpcode != 0x136u;
         if (opSel != 0u || (omod != 0u && !resultModifiers && !ignoresOutputModifiers) || (clamp != 0u && !clampModifier && !ignoresOutputModifiers) || unmeasuredAccumulatorModifiers) {
-            throw std::invalid_argument("VOP3 source modifiers are not implemented");
+            throw std::invalid_argument("VOP3 source modifiers are not implemented op=" + std::to_string(encodedOpcode) + " abs=" + std::to_string(abs) + " neg=" + std::to_string(neg) + " opsel=" + std::to_string(opSel) + " clamp=" + std::to_string(clamp) + " omod=" + std::to_string(omod));
         }
         return;
     }
     if (resultModifiers) {
         if (abs != 0u || opSel != 0u || neg != 0u) {
-            throw std::invalid_argument("VOP3 source modifiers are not implemented");
+            throw std::invalid_argument("VOP3 source modifiers are not implemented op=" + std::to_string(encodedOpcode) + " abs=" + std::to_string(abs) + " neg=" + std::to_string(neg) + " opsel=" + std::to_string(opSel) + " clamp=" + std::to_string(clamp) + " omod=" + std::to_string(omod));
         }
         return;
     }
     if (abs != 0u || opSel != 0u || clamp != 0u || omod != 0u || neg != 0u) {
-        throw std::invalid_argument("VOP3 source modifiers are not implemented");
+        throw std::invalid_argument("VOP3 source modifiers are not implemented op=" + std::to_string(encodedOpcode) + " abs=" + std::to_string(abs) + " neg=" + std::to_string(neg) + " opsel=" + std::to_string(opSel) + " clamp=" + std::to_string(clamp) + " omod=" + std::to_string(omod));
     }
 }
 
