@@ -21,12 +21,15 @@ def _decode(blob):
     return out
 
 
+_RESYNC = struct.pack("<2I", 0xBF800000, 0xBF800000)
+
+
 def _table(count, words):
     blob, want = b"", {}
     for op in range(count):
         enc = struct.pack("<%dI" % len(words(op)), *words(op))
         want[enc] = op
-        blob += enc
+        blob += enc + (_RESYNC if len(enc) > 4 else b"")
     table = {}
     for name, enc, _ in _decode(blob):
         op = want.get(enc)
