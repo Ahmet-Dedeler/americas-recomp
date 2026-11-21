@@ -11,7 +11,7 @@ for f in glob.glob(os.path.join(here, "runtime", "*.cpp")):
 t = json.load(open(sys.argv[1]))["interfaces"]
 out = {}
 for i in t:
-    ms = [[m["name"], m["name"] in impl] for m in i["methods"]]
+    ms = [[m["name"], m["name"] in impl] for m in i["methods"] if not m.get("unnamed")]
     if ms:
         out[i["name"]] = ms
 json.dump(out, open(sys.argv[2], "w"), indent=0)
