@@ -19,6 +19,8 @@ import cpu_ref as C
 import cpu_compare as CC
 
 GLSLANG = r"C:/VulkanSDK/1.4.363.1/Bin/glslangValidator.exe"
+# the pixel harness is its own build of exec.cpp (exec_ps.exe); XBOX_EXEC is the compute one, so it is not used here
+PS_EXEC = os.environ.get("XBOX_EXEC_PS", r"E:/Programming/anyps5_src/build/exec_ps.exe")
 CLEAR = C.b32(-777.0)
 TARGET = 8
 
@@ -224,7 +226,7 @@ def one(args, code_override=None):
     sc = os.path.join(d, "scenario.txt")
     open(sc, "w").write("\n".join(lines) + "\n")
     try:
-        p = subprocess.run([R.EXEC, sc], capture_output=True, text=True, timeout=float(os.environ.get("CPU_COMPARE_GPU_TIMEOUT", 30)))
+        p = subprocess.run([PS_EXEC, sc], capture_output=True, text=True, timeout=float(os.environ.get("CPU_COMPARE_GPU_TIMEOUT", 30)))
     except subprocess.TimeoutExpired:
         return {"idx": idx, "outcome": "GPU_FAIL", "detail": "timeout"}
     out = p.stdout.strip().splitlines()
@@ -289,6 +291,12 @@ def main():
     rows = [r for r in csv.DictReader(open(R.ROOT + "manifest_all.csv")) if r["stage"] == "PS" and int(r["bytes"]) <= mb]
     ids = opt("--ids", "").split(",") if "--ids" in argv else [r["idx"] for r in rows]
     ids = [i for i in ids if os.path.exists(R.ROOT + f"binds_all/{i}.bind")]
+    import harness_guard
+    harness_guard.require_fresh_binds(R.ROOT + "binds_all", ids)     # refuse bindings made by another bindings.py
+    if "--no-canary" not in argv:
+        import canary
+        if not canary.compare_ok():                                   # known MATCHes must still match before the run
+            sys.exit("canary failed: not starting the comparison (--no-canary overrides)")
     # worker PROCESSES: the interpreter is pure Python, so threads would share one core. Each worker builds its own vertex shaders.
     os.environ["CPU_COMPARE_STEPS"] = opt("--steps", "100000")
     os.environ["CPU_COMPARE_GPU_TIMEOUT"] = opt("--gpu-timeout", "30")

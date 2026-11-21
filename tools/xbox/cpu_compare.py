@@ -175,6 +175,12 @@ def main():
     rows = [r for r in csv.DictReader(open(R.ROOT + "manifest_all.csv")) if r["stage"] == "CS" and int(r["bytes"]) <= max_insns]
     ids = opt("--ids", "").split(",") if "--ids" in argv else [r["idx"] for r in rows]
     ids = [i for i in ids if os.path.exists(R.ROOT + f"binds_all/{i}.bind")]
+    import harness_guard
+    harness_guard.require_fresh_binds(R.ROOT + "binds_all", ids)     # refuse bindings made by another bindings.py
+    if "--no-canary" not in argv:
+        import canary
+        if not canary.compare_ok():                                   # known MATCHes must still match before the run
+            sys.exit("canary failed: not starting the comparison (--no-canary overrides)")
     os.environ["CPU_COMPARE_STEPS"] = opt("--steps", "100000")          # read by the worker processes
     os.environ["CPU_COMPARE_GPU_TIMEOUT"] = opt("--gpu-timeout", "30")
     res = []

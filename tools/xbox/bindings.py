@@ -11,8 +11,13 @@ and write <idx>.bind for driver.exe:
 Approximations (documented, not hidden): linear scan from the entry, so registers overwritten later or loads in
 other basic blocks are not tracked precisely; unclassified loads are left zero.
 """
-import sys, struct, os, collections
+import sys, struct, os, collections, hashlib
+
+# Every .bind starts with "version <VERSION>": a hash of this file, so a runner can refuse bindings written by an older or edited
+# generator (harness_guard.py). driver.exe and run_real.py skip lines they do not know.
+VERSION = hashlib.sha256(open(os.path.abspath(__file__), 'rb').read().replace(b'\r\n', b'\n')).hexdigest()[:12]   # line-ending neutral
 sys.path.insert(0, '.')
+sys.path.insert(1, r'E:/Programming/rpf9shaders/out_disasm')   # rdna2.py
 import rdna2
 
 SMEM_LOAD = {'s_load_dword': 1, 's_load_dwordx2': 2, 's_load_dwordx4': 4, 's_load_dwordx8': 8, 's_load_dwordx16': 16}
@@ -128,22 +133,30 @@ def analyse(path):
             if name.endswith('b64'):
                 tag.pop(dst + 1, None)
 
-    lines = list(node_lines)
+    lines = ['version ' + VERSION] + list(node_lines)
     for node, off, cls in sorted(out):
         lines.append(f'desc {node} {off} {cls}')
     stats = collections.Counter(c for _, _, c in out)
     return lines, stats, len(loads), len(nodes)
 
 
+def _write(job):
+    src, dst, f = job
+    lines, st, nl, nn = analyse(os.path.join(src, f))
+    open(os.path.join(dst, f[:-4] + '.bind'), 'w').write('\n'.join(lines) + '\n')
+    return st, nl
+
+
 if __name__ == '__main__':
+    # usage: bindings.py <bins dir> <binds dir>   (all .bin files, in worker processes)
+    import concurrent.futures as cf
     src, dst = sys.argv[1], sys.argv[2]
     os.makedirs(dst, exist_ok=True)
     total = collections.Counter()
     nloads = 0
     names = [f for f in os.listdir(src) if f.endswith('.bin')]
-    for f in names:
-        lines, st, nl, nn = analyse(os.path.join(src, f))
-        open(os.path.join(dst, f[:-4] + '.bind'), 'w').write('\n'.join(lines) + '\n')
-        total.update(st)
-        nloads += nl
-    print(len(names), 'shaders;', nloads, 'descriptor/pointer loads; classified descriptors:', dict(total))
+    with cf.ProcessPoolExecutor(max(1, (os.cpu_count() or 4) - 2)) as ex:
+        for st, nl in ex.map(_write, [(src, dst, f) for f in names], chunksize=64):
+            total.update(st)
+            nloads += nl
+    print(len(names), 'shaders;', nloads, 'descriptor/pointer loads; classified descriptors:', dict(total), '; bindings.py', VERSION)
