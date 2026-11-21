@@ -51,6 +51,22 @@ Static imports only: this does not include what the DLLs call through COM/vtable
    insert, funnel shift), and for the 31 others an address-to-resource mapping for the 64-bit addresses, which the Xbox2Windows-style
    translation or our own RDNA-aware path would have to provide. The ISA semantics of these intrinsics are the ones the SPIR-V recompiler
    already implements for the same instructions.
+**Lowering the intrinsics (tools/xbox/platform/xbox_dxil_lower.py + dxasm.cpp)**: `xbox_dxil_lower.py` rewrites the disassembled DXIL
+(`dxc -dumpbin`) so it calls standard operations instead, and `dxasm.exe` reassembles it with DXC's assembler API and signs it with
+`dxil.dll`. Needed besides the replacements: the Xbox target triple `dxil-ms-xb2` and the `xbox.compiler.options` metadata are rejected by the
+standard validator; the Xbox validator allows `{ half, half }` aggregates, standard DXIL does not (every pair value is split into two scalars);
+and unnamed SSA values and blocks must be renumbered after instructions are removed (number 0 is the entry block).
+Done so far: `V_PK_MIN_F16` / `V_PK_MAX_F16` -> `dx.op.binary.f16` on each half, `Med3_F32` -> `max(min(a,b), min(max(a,b),c))`.
+That covers the four arithmetic-only shaders, and on the RX 7800 XT (one shader per process, original / lowered):
+| shader | original | lowered |
+|---|---|---|
+| Box16Rehydration | compiler crash | compiles |
+| Box32Rehydration | compiler crash | compiles |
+| ConstructBVH4 | compiler crash | compiles |
+| BuildApexPointMap | error | compiles |
+"Compiles" means the driver accepted the pipeline; nothing has been dispatched, so the lowered shaders are not yet checked for correct results.
+Next: the nine wave/lane shaders (`ReadLane`, `LaneSwizzle`, `Ballot64`, `MBCNT64`, `S_BCNT1_U64`, `MakeUniform`, `V_CNDMASK_B32`; these depend on the
+64-lane wave the Xbox build assumed: `__XBOX_ENABLE_WAVE32` is set in the shaders seen so far) and then the raw-address ones.
 Not reached: any build or rehydrate call. They take GPU virtual addresses, which the builder's DXIL shaders read by 64-bit address (no PC
 D3D12 equivalent), and real inputs would also need the matching vertex/index buffers (BVH_CONTAINER.md).
 

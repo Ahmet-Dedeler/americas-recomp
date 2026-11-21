@@ -12,6 +12,7 @@
 #include <cstring>
 #include <exception>
 #include <cstdlib>
+#include <vector>
 #include <csignal>
 using Microsoft::WRL::ComPtr;
 #include "xbox_device_proxy.h"
@@ -38,6 +39,20 @@ static HRESULT __fastcall Slot62(XboxObjectProxy* self, const D3D12_COMPUTE_PIPE
         d2.CS.pShaderBytecode = g_dummy; d2.CS.BytecodeLength = sizeof(g_dummy);
         return ((ID3D12Device*)self->real)->CreateComputePipelineState(&d2, riid, out);
     }
+    // BVH_REPLACE_DIR: use <dir>/repl_NN.dxil (a lowered, re-signed shader) instead of blob NN
+    D3D12_COMPUTE_PIPELINE_STATE_DESC dr = *desc;
+    static std::vector<char> replBytes;
+    if (const char* rd = getenv("BVH_REPLACE_DIR")) {
+        char path[MAX_PATH]; sprintf_s(path, "%s\\repl_%02d.dxil", rd, idx);
+        FILE* rf = nullptr;
+        if (!fopen_s(&rf, path, "rb")) {
+            fseek(rf, 0, SEEK_END); long n = ftell(rf); fseek(rf, 0, SEEK_SET);
+            replBytes.resize(n); fread(replBytes.data(), 1, n, rf); fclose(rf);
+            dr.CS.pShaderBytecode = replBytes.data(); dr.CS.BytecodeLength = n;
+            printf("  [slot 62] #%02d: using replacement %s (%ld bytes)\n", idx, path, n);
+        }
+    }
+    desc = &dr;
     bool crashed = false;
     HRESULT hr = TryCreate((ID3D12Device*)self->real, desc, riid, out, &crashed);
     if (only >= 0) printf("RESULT %d %s 0x%08lx" "\n", idx, crashed ? "CRASH" : FAILED(hr) ? "FAIL" : "OK", (unsigned long)hr);
