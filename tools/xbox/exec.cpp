@@ -70,6 +70,7 @@ struct ImageRes {
     AgcDriver::Graphics::TextureDimension dimension = AgcDriver::Graphics::TextureDimension::k2D;
     VkFormat vkFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
     std::uint32_t bytesPerTexel = 16;
+    std::uint32_t block = 1;
     bool integer = false;
     bool storage = false;
     std::string clear[4] = {"0", "0", "0", "0"};
@@ -230,7 +231,8 @@ VkImageView ImageView(const Device& dev, ImageRes& im, VkImageViewType type, std
 }
 
 std::uint64_t LevelBytes(const ImageRes& im, std::uint32_t level) {
-    return static_cast<std::uint64_t>(std::max(im.width >> level, 1u)) * std::max(im.height >> level, 1u) * std::max(im.depth >> level, 1u) * im.bytesPerTexel * im.layers;
+    const auto blocks = [&](std::uint32_t extent) { return (std::max(extent >> level, 1u) + im.block - 1u) / im.block; };
+    return static_cast<std::uint64_t>(blocks(im.width)) * blocks(im.height) * std::max(im.depth >> level, 1u) * im.bytesPerTexel * im.layers;
 }
 
 std::uint64_t ImageBytes(const ImageRes& im) {
@@ -393,7 +395,8 @@ int main(int argc, char** argv) {
             if (im.dimension != TextureDimension::k3D && im.depth != 1) throw std::runtime_error("image " + l.w[1] + ": depth needs dim 3d");
             if (im.dimension == TextureDimension::k1D && im.height != 1) throw std::runtime_error("image " + l.w[1] + ": a 1D image has height 1");
             if (im.mips == 0 || (std::max({im.width, im.height, im.depth}) >> (im.mips - 1)) == 0) throw std::runtime_error("image " + l.w[1] + ": " + std::to_string(im.mips) + " mip levels do not fit the image extent");
-            if (AgcDriver::Graphics::IsBlockCompressed(im.format)) throw std::runtime_error("image " + l.w[1] + ": block-compressed formats are not implemented in the harness");
+            im.block = AgcDriver::Graphics::BlockWidth(im.format);
+            if (im.block != 1 && im.initFile.empty()) throw std::runtime_error("image " + l.w[1] + ": a block-compressed image needs an init file (it cannot be cleared)");
             im.vkFormat = AgcDriver::Graphics::ResolveTextureFormat(im.format);
             im.bytesPerTexel = AgcDriver::Graphics::BytesPerElement(im.format);
             const auto numeric = SampledTextureNumericClass(static_cast<IrBufferFormat>(im.format));
