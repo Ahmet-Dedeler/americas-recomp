@@ -2,6 +2,7 @@
 
 AnyPS5 relinks PS5 executables into native Linux or Windows programs that run against reimplemented system libraries; it is not an emulator. The rules are [CONTRIBUTING.md](CONTRIBUTING.md) and [CONVENTIONS](docs/dev/CONVENTIONS.md); these are the ones agents break.
 
+- Before changing anything, read [Xbox fork: what must never be committed](CONTRIBUTING.md#xbox-fork-what-must-never-be-committed) and follow it. If a task would need game files, shader dumps, keys or decrypted content in a commit, pull request or comment, stop and ask the maintainer instead.
 - No comments in code, except `#endif`, namespace ends, and the licence and copyright notice of code adapted from an upstream source (for example ICU or WebRTC). That notice stays verbatim at the top of the file, with a link to the pinned upstream commit. Attribution facts and known gaps still go in `docs/dev/debt/<library>.md`.
 - An export you cannot implement calls `NotImplemented_nid_no_patch(__func__)`; never return a made-up success.
 - Implement the function for every input. Never special-case a value, ID or path seen in one title's trace; if the general behaviour is unknown, throw and record it in `docs/dev/debt/<library>.md`.
