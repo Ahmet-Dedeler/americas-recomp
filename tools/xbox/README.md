@@ -129,6 +129,20 @@ One 32-lane workgroup computes `2.0 * 4.0 + 4.0`, `-2.0 * 4.0 + 4.0` and
 results must be 1.0, 0.0 and 0.25 in every lane. Clearing the clamp bit produces
 12.0, -4.0 and 0.25, so the test fails when clamp is ignored.
 
+### Test v_permlane16 and v_permlanex16
+
+With the execution harness built, run:
+
+```powershell
+python tools/xbox/permlane_test.py --exec "build-xbox/exec.exe"
+```
+
+One 32-lane workgroup supplies a 64-bit lane-select value that reverses each
+16-lane group. `v_permlane16_b32` selects within the group and
+`v_permlanex16_b32` selects from the opposite group. Each instruction also runs
+with `op_sel[3]` set, which Xbox shaders use; the result must match the run
+without it. Every lane exports four dwords and all 128 values are checked.
+
 ### Test texture sampling
 
 With the Vulkan execution harness built and the SDK's `glslangValidator` on PATH,
