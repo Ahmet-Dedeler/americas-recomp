@@ -4,7 +4,7 @@ Run from a normal Windows shell (PowerShell/cmd), NOT Git Bash: vcvars64.bat nee
 
     python tools/xbox/build_msvc.py [--build-dir build-xbox] [--jobs 8] [--force]
 
-Outputs <build-dir>/driver.exe and <build-dir>/stages.exe.
+Outputs driver.exe and stages.exe. Add --with-exec to build the Vulkan execution harness.
 Needs: Visual Studio (any recent), and 3rdparty/SPIRV-Headers checked out
 (git submodule update --init 3rdparty/SPIRV-Headers).
 """
@@ -37,7 +37,17 @@ def main():
     ap.add_argument("--build-dir", default=str(ROOT / "build-xbox"))
     ap.add_argument("--jobs", type=int, default=8)
     ap.add_argument("--force", action="store_true")
+    ap.add_argument("--with-exec", action="store_true", help="build exec.exe with the x64 Vulkan SDK")
+    ap.add_argument("--vulkan-sdk", default=os.environ.get("VULKAN_SDK"), help="SDK directory (default: VULKAN_SDK)")
     a = ap.parse_args()
+    tools = [("driver.cpp", "driver.exe", ""), ("stages.cpp", "stages.exe", "")]
+    if a.with_exec:
+        if not a.vulkan_sdk:
+            ap.error("--with-exec requires --vulkan-sdk or VULKAN_SDK")
+        sdk = pathlib.Path(a.vulkan_sdk).resolve()
+        if not (sdk / "Include/vulkan/vulkan.h").is_file() or not (sdk / "Lib/vulkan-1.lib").is_file():
+            ap.error(f"missing Vulkan headers or x64 import library under {sdk}")
+        tools.append(("exec.cpp", "exec.exe", f'/I"{sdk / "Include"}" "{sdk / "Lib/vulkan-1.lib"}"'))
     B = pathlib.Path(a.build_dir)
     (B / "obj").mkdir(parents=True, exist_ok=True)
     (B / "tool_obj").mkdir(exist_ok=True)
@@ -63,8 +73,8 @@ def main():
     if bad:
         sys.exit(1)
     objs = " ".join(f'"{o}"' for o in glob.glob(str(B / "obj" / "*.obj")))
-    for src, exe in (("driver.cpp", "driver.exe"), ("stages.cpp", "stages.exe")):
-        r = subprocess.run(f'"{cl}" {FLAGS} {inc} "{HERE / src}" "{HERE / "stub_version.cpp"}" {objs} /Fe:"{B / exe}" /Fo"{(B / "tool_obj").as_posix()}/" advapi32.lib',
+    for src, exe, extra in tools:
+        r = subprocess.run(f'"{cl}" {FLAGS} {inc} {extra} "{HERE / src}" "{HERE / "stub_version.cpp"}" {objs} /Fe:"{B / exe}" /Fo"{(B / "tool_obj").as_posix()}/" advapi32.lib',
                            env=env, capture_output=True, text=True)
         if r.returncode:
             print(r.stdout + r.stderr)

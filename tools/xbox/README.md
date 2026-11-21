@@ -10,9 +10,26 @@ Experimental tooling for running Xbox Series shader code through the shader reco
 4. `run_batch.py` runs the driver over a directory of blobs and validates with `spirv-val`.
 5. `stages.exe <code.bin>` times decode / CFG build / structurize separately (for the slow ray-tracing shaders).
 6. `exec.exe <scenario.txt>` is the execution harness: it recompiles a compute shader against REAL Vulkan device memory, dispatches it on the
-   host GPU and writes the memory regions (and images) back. Build it like `driver.exe` plus the Vulkan SDK include path and `vulkan-1.lib`.
+   host GPU and writes the memory regions (and images) back. Build it on Windows with `build_msvc.py --with-exec`.
    `rdna_asm.py` assembles small RDNA2 test programs (opcode numbers come from the decoder tables; each program is decoded back to check it),
    `exec_tests.py` and `exec_bvh_tests.py` hold the tests. Set `XBOX_EXEC` to the `exec.exe` path. Supported: guest buffers, shader data,
    flattened SRT, identity BDA page table and fault reporting, 2D RGBA32F images, samplers. Not yet: other image formats/dimensions, image
    tables, texel buffers, graphics stages.
 
+
+## Windows compute smoke test
+
+From the repository root in PowerShell, with Python 3, the x64 MSVC C++ toolchain,
+the Vulkan SDK, and a Vulkan-capable GPU driver installed, run:
+
+```powershell
+git submodule update --init 3rdparty/SPIRV-Headers
+python tools/xbox/build_msvc.py --with-exec
+python tools/xbox/exec_smoke.py
+```
+
+The build reads `VULKAN_SDK`. Use `--vulkan-sdk "path to SDK"` to select another
+installation. For a custom build directory, pass `--exec "path to exec.exe"` to
+the smoke test. It generates a standalone RDNA2 compute program, dispatches one
+32-lane workgroup, and checks all 1024 output bytes. A successful run prints
+`PASS`. This test requires neither a shader corpus nor an external decoder.
