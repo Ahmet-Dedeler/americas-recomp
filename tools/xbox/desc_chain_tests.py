@@ -109,7 +109,153 @@ def test_loop_carried_index_from_buffer():
         want = tuple(1000 + lane + 100 * i for lane in range(32))
         assert got == want, ("iteration", i, "region", FIRST + k, got[:6], want[:6])
 
-TESTS = [test_loop_carried_index_from_buffer, test_scalar_index_from_buffer, test_waterfall_over_buffer_loaded_index]
+def test_phi_multiple_offset_image_table():
+    """SRT: index-buffer V# at 0, image-heap pointer at 16, output V# at 32, selector at 48.
+    A branch computes s_off = (selector == 0 ? cb[0] : cb[1]) << 5 into a Phi (no ReadFirstLane),
+    loads the T# from heap + s_off, and reads a texel."""
+    count = 3
+    idx_data = struct.pack('<4I', 1, 2, 0, 0)
+    for selector, want_idx in ((0, 1), (1, 2)):
+        p = rdna_asm.Program()
+        p.smem('s_load_dwordx4', 8, 4, 0)
+        p.smem('s_load_dwordx2', 12, 4, 16)
+        p.smem('s_load_dwordx4', 24, 4, 32)
+        p.smem('s_load_dword', 28, 4, 48)
+        p.sopp('s_waitcnt', 0)
+        p.vop2('v_and_b32', 6, 1, 'v0')
+        p.vop1('v_readfirstlane_b32', 31, 'v6')
+        p.sop2('s_lshl_b32', 31, 's31', 2)
+        p.smem('s_buffer_load_dword', 29, 8, 0, soffset='s31')
+        p.smem('s_buffer_load_dword', 30, 8, 4, soffset='s31')
+        p.sopp('s_waitcnt', 0)
+        p.sopc('s_cmp_eq_u32', 's28', 0)
+        to_a = p.branch_fwd('s_cbranch_scc1')
+        p.sop2('s_lshl_b32', 20, 's30', 5)
+        to_join = p.branch_fwd('s_branch')
+        p.patch_to_here(to_a)
+        p.sop2('s_lshl_b32', 20, 's29', 5)
+        p.patch_to_here(to_join)
+        p.smem('s_load_dwordx8', 16, 12, 0, soffset='s20')
+        p.sopp('s_waitcnt', 0)
+        p.vop1('v_mov_b32', 1, 'v0')
+        p.vop1('v_mov_b32', 2, 0)
+        p.mimg('image_load', 4, 1, 16, dmask=1)
+        p.sopp('s_waitcnt', 0)
+        p.vop2('v_lshlrev_b32', 5, 2, 'v0')
+        p.mubuf('buffer_store_dword', 4, 5, 24, 128, 0)
+        p.sopp('s_endpgm')
+        extra = [f"image {i + 1} 32 1 format 20 clear {100 * (i + 1)} 0 0 0" for i in range(count)]
+        extra += [f"timg {HEAP} {i * 32} {i + 1}" for i in range(count)]
+        pokes = T.vsharp(0, 0, 1, 16) + [f"ptrlo 0 16 {HEAP}", f"ptrhi 0 20 {HEAP} 0"] + T.vsharp(0, 32, FIRST, 128) + [f"poke 0 48 {selector}"]
+        r = T.run(p.bytes(), {0: (256, None), 1: (16, idx_data), HEAP: (count * 32, None), FIRST: (128, None)}, pokes, extra=extra)
+        got = struct.unpack('<32I', r[FIRST][:128])
+        assert got == (100 * (want_idx + 1),) * 32, (selector, got[:4])
+
+def test_phi_same_heap_image_loads():
+    """SRT: index-buffer V# at 0, image-heap pointer at 16, output V# at 32, selector at 48.
+    Two branches each execute s_load_dwordx8 from the same heap at different shifted offsets
+    and merge the loaded T# dwords in Phis before image_load."""
+    count = 3
+    idx_data = struct.pack('<4I', 0, 2, 0, 0)
+    for selector, want_idx in ((0, 0), (1, 2)):
+        p = rdna_asm.Program()
+        p.smem('s_load_dwordx4', 8, 4, 0)
+        p.smem('s_load_dwordx2', 12, 4, 16)
+        p.smem('s_load_dwordx4', 24, 4, 32)
+        p.smem('s_load_dword', 28, 4, 48)
+        p.sopp('s_waitcnt', 0)
+        p.smem('s_buffer_load_dword', 29, 8, 0)
+        p.smem('s_buffer_load_dword', 30, 8, 4)
+        p.sopp('s_waitcnt', 0)
+        p.sopc('s_cmp_eq_u32', 's28', 0)
+        to_a = p.branch_fwd('s_cbranch_scc1')
+        p.sop2('s_lshl_b32', 20, 's30', 5)
+        p.smem('s_load_dwordx8', 16, 12, 0, soffset='s20')
+        to_join = p.branch_fwd('s_branch')
+        p.patch_to_here(to_a)
+        p.sop2('s_lshl_b32', 20, 's29', 5)
+        p.smem('s_load_dwordx8', 16, 12, 0, soffset='s20')
+        p.patch_to_here(to_join)
+        p.sopp('s_waitcnt', 0)
+        p.vop1('v_mov_b32', 1, 'v0')
+        p.vop1('v_mov_b32', 2, 0)
+        p.mimg('image_load', 4, 1, 16, dmask=1)
+        p.sopp('s_waitcnt', 0)
+        p.vop2('v_lshlrev_b32', 5, 2, 'v0')
+        p.mubuf('buffer_store_dword', 4, 5, 24, 128, 0)
+        p.sopp('s_endpgm')
+        extra = [f"image {i + 1} 32 1 format 20 clear {200 * (i + 1)} 0 0 0" for i in range(count)]
+        extra += [f"timg {HEAP} {i * 32} {i + 1}" for i in range(count)]
+        pokes = T.vsharp(0, 0, 1, 16) + [f"ptrlo 0 16 {HEAP}", f"ptrhi 0 20 {HEAP} 0"] + T.vsharp(0, 32, FIRST, 128) + [f"poke 0 48 {selector}"]
+        r = T.run(p.bytes(), {0: (256, None), 1: (16, idx_data), HEAP: (count * 32, None), FIRST: (128, None)}, pokes, extra=extra)
+        got = struct.unpack('<32I', r[FIRST][:128])
+        assert got == (200 * (want_idx + 1),) * 32, (selector, got[:4])
+
+def test_table_image_with_sampler_phi():
+    """SRT: selector at 0, image-heap pointer at 8, output V# at 16, idx-buffer V# at 32,
+    sampler WRAP at 48, sampler CLAMP at 64. The image handle comes from a waterfall loop
+    over a Phi index while the sampler handle is a branch Phi over the two SRT samplers."""
+    wrap_s = [0, 0xfff << 12, 0, 0]
+    clamp_s = [2 | (2 << 3) | (2 << 6), 0xfff << 12, 0, 0]
+    init_path = os.path.join(T.tempfile.mkdtemp(prefix="dchain_"), "img.bin")
+    open(init_path, "wb").write(struct.pack("<2f", 1.0, 2.0))
+    init_path2 = os.path.join(T.tempfile.mkdtemp(prefix="dchain_"), "img2.bin")
+    open(init_path2, "wb").write(struct.pack("<2f", 10.0, 20.0))
+    perm = [i & 1 for i in range(32)]
+    for selector, want_pair in ((0, (1.0, 10.0)), (1, (2.0, 20.0))):
+        p = rdna_asm.Program()
+        p.smem('s_load_dword', 2, 4, 0)
+        p.smem('s_load_dwordx2', 6, 4, 8)
+        p.smem('s_load_dwordx4', 24, 4, 16)
+        p.smem('s_load_dwordx4', 28, 4, 32)
+        p.sopp('s_waitcnt', 0)
+        p.sopc('s_cmp_eq_u32', 's2', 0)
+        to_wrap = p.branch_fwd('s_cbranch_scc1')
+        p.smem('s_load_dwordx4', 12, 4, 64)
+        p.vop2('v_lshlrev_b32', 5, 2, 'v0')
+        p.mubuf('buffer_load_dword', 3, 5, 28, 128, 0)
+        to_join = p.branch_fwd('s_branch')
+        p.patch_to_here(to_wrap)
+        p.smem('s_load_dwordx4', 12, 4, 48)
+        p.vop2('v_lshlrev_b32', 5, 2, 'v0')
+        p.mubuf('buffer_load_dword', 3, 5, 28, 128, 0)
+        p.patch_to_here(to_join)
+        p.sopp('s_waitcnt', 0)
+        p.vop1('v_mov_b32', 1, ('lit', 0x3fa00000))
+        p.vop1('v_mov_b32', 2, ('lit', 0x3f000000))
+        top = p.label()
+        p.vop1('v_readfirstlane_b32', 0, 'v3')
+        p.vopc('v_cmp_eq_u32', 's0', 'v3')
+        p.sop1('s_and_saveexec_b32', 1, rdna_asm.VCC_LO)
+        p.sop2('s_lshl_b32', 0, 's0', 5)
+        p.smem('s_load_dwordx8', 16, 6, 0, soffset='s0')
+        p.sopp('s_waitcnt', 0)
+        p.mimg('image_sample_lz', 4, 1, 16, dmask=1, ssamp=12)
+        p.sopp('s_waitcnt', 0)
+        p.mubuf('buffer_store_dword', 4, 5, 24, 128, 0)
+        p.sop2('s_xor_b32', rdna_asm.EXEC_LO, rdna_asm.EXEC_LO, 's1')
+        p.branch_to('s_cbranch_execnz', top)
+        p.sopp('s_endpgm')
+        extra = [
+            f"image 1 2 1 format 22 init {init_path}",
+            f"image 2 2 1 format 22 init {init_path2}",
+            f"timg {HEAP} 0 1",
+            f"timg {HEAP} 32 2",
+        ]
+        pokes = (
+            [f"poke 0 0 {selector}", f"ptrlo 0 8 {HEAP}", f"ptrhi 0 12 {HEAP} 0"]
+            + T.vsharp(0, 16, FIRST, 128)
+            + T.vsharp(0, 32, 1, 128)
+            + [f"poke 0 {48 + 4 * k} {w}" for k, w in enumerate(wrap_s)]
+            + [f"poke 0 {64 + 4 * k} {w}" for k, w in enumerate(clamp_s)]
+        )
+        regions = {0: (256, None), 1: (128, struct.pack('<32I', *perm)), HEAP: (64, None), FIRST: (128, None)}
+        r = T.run(p.bytes(), regions, pokes, extra=extra)
+        got = struct.unpack('<32f', r[FIRST][:128])
+        want = tuple(want_pair[i & 1] for i in range(32))
+        assert got == want, (selector, got[:6], want[:6])
+
+TESTS = [test_loop_carried_index_from_buffer, test_scalar_index_from_buffer, test_waterfall_over_buffer_loaded_index, test_phi_multiple_offset_image_table, test_phi_same_heap_image_loads, test_table_image_with_sampler_phi]
 
 if __name__ == "__main__":
     bad = 0
