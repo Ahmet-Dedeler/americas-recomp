@@ -24,6 +24,7 @@ Status of the `xbox-series` branch. Everything here comes from one title's `shad
 | `RdnaVectorOpDecoder.cpp` | allow op_sel bits 2-3 on `v_permlane16/x16_b32` | Xbox shaders set op_sel[3]. Assumed to have no effect on a 32-bit op. **Unverified.** |
 | `RdnaVectorOpDecoder.cpp` | opcode/modifier numbers in two error messages | diagnostics |
 | `RoundingMode.cpp` | ignore `s_setreg*` writes to hwreg 20/21 (`FLAT_SCRATCH_LO/HI`) | Xbox shaders zero these at entry. Ignored, so a shader that really uses scratch via flat_scratch would be wrong. |
+| `Recompiler.hpp`, `SpirvModuleEmitter.cpp`, `SpirvFlowEmitter.cpp`, `ShaderInputInfoBuilder.cpp`, ... | legacy (non-NGG) merged ES-GS geometry stage: `GeometryConfiguration`, `ExecutionModelGeometry`, `s_sendmsg` `MSG_GS` `EMIT`/`CUT` and `MSG_GS_DONE` | The title ships 195 such shaders. Each invocation runs single-lane with LDS as `Function` storage (Vulkan has no `Workgroup` storage in geometry shaders). The ESGS/GSVS ring layout and the system SGPR/VGPR assignments are inferred from the shaders, not checked on hardware or against ACO. **Unverified; validity-only (`spirv-val`), never executed.** |
 | `Structurizer.cpp` | fast shared-merge split budget (default 60% of blocks, min 64 splits, `XBOX_SPLIT_PCT`), full 400% cascade as fallback; `XBOX_STRUCT_PROF=1` prints timing and attempts | see below |
 | `Recompiler.cpp`, `SrtDescriptorEvaluation.cpp`, `SpirvSpecialization.cpp` | MSVC build fixes (`static constexpr`, no `__builtin_prefetch`, narrowing cast) | upstream builds with MinGW GCC only |
 
@@ -293,7 +294,7 @@ Update after the pixel work: with the extra reference instructions (`s_wqm`, `v_
 
 
 ## Whole corpus (26,497 shaders)
-`tools/xbox/extract_full.py` (blobs and stage for the main run and the second run), `run_full.py` (recompile + `spirv-val`) and `make_full_results.py` (merge into `docs/xbox/results.json`). Stage is the shader kind in the first dword of the DXIL stub (stub files) or in the DXIL part of the container (second run); kind 6/7 is mesh. Counts: 12,098 PS, 2,233 VS, 2,689 CS, 9,282 mesh, 195 GS (not run); the two runs together are 26,503 shaders, 6 of the second run do not inflate.
+`tools/xbox/extract_full.py` (blobs and stage for the main run and the second run), `run_full.py` (recompile + `spirv-val`) and `make_full_results.py` (merge into `docs/xbox/results.json`). Stage is the shader kind in the first dword of the DXIL stub (stub files) or in the DXIL part of the container (second run); kind 6/7 is mesh. Counts: 12,098 PS, 2,233 VS, 2,689 CS, 9,282 mesh, 195 GS (run separately with `run_gs.py`: all 195 pass `spirv-val`, not executed); the two runs together are 26,503 shaders, 6 of the second run do not inflate.
 
 | Stage | Shaders | Valid |
 |---|---|---|

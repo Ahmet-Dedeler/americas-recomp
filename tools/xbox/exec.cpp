@@ -259,7 +259,8 @@ VkImageViewType ViewTypeFor(DescriptorImageShape shape, const ImageRes& im) {
         case DescriptorImageShape::Image1D: if (im.dimension == TextureDimension::k1D) return VK_IMAGE_VIEW_TYPE_1D; break;
         case DescriptorImageShape::Image1DArray: if (im.dimension == TextureDimension::k1D) return VK_IMAGE_VIEW_TYPE_1D_ARRAY; break;
         case DescriptorImageShape::Image2D: if (im.dimension == TextureDimension::k2D) return VK_IMAGE_VIEW_TYPE_2D; break;
-        case DescriptorImageShape::Image2DArray: if (im.dimension == TextureDimension::k2D || im.dimension == TextureDimension::k2DArray) return VK_IMAGE_VIEW_TYPE_2D_ARRAY; break;
+        case DescriptorImageShape::Image2DArray: if (im.dimension == TextureDimension::k2D || im.dimension == TextureDimension::k2DArray || im.dimension == TextureDimension::kCube) return VK_IMAGE_VIEW_TYPE_2D_ARRAY; break;
+        case DescriptorImageShape::ImageCube: if (im.dimension == TextureDimension::kCube) return im.layers == 6 ? VK_IMAGE_VIEW_TYPE_CUBE : VK_IMAGE_VIEW_TYPE_CUBE_ARRAY; break;
         case DescriptorImageShape::Image3D: if (im.dimension == TextureDimension::k3D) return VK_IMAGE_VIEW_TYPE_3D; break;
         default: break;
     }
@@ -273,10 +274,11 @@ std::array<std::uint32_t, 8> EncodeImage(const ImageRes& im) {
     t.tileMode = AgcDriver::Graphics::TextureTileMode::kLinear; t.format = im.format;
     t.dstSelX = 4; t.dstSelY = 5; t.dstSelZ = 6; t.dstSelW = 7;
     std::array<std::uint32_t, 8> words{};
-    if (im.dimension == TextureDimension::k2D || im.dimension == TextureDimension::k2DArray) {
-        t.dimension = im.dimension;
+    if (im.dimension == TextureDimension::k2D || im.dimension == TextureDimension::k2DArray || im.dimension == TextureDimension::kCube) {
+        t.dimension = im.dimension == TextureDimension::kCube ? TextureDimension::k2DArray : im.dimension;
         t.depthOrLastArray = im.layers - 1;
         words = AgcDriver::Graphics::EncodeTextureResource(t);
+        if (im.dimension == TextureDimension::kCube) words[3] = (words[3] & 0x0fffffffu) | (11u << 28);
     } else {
         t.dimension = TextureDimension::k2D;
         words = AgcDriver::Graphics::EncodeTextureResource(t);
@@ -375,13 +377,19 @@ int main(int argc, char** argv) {
                     if (d == "1d") im.dimension = TextureDimension::k1D;
                     else if (d == "2d") im.dimension = TextureDimension::k2D;
                     else if (d == "3d") im.dimension = TextureDimension::k3D;
-                    else throw std::runtime_error("image " + l.w[1] + ": unknown dim " + d + " (1d, 2d, 3d; 2D arrays use layers)");
+                    else if (d == "cube") im.dimension = TextureDimension::kCube;
+                    else throw std::runtime_error("image " + l.w[1] + ": unknown dim " + d + " (1d, 2d, 3d, cube; 2D arrays use layers)");
                 }
                 else throw std::runtime_error("image " + l.w[1] + ": unknown option " + l.w[k]);
             }
             using AgcDriver::Graphics::TextureDimension;
-            if (im.layers > 1 && im.dimension != TextureDimension::k2D) throw std::runtime_error("image " + l.w[1] + ": layers are implemented for 2D images only");
-            if (im.layers > 1) im.dimension = TextureDimension::k2DArray;
+            if (im.dimension == TextureDimension::kCube) {
+                if (im.layers == 1) im.layers = 6;
+                if (im.layers % 6 != 0) throw std::runtime_error("image " + l.w[1] + ": a cube image has a multiple of six layers");
+                if (im.width != im.height) throw std::runtime_error("image " + l.w[1] + ": a cube image is square");
+            }
+            if (im.layers > 1 && im.dimension != TextureDimension::k2D && im.dimension != TextureDimension::kCube) throw std::runtime_error("image " + l.w[1] + ": layers are implemented for 2D and cube images only");
+            if (im.layers > 1 && im.dimension == TextureDimension::k2D) im.dimension = TextureDimension::k2DArray;
             if (im.dimension != TextureDimension::k3D && im.depth != 1) throw std::runtime_error("image " + l.w[1] + ": depth needs dim 3d");
             if (im.dimension == TextureDimension::k1D && im.height != 1) throw std::runtime_error("image " + l.w[1] + ": a 1D image has height 1");
             if (im.mips == 0 || (std::max({im.width, im.height, im.depth}) >> (im.mips - 1)) == 0) throw std::runtime_error("image " + l.w[1] + ": " + std::to_string(im.mips) + " mip levels do not fit the image extent");
@@ -403,6 +411,7 @@ int main(int argc, char** argv) {
             ici.tiling = VK_IMAGE_TILING_OPTIMAL;
             ici.usage = (im.storage ? VK_IMAGE_USAGE_STORAGE_BIT : 0u) | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
             ici.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            if (im.dimension == TextureDimension::kCube) ici.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
             VK(vkCreateImage(dev.device, &ici, nullptr, &im.image));
             VkMemoryRequirements req{};
             vkGetImageMemoryRequirements(dev.device, im.image, &req);
@@ -585,7 +594,7 @@ int main(int argc, char** argv) {
                         if (r->guest != base) throw std::runtime_error("V# base is not a region start (unaligned element offsets are not implemented)");
                         info.buffer = r->buffer;
                     }
-                } else if (b.role == DescriptorRole::ShaderData || b.role == DescriptorRole::FlattenedSrt) {
+                } else if (b.role == DescriptorRole::ShaderData || b.role == DescriptorRole::FlattenedSrt || b.role == DescriptorRole::ImageTableMap) {
                     extra.emplace_back();
                     MakeBuffer(dev, extra.back(), std::max<std::size_t>(b.guestDescriptor.size() * 4, 16), 0);
                     std::memcpy(extra.back().mapped, b.guestDescriptor.data(), b.guestDescriptor.size() * 4);

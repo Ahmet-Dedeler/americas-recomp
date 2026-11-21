@@ -5,6 +5,7 @@ reported (exit status 1). The first argument of every xbox.* call (an instructio
 (dxil-ms-xb2) and the `xbox.compiler.options` module metadata are rewritten, because the standard validator rejects them.
 The Xbox validator also accepts first-class aggregates such as `{ half, half }` and `{ i32, i32 }` (a 64-bit lane mask); standard DXIL does not,
 so every such pair value is split into two scalars (its insertvalue/extractvalue chains disappear).
+Numeric type IDs (`%N = type ...`) are not supported; the input is expected to use named type tokens as `dxc -dumpbin` does.
 
 usage: python -I xbox_dxil_lower.py in.ll out.ll        then: dxasm out.ll out.dxil
 
@@ -29,27 +30,95 @@ import re, sys
 PAIR_RE = r"\{ (?:half, half|i32, i32) \}"
 
 
+def split_params(text):
+    out, depth, current = [], 0, ""
+    for ch in text:
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+        if ch == "," and depth == 0:
+            out.append(current.strip())
+            current = ""
+        else:
+            current += ch
+    if current.strip():
+        out.append(current.strip())
+    return out
+
+
+def param_text(header):
+    start = header.find("(")
+    if start < 0:
+        return ""
+    depth = 0
+    for i in range(start, len(header)):
+        if header[i] == "(":
+            depth += 1
+        elif header[i] == ")":
+            depth -= 1
+            if depth == 0:
+                return header[start + 1:i]
+    return ""
+
+
+def renumber_function(header, body):
+    mapping, n, original = {}, 0, 0
+    for param in split_params(param_text(header)):
+        tokens = param.split()
+        names = [t for t in tokens if t.startswith("%")]
+        if not names:
+            mapping[str(original)] = str(n)
+            original += 1
+            n += 1
+        elif re.fullmatch(r"%\d+", names[-1]):
+            mapping[names[-1][1:]] = str(n)
+            original = max(original, int(names[-1][1:]) + 1)
+            n += 1
+        elif not (len(tokens) > 1 and tokens[-1] == names[-1]):
+            mapping[str(original)] = str(n)
+            original += 1
+            n += 1
+    lines = [line.strip() for line in body.split("\n")]
+    lines = [line for line in lines if line and (not line.startswith(";") or line.startswith("; <label>:"))]
+    if lines and not any(re.match(pattern, lines[0]) for pattern in
+                         (r"^; <label>:", r"^%?\d+:", r"^[-\w.$]+:\s*$")):
+        mapping[str(original)] = str(n)
+        original += 1
+        n += 1
+    for line in lines:
+        label = re.match(r"^; <label>:(\d+)", line)
+        value = re.match(r"^%(\d+) = ", line)
+        numbered_label = re.match(r"^%?(\d+):", line)
+        if label or numbered_label:
+            mapping[(label or numbered_label).group(1)] = str(n)
+            n += 1
+        elif value:
+            mapping[value.group(1)] = str(n)
+            n += 1
+    sub = lambda x: "%" + mapping.get(x.group(1), x.group(1))
+    header = re.sub(r"(?<=\s)%(\d+)(?=\s*(?:,|\)))", sub, header)
+    body = re.sub(r"%(\d+)\b", sub, body)
+    body = re.sub(r"^; <label>:(\d+)", lambda x: "; <label>:" + mapping.get(x.group(1), x.group(1)), body, flags=re.M)
+    body = re.sub(r"^(\s*)(\d+):", lambda x: x.group(1) + mapping.get(x.group(2), x.group(2)) + ":", body, flags=re.M)
+    return header + body
+
+
 def renumber(text):
     """Unnamed values and blocks (%N, '; <label>:N') must be numbered consecutively; removing instructions leaves holes."""
-    m = re.search(r"^define [^\n]*\{\n", text, re.M)
-    if not m:
-        return text
-    start = m.end()
-    end = text.index("\n}\n", start)
-    body = text[start:end]
-    mapping, n = {}, 1          # number 0 is the unlabeled entry block
-    for line in body.split("\n"):
-        lm = re.match(r"^; <label>:(\d+)", line)
-        dm = re.match(r"^\s*%(\d+) = ", line)
-        if lm:
-            mapping[lm.group(1)] = str(n)
-            n += 1
-        elif dm:
-            mapping[dm.group(1)] = str(n)
-            n += 1
-    body = re.sub(r"%(\d+)\b", lambda x: "%" + mapping.get(x.group(1), x.group(1)), body)
-    body = re.sub(r"^; <label>:(\d+)", lambda x: "; <label>:" + mapping.get(x.group(1), x.group(1)), body, flags=re.M)
-    return text[:start] + body + text[end:]
+    out, pos = [], 0
+    for m in re.finditer(r"^define [^\n]*\{\n", text, re.M):
+        if m.start() < pos:
+            continue
+        start = m.end()
+        end = text.find("\n}\n", start)
+        if end < 0:
+            continue
+        out.append(text[pos:m.start()])
+        out.append(renumber_function(text[m.start():start], text[start:end]))
+        pos = end
+    out.append(text[pos:])
+    return "".join(out)
 
 
 def split_args(s):

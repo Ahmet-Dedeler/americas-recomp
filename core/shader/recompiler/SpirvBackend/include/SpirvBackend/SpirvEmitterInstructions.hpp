@@ -243,6 +243,7 @@ void EmitDescriptorFault(SpirvValueEmitContext& ctx, const IrValue& inst, std::u
 void EmitControlNop(SpirvValueEmitContext& context);
 void EmitWaitcnt(SpirvValueEmitContext& context);
 void EmitSendmsg(SpirvValueEmitContext& context);
+void EmitGeometryVertex(SpirvValueEmitContext& ctx, const IrValue& inst);
 void EmitTtraceData(SpirvValueEmitContext& context);
 void EmitInstPrefetch(SpirvValueEmitContext& context);
 std::uint32_t EmitUndefU8(SpirvEmitterState& state, const IrValue& inst);

@@ -27,7 +27,7 @@ SMEM_BUF = {'s_buffer_load_dword': 1, 's_buffer_load_dwordx2': 2, 's_buffer_load
 def user_sgprs(stage):
     """How many SGPRs (from s0) can hold user data. Mesh shaders (manifest stage '?', merged NGG): s0-s7 are system/hidden words and
     user data runs to s39, so 40. Everything else: 16 (the harness driver passes 16 words for those stages)."""
-    return 40 if stage == '?' else 16
+    return 40 if stage in ('?', 'GS') else 16
 
 
 def analyse(path, nuser=16):

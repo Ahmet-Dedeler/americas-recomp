@@ -19,6 +19,7 @@ enum class ShaderStageKind {
     Unknown,
     Fetch,
     Mesh,
+    Geometry,
     Local,
     TessellationControl,
     TessellationEvaluation
