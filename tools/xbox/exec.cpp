@@ -86,6 +86,7 @@ struct Device {
     std::uint32_t family = 0;
     VkPhysicalDeviceMemoryProperties memory{};
     bool samplerAnisotropy = false;
+    bool shaderResourceMinLod = false;
     float maxSamplerAnisotropy = 1.0f;
     VkPhysicalDeviceVulkan13Properties subgroup{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_PROPERTIES};
     std::uint32_t nativeSubgroupSize = 0;
@@ -181,6 +182,7 @@ Device CreateDevice(std::uint32_t wave, bool bary) {
     vkGetPhysicalDeviceFeatures2(d.physical, &f2);
     if (bary && !fbary.fragmentShaderBarycentric) throw std::runtime_error(noBary);
     d.samplerAnisotropy = f2.features.samplerAnisotropy == VK_TRUE;
+    d.shaderResourceMinLod = f2.features.shaderResourceMinLod == VK_TRUE;
     VkPhysicalDeviceProperties limits{};
     vkGetPhysicalDeviceProperties(d.physical, &limits);
     d.maxSamplerAnisotropy = limits.limits.maxSamplerAnisotropy;
@@ -540,6 +542,7 @@ int main(int argc, char** argv) {
         request.target.bdaAbiVersion = 1;
         std::vector<std::uint32_t> capsLocal = caps;
         std::vector<std::string_view> extLocal(ext.begin(), ext.end());
+        if (dev.shaderResourceMinLod) capsLocal.push_back(42u);
         if (pixel && !std::getenv("XBOX_NO_FRAGMENT_BARY")) {
             // the host has VK_KHR_fragment_shader_barycentric (per-vertex inputs and barycentric builtins need no geometry-shader emulation)
             request.target.fragmentShaderBarycentricEnabled = true;

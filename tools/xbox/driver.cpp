@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
     for (auto& [id, n] : nodes) regions.push_back({n.base, std::as_bytes(std::span<const std::uint32_t>(n.mem))});
     for (auto& [base, mem] : bufferBacking) regions.push_back({base, std::as_bytes(std::span<const std::uint32_t>(mem))});
     request.context.memory = MemoryRegionView(std::span<const MemoryRegion>(regions));
-    const std::vector<std::uint32_t> caps{1u,55u,56u,32u,33u,5283u,9u,10u,11u,22u,39u,61u,62u,63u,64u,65u,66u,67u,68u,4427u,4433u,4434u,4435u,4436u,4437u,4438u,4445u,4447u,4448u,4449u,4450u,5345u,5346u,5347u,5301u,5302u,5303u,5304u,5305u,6u,38u,41u,5u,17u,18u,19u,3u,2u,4u,7u,8u,45u,5249u};
+    const std::vector<std::uint32_t> caps{1u,55u,56u,32u,33u,5283u,9u,10u,11u,22u,39u,61u,62u,63u,64u,65u,66u,67u,68u,4427u,4433u,4434u,4435u,4436u,4437u,4438u,4445u,4447u,4448u,4449u,4450u,5345u,5346u,5347u,5301u,5302u,5303u,5304u,5305u,6u,38u,41u,42u,5u,17u,18u,19u,3u,2u,4u,7u,8u,45u,5249u};
     const std::array<std::string_view, 7> ext{"SPV_EXT_mesh_shader", "SPV_KHR_storage_buffer_storage_class", "SPV_KHR_physical_storage_buffer", "SPV_KHR_16bit_storage", "SPV_KHR_8bit_storage", "SPV_KHR_vulkan_memory_model", "SPV_KHR_shader_ballot"};
     // argv[6] stage: cs (default), ps, vs. argv[7] pixel input address mask (hex), argv[8] interpolator count.
     // Everything not derivable from the code (export mapping/mode, target merges, vertex fetch) is a documented default.
