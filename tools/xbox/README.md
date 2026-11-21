@@ -87,6 +87,19 @@ the smoke test. It generates a standalone RDNA2 compute program, dispatches one
 32-lane workgroup, and checks all 1024 output bytes. A successful run prints
 `PASS`. This test requires neither a shader corpus nor an external decoder.
 
+### Test v_mad_legacy_f32 clamp
+
+With the execution harness built, run:
+
+```powershell
+python tools/xbox/mad_legacy_clamp_test.py --exec "build-xbox/exec.exe"
+```
+
+One 32-lane workgroup computes `2.0 * 4.0 + 4.0`, `-2.0 * 4.0 + 4.0` and
+`0.5 * 0.5 + 0.0` with `v_mad_legacy_f32` and the VOP3 clamp bit. The clamped
+results must be 1.0, 0.0 and 0.25 in every lane. Clearing the clamp bit produces
+12.0, -4.0 and 0.25, so the test fails when clamp is ignored.
+
 ### Test texture sampling
 
 With the Vulkan execution harness built and the SDK's `glslangValidator` on PATH,
