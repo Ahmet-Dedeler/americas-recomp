@@ -126,3 +126,9 @@ counters, `PrintHits`) and lets selected slots be replaced. It is the starting p
   Added here: `D3D12SerializeRootSignature` (v1.0 layout, flags at +32; a descriptor with flags 0x3000001 serializes through the shim and fails with E_INVALIDARG on the PC runtime) and `D3D12CreateVersionedRootSignatureDeserializer`.
 - They have no D3D12.X device layer (listed as to do), no shader recompiler, and no BVH or upscaler tests; they have a much larger `xgameruntime` (152 of 396 APIs) and a kernel redirect (`kernelx.dll`).
 
+## D3D12XboxCreateDevice (first graphics call of a title)
+`d3d12_xs_device.cpp` exports it: `(adapter, params, riid, out)` returns a PC `ID3D12Device` behind the Xbox-ABI proxy, with slot 14 (descriptor heaps, whose start handles come back in RAX) and slot 76
+(resource creation with the Xbox texture layout) overridden. Checked with a client that does what the package DLLs do: create the device, create a descriptor heap through slot 14, read the heap start through slot 9/10 (non-zero 8-byte values in RAX).
+The signature and the `params` struct are from memory of the public documentation, not from a header: the struct is only logged (24 words), so a wrong layout cannot break creation, but its contents (command-queue ring size, scratch memory, debug flags) are unused.
+Not covered: presentation (`PresentX` on the queue, plane parameters), the command-list extensions, queue and fence creation (their slot numbers on the Xbox device are unknown beyond the ones listed above); `XS_TRACE=1` lists what a title calls.
+

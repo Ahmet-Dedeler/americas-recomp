@@ -123,3 +123,6 @@ cookies.txt
 *.pfx
 id_rsa*
 id_ed25519*
+
+# local output of exe_report.py (derived from game files)
+tools/xbox/platform/exe_report/

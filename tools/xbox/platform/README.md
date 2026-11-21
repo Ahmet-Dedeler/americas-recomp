@@ -5,6 +5,7 @@ What the package's DLLs need from the platform, and stand-ins for the Xbox-only 
 * `pe_imports.py <dir> <out.json>` lists the static imports (normal and delay-load) and exports of every PE file under a directory.
 * `make_platform_results.py <imports.json>` classifies each imported function (standard Windows / shipped in the package / needs a shim) and
   stores it under `"platform"` in `docs/xbox/results.json` for the progress map. Windows only.
+* `d3d12_xs_device.cpp` (build with `d3d12_xs.cpp`) adds `D3D12XboxCreateDevice`: a PC device behind the Xbox-ABI proxy with the deviations learned so far (`xbox_device_overrides.h`: descriptor heap handles in RAX, resource creation at slot 76). The parameter struct is only logged. `XS_LOG` and `XS_TRACE=1` show what a title does with it.
 * `xmem.cpp` is a stand-in `xmem.dll` (XMemAlloc, XMemFree, XMemGetWorkingSetStatistics, XMemVirtualQuery); `d3d12_xs.cpp` forwards the two
   `d3d12_xs.dll` functions the DLLs import to the PC `d3d12.dll`. Build each with `cl /LD /O2 file.cpp /Fe:name.dll`. Argument shapes were read from the callers' machine code;
   the meaning of the attribute bits and of two output fields is a guess (see the comments in `xmem.cpp`). `XMEM_LOG=<file>` logs every call.
