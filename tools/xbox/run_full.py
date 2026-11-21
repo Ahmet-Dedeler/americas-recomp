@@ -110,7 +110,8 @@ skip = set()
 for f in skip_files:
     for e in json.load(open(f)):
         skip.add((e["idx"], bool(e.get("relaxed", False))))
-rows = [r for r in csv.DictReader(open(M + "manifest_full.csv")) if (ONLY is None or r["stage"] == ONLY)]
+IDX = set(open(args[args.index("--idx-file") + 1]).read().split()) if "--idx-file" in args else None
+rows = [r for r in csv.DictReader(open(M + "manifest_full.csv")) if (ONLY is None or r["stage"] == ONLY) and (IDX is None or r["idx"] in IDX)]
 jobs = [(r, x) for r in rows for x in ((False, True) if r["stage"] == "PS" else (False,)) if (r["idx"], x) not in skip]
 print(len(jobs), "jobs", flush=True)
 out, t0 = [], time.time()

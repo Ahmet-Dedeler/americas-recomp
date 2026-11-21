@@ -298,10 +298,21 @@ Update after the pixel work: with the extra reference instructions (`s_wqm`, `v_
 | Stage | Shaders | Valid |
 |---|---|---|
 | Compute | 2,689 | 2,601 |
-| Pixel strict | 12,098 | 6,697 |
-| Pixel, with the host barycentric extension | 12,098 | 6,931 |
-| Pixel, extension and f16 approximation | 12,098 | 11,044 |
+| Pixel strict | 12,098 | 7,037 |
+| Pixel, with the host barycentric extension | 12,098 | 7,271 |
+| Pixel, extension and f16 approximation | 12,098 | 11,993 |
 | Vertex | 2,233 | 1,371 |
 | Mesh | 9,282 | 8,035 |
 
 The pixel, vertex and mesh runs use the same single-guess harness defaults as the sample (float mode, export mapping, mesh configuration); only the compute numbers include the fake-memory variants. Nothing from these runs was executed.
+
+(Pixel numbers above are after regenerating the new shaders' bindings with the current `bindings.py`; the first full run used an old copy without atomic-image marking, which failed 953 shaders on "atomic image descriptor uses an unsupported format 56".)
+
+## The six compute mismatches, resolved
+- **23306, 23441, 22186, 22570, 23442: not comparable.** Eight GPU runs of each give eight different outputs. The CPU reference shows why: each reads LDS dwords that no thread wrote earlier in the run (336 of 504 reads in 23306). On a GPU that memory holds whatever was left there, on the CPU it is zero. The cause is the harness (one wave of 64 threads with thread id = lane, while these shaders index LDS for a different workgroup shape), not the recompiler. `cpu_ref.py` now raises Unsupported on a read of never-written LDS, so such shaders are SKIP instead of MISMATCH. No previously matching shader was lost by this.
+- **23324: explained by reciprocal precision.** Deterministic, 11 floats differ by 5 to 14 ulp. The only approximate instructions are three `v_rcp_f32` (hardware: within 1 ulp; reference: exact). `tools/xbox/rcp_envelope.py` reruns the reference 300 times with random +-1 ulp on every reciprocal: the reference results then spread up to 63 ulp, and every GPU value lies inside that envelope. This shows the difference is consistent with rcp rounding, not that the recompiler is exact.
+
+Compute comparison now (shaders up to 1500 bytes): 242 match, 1 mismatch (23324, above), 2 harness failures, 435 skipped.
+
+## Comparison speed
+`cpu_compare.py` and `cpu_compare_ps.py` ran the pure-Python interpreter in threads, so a run used one core; a few shaders that loop on junk input ran to the 2,000,000-step limit, and GPU hangs waited 240 s. They now use worker processes, a 100,000-step limit (the largest compared shader needs about 10,000) and a 30 s GPU timeout, and record each shader's time. Compute (680 shaders): about an hour to 56 s with the same outcomes; pixel (738): 9 s, identical outcomes.

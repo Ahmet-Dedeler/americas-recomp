@@ -205,7 +205,7 @@ def one(args, code_override=None):
                     mem.add(guest[rid], dd)
                 wave_ = PSWave(code, mem, sgpr, junk, ia)
                 wave_.images = images
-                wave_.run()
+                wave_.run(int(os.environ.get("CPU_COMPARE_STEPS", 100_000)))
                 cpu.append((wave_, regions, images))
         except C.Unsupported as e:
             return {"idx": idx, "outcome": "SKIP", "detail": str(e)[:100]}
@@ -224,7 +224,7 @@ def one(args, code_override=None):
     sc = os.path.join(d, "scenario.txt")
     open(sc, "w").write("\n".join(lines) + "\n")
     try:
-        p = subprocess.run([R.EXEC, sc], capture_output=True, text=True, timeout=120)
+        p = subprocess.run([R.EXEC, sc], capture_output=True, text=True, timeout=float(os.environ.get("CPU_COMPARE_GPU_TIMEOUT", 30)))
     except subprocess.TimeoutExpired:
         return {"idx": idx, "outcome": "GPU_FAIL", "detail": "timeout"}
     out = p.stdout.strip().splitlines()
@@ -289,14 +289,15 @@ def main():
     rows = [r for r in csv.DictReader(open(R.ROOT + "manifest_all.csv")) if r["stage"] == "PS" and int(r["bytes"]) <= mb]
     ids = opt("--ids", "").split(",") if "--ids" in argv else [r["idx"] for r in rows]
     ids = [i for i in ids if os.path.exists(R.ROOT + f"binds_all/{i}.bind")]
-    # build the vertex shaders serially first (the cache is not thread safe)
-    for i in ids:
-        try:
-            vertex_shader(attrs(i)[0], "")
-        except Exception:
-            pass
-    with cf.ThreadPoolExecutor(int(opt("--workers", 6))) as ex:
-        res = list(ex.map(one, [(i, wave) for i in ids]))
+    # worker PROCESSES: the interpreter is pure Python, so threads would share one core. Each worker builds its own vertex shaders.
+    os.environ["CPU_COMPARE_STEPS"] = opt("--steps", "100000")
+    os.environ["CPU_COMPARE_GPU_TIMEOUT"] = opt("--gpu-timeout", "30")
+    res = []
+    with cf.ProcessPoolExecutor(int(opt("--workers", max(1, (os.cpu_count() or 4) - 2)))) as ex:
+        for n, r in enumerate(ex.map(one, [(i, wave) for i in ids], chunksize=1)):
+            res.append(r)
+            if (n + 1) % 100 == 0:
+                print(n + 1, "of", len(ids), flush=True)
     json.dump(res, open(argv[0], "w"), indent=1)
     print(collections.Counter(r["outcome"] for r in res))
     print("mismatch", [(r["idx"], r["first"][:1]) for r in res if r["outcome"] == "MISMATCH"][:20])

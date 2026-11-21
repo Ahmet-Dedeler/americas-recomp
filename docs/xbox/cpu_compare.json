@@ -1,0 +1,5702 @@
+[
+ {
+  "idx": "22158",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 24,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.42
+ },
+ {
+  "idx": "22160",
+  "outcome": "SKIP",
+  "detail": "s_or_saveexec_b64",
+  "secs": 0.03
+ },
+ {
+  "idx": "22161",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.05
+ },
+ {
+  "idx": "22162",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.02
+ },
+ {
+  "idx": "22163",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.03
+ },
+ {
+  "idx": "22164",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.03
+ },
+ {
+  "idx": "22165",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 41,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.23
+ },
+ {
+  "idx": "22166",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.05
+ },
+ {
+  "idx": "22172",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 111,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.31
+ },
+ {
+  "idx": "22174",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 77,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.34
+ },
+ {
+  "idx": "22175",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 77,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.35
+ },
+ {
+  "idx": "22176",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 14,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.42
+ },
+ {
+  "idx": "22181",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.05
+ },
+ {
+  "idx": "22182",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 38,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.27
+ },
+ {
+  "idx": "22183",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.1
+ },
+ {
+  "idx": "22186",
+  "outcome": "SKIP",
+  "detail": "reads LDS that nothing has written (uninitialised on a GPU, so the result is not deterministic)",
+  "secs": 0.04
+ },
+ {
+  "idx": "22187",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.03
+ },
+ {
+  "idx": "22188",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "22189",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.02
+ },
+ {
+  "idx": "22195",
+  "outcome": "SKIP",
+  "detail": "s_or_saveexec_b64",
+  "secs": 0.91
+ },
+ {
+  "idx": "22196",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 25,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.47
+ },
+ {
+  "idx": "22197",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 12,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.43
+ },
+ {
+  "idx": "22198",
+  "outcome": "SKIP",
+  "detail": "v_add_co_ci_u32",
+  "secs": 0.03
+ },
+ {
+  "idx": "22200",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.01
+ },
+ {
+  "idx": "22201",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.01
+ },
+ {
+  "idx": "22202",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 15,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.22
+ },
+ {
+  "idx": "22205",
+  "outcome": "SKIP",
+  "detail": "ds_write2st64_b32",
+  "secs": 0.03
+ },
+ {
+  "idx": "22207",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 18,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.5
+ },
+ {
+  "idx": "22209",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 17,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.45
+ },
+ {
+  "idx": "22214",
+  "outcome": "SKIP",
+  "detail": "ds_write2st64_b32",
+  "secs": 0.04
+ },
+ {
+  "idx": "22215",
+  "outcome": "SKIP",
+  "detail": "ds_write2st64_b32",
+  "secs": 0.02
+ },
+ {
+  "idx": "22216",
+  "outcome": "SKIP",
+  "detail": "ds_write2st64_b32",
+  "secs": 0.05
+ },
+ {
+  "idx": "22237",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 15,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.28
+ },
+ {
+  "idx": "22238",
+  "outcome": "GPU_FAIL",
+  "detail": "FAIL binding 64: role 10 is not implemented in the harness",
+  "secs": 0.3
+ },
+ {
+  "idx": "22257",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 5,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.49
+ },
+ {
+  "idx": "22258",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 5,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.47
+ },
+ {
+  "idx": "22260",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 13,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.26
+ },
+ {
+  "idx": "22265",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 12,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.45
+ },
+ {
+  "idx": "22272",
+  "outcome": "SKIP",
+  "detail": "step limit",
+  "secs": 7.89
+ },
+ {
+  "idx": "22275",
+  "outcome": "SKIP",
+  "detail": "image class img0",
+  "secs": 0.01
+ },
+ {
+  "idx": "22276",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x57",
+  "secs": 0.04
+ },
+ {
+  "idx": "22279",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.06
+ },
+ {
+  "idx": "22280",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.07
+ },
+ {
+  "idx": "22281",
+  "outcome": "SKIP",
+  "detail": "non-finite sample coordinate",
+  "secs": 0.07
+ },
+ {
+  "idx": "22300",
+  "outcome": "SKIP",
+  "detail": "s_or_saveexec_b64",
+  "secs": 0.02
+ },
+ {
+  "idx": "22301",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 62,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.26
+ },
+ {
+  "idx": "22302",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 2,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.41
+ },
+ {
+  "idx": "22310",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 18,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.5
+ },
+ {
+  "idx": "22311",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.02
+ },
+ {
+  "idx": "22312",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.01
+ },
+ {
+  "idx": "22313",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.01
+ },
+ {
+  "idx": "22314",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.01
+ },
+ {
+  "idx": "22315",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.01
+ },
+ {
+  "idx": "22316",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.01
+ },
+ {
+  "idx": "22317",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.01
+ },
+ {
+  "idx": "22318",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.02
+ },
+ {
+  "idx": "22319",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.01
+ },
+ {
+  "idx": "22320",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.02
+ },
+ {
+  "idx": "22321",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.01
+ },
+ {
+  "idx": "22322",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.01
+ },
+ {
+  "idx": "22323",
+  "outcome": "SKIP",
+  "detail": "v_sub_co_ci_u32",
+  "secs": 0.02
+ },
+ {
+  "idx": "22327",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x80",
+  "secs": 0.01
+ },
+ {
+  "idx": "22328",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.02
+ },
+ {
+  "idx": "22329",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x80",
+  "secs": 0.01
+ },
+ {
+  "idx": "22330",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.02
+ },
+ {
+  "idx": "22331",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x80",
+  "secs": 0.01
+ },
+ {
+  "idx": "22332",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.02
+ },
+ {
+  "idx": "22333",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x80",
+  "secs": 0.02
+ },
+ {
+  "idx": "22334",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.01
+ },
+ {
+  "idx": "22335",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x80",
+  "secs": 0.02
+ },
+ {
+  "idx": "22336",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x80",
+  "secs": 0.02
+ },
+ {
+  "idx": "22337",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x80",
+  "secs": 0.01
+ },
+ {
+  "idx": "22338",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x80",
+  "secs": 0.01
+ },
+ {
+  "idx": "22339",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x80",
+  "secs": 0.02
+ },
+ {
+  "idx": "22340",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x80",
+  "secs": 0.02
+ },
+ {
+  "idx": "22345",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 6,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.26
+ },
+ {
+  "idx": "22346",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 6,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.29
+ },
+ {
+  "idx": "22347",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 6,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.27
+ },
+ {
+  "idx": "22348",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 6,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.29
+ },
+ {
+  "idx": "22349",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.01
+ },
+ {
+  "idx": "22350",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.01
+ },
+ {
+  "idx": "22351",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.01
+ },
+ {
+  "idx": "22352",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.01
+ },
+ {
+  "idx": "22353",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x80",
+  "secs": 0.01
+ },
+ {
+  "idx": "22354",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x80",
+  "secs": 0.01
+ },
+ {
+  "idx": "22355",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x80",
+  "secs": 0.01
+ },
+ {
+  "idx": "22356",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x80",
+  "secs": 0.01
+ },
+ {
+  "idx": "22357",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 28,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.27
+ },
+ {
+  "idx": "22359",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x83",
+  "secs": 0.02
+ },
+ {
+  "idx": "22360",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x80",
+  "secs": 0.02
+ },
+ {
+  "idx": "22362",
+  "outcome": "SKIP",
+  "detail": "MUBUF D16 opcode 0x80",
+  "secs": 0.01
+ },
+ {
+  "idx": "22363",
+  "outcome": "SKIP",
+  "detail": "ds_write_b16",
+  "secs": 0.01
+ },
+ {
+  "idx": "22364",
+  "outcome": "SKIP",
+  "detail": "ds_write_b16",
+  "secs": 0.01
+ },
+ {
+  "idx": "22371",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 20,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.29
+ },
+ {
+  "idx": "22372",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 21,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.31
+ },
+ {
+  "idx": "22374",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 15,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.29
+ },
+ {
+  "idx": "22375",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 6,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.39
+ },
+ {
+  "idx": "22392",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 12,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.38
+ },
+ {
+  "idx": "22399",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.07
+ },
+ {
+  "idx": "22400",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 13,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.36
+ },
+ {
+  "idx": "22401",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.02
+ },
+ {
+  "idx": "22404",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 349,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.42
+ },
+ {
+  "idx": "22406",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 11,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.35
+ },
+ {
+  "idx": "22407",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.01
+ },
+ {
+  "idx": "22408",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.01
+ },
+ {
+  "idx": "22410",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.02
+ },
+ {
+  "idx": "22411",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 20,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.58
+ },
+ {
+  "idx": "22412",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 10,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.36
+ },
+ {
+  "idx": "22413",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 6,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.47
+ },
+ {
+  "idx": "22415",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 38,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.56
+ },
+ {
+  "idx": "22416",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 9,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.4
+ },
+ {
+  "idx": "22420",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "22422",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.05
+ },
+ {
+  "idx": "22423",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.05
+ },
+ {
+  "idx": "22426",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "22427",
+  "outcome": "SKIP",
+  "detail": "v_mad_legacy_f32",
+  "secs": 0.03
+ },
+ {
+  "idx": "22429",
+  "outcome": "SKIP",
+  "detail": "s_or_saveexec_b64",
+  "secs": 0.02
+ },
+ {
+  "idx": "22430",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 68,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.35
+ },
+ {
+  "idx": "22431",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.03
+ },
+ {
+  "idx": "22432",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.03
+ },
+ {
+  "idx": "22433",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "22434",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 42,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.35
+ },
+ {
+  "idx": "22435",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 37,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.31
+ },
+ {
+  "idx": "22437",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.04
+ },
+ {
+  "idx": "22439",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 38,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.32
+ },
+ {
+  "idx": "22440",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 85,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.54
+ },
+ {
+  "idx": "22441",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.01
+ },
+ {
+  "idx": "22442",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.02
+ },
+ {
+  "idx": "22443",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.03
+ },
+ {
+  "idx": "22444",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.03
+ },
+ {
+  "idx": "22445",
+  "outcome": "SKIP",
+  "detail": "v_readlane_b32",
+  "secs": 0.04
+ },
+ {
+  "idx": "22446",
+  "outcome": "SKIP",
+  "detail": "v_readlane_b32",
+  "secs": 0.04
+ },
+ {
+  "idx": "22447",
+  "outcome": "SKIP",
+  "detail": "v_readlane_b32",
+  "secs": 0.04
+ },
+ {
+  "idx": "22448",
+  "outcome": "SKIP",
+  "detail": "v_readlane_b32",
+  "secs": 0.04
+ },
+ {
+  "idx": "22449",
+  "outcome": "SKIP",
+  "detail": "v_readlane_b32",
+  "secs": 0.04
+ },
+ {
+  "idx": "22450",
+  "outcome": "SKIP",
+  "detail": "v_readlane_b32",
+  "secs": 0.05
+ },
+ {
+  "idx": "22451",
+  "outcome": "SKIP",
+  "detail": "v_readlane_b32",
+  "secs": 0.05
+ },
+ {
+  "idx": "22452",
+  "outcome": "SKIP",
+  "detail": "v_readlane_b32",
+  "secs": 0.05
+ },
+ {
+  "idx": "22453",
+  "outcome": "SKIP",
+  "detail": "v_readlane_b32",
+  "secs": 0.05
+ },
+ {
+  "idx": "22454",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.03
+ },
+ {
+  "idx": "22455",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.03
+ },
+ {
+  "idx": "22456",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.05
+ },
+ {
+  "idx": "22457",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.05
+ },
+ {
+  "idx": "22458",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.08
+ },
+ {
+  "idx": "22485",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": true,
+  "steps": 109,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.29
+ },
+ {
+  "idx": "22486",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": true,
+  "steps": 130,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.32
+ },
+ {
+  "idx": "22487",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 153,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.35
+ },
+ {
+  "idx": "22488",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 175,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.37
+ },
+ {
+  "idx": "22489",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 31,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.24
+ },
+ {
+  "idx": "22490",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.02
+ },
+ {
+  "idx": "22491",
+  "outcome": "SKIP",
+  "detail": "v_mul_hi_i32",
+  "secs": 0.02
+ },
+ {
+  "idx": "22492",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 16,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.52
+ },
+ {
+  "idx": "22496",
+  "outcome": "SKIP",
+  "detail": "ds_add_rtn_u32",
+  "secs": 0.02
+ },
+ {
+  "idx": "22497",
+  "outcome": "SKIP",
+  "detail": "ds_add_rtn_u32",
+  "secs": 0.03
+ },
+ {
+  "idx": "22502",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 13,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.46
+ },
+ {
+  "idx": "22503",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 15,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.48
+ },
+ {
+  "idx": "22504",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x10bfdd840",
+  "secs": 0.03
+ },
+ {
+  "idx": "22521",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 15,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.54
+ },
+ {
+  "idx": "22527",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 20,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.53
+ },
+ {
+  "idx": "22528",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 15,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.5
+ },
+ {
+  "idx": "22529",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 8,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.29
+ },
+ {
+  "idx": "22530",
+  "outcome": "SKIP",
+  "detail": "v_bfrev_b32",
+  "secs": 0.03
+ },
+ {
+  "idx": "22537",
+  "profile": "int",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 46,
+  "profiles_matched": [
+   "int"
+  ],
+  "secs": 7.63
+ },
+ {
+  "idx": "22538",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 55,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.35
+ },
+ {
+  "idx": "22539",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 20,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.59
+ },
+ {
+  "idx": "22540",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x100dbea58",
+  "secs": 0.02
+ },
+ {
+  "idx": "22541",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x100dbea58",
+  "secs": 0.02
+ },
+ {
+  "idx": "22542",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x100dbea58",
+  "secs": 0.02
+ },
+ {
+  "idx": "22543",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x100dbea58",
+  "secs": 0.02
+ },
+ {
+  "idx": "22544",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0xffdbea58",
+  "secs": 0.02
+ },
+ {
+  "idx": "22547",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0xffdbea58",
+  "secs": 0.02
+ },
+ {
+  "idx": "22549",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0xffdbea58",
+  "secs": 0.02
+ },
+ {
+  "idx": "22550",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x100dbea58",
+  "secs": 0.02
+ },
+ {
+  "idx": "22551",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x100dbea58",
+  "secs": 0.03
+ },
+ {
+  "idx": "22552",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x100dbea58",
+  "secs": 0.02
+ },
+ {
+  "idx": "22553",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 10,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.44
+ },
+ {
+  "idx": "22554",
+  "outcome": "SKIP",
+  "detail": "s_or_saveexec_b64",
+  "secs": 0.02
+ },
+ {
+  "idx": "22556",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 11,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.42
+ },
+ {
+  "idx": "22557",
+  "outcome": "SKIP",
+  "detail": "VOPC opcode",
+  "secs": 0.01
+ },
+ {
+  "idx": "22558",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 16,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.45
+ },
+ {
+  "idx": "22567",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 9,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.4
+ },
+ {
+  "idx": "22570",
+  "outcome": "SKIP",
+  "detail": "reads LDS that nothing has written (uninitialised on a GPU, so the result is not deterministic)",
+  "secs": 0.04
+ },
+ {
+  "idx": "22590",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 42,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.67
+ },
+ {
+  "idx": "22592",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 20,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.55
+ },
+ {
+  "idx": "22593",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.04
+ },
+ {
+  "idx": "22597",
+  "outcome": "SKIP",
+  "detail": "s_abs_i32",
+  "secs": 0.02
+ },
+ {
+  "idx": "22615",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.04
+ },
+ {
+  "idx": "22621",
+  "outcome": "SKIP",
+  "detail": "ds_add_rtn_u32",
+  "secs": 0.04
+ },
+ {
+  "idx": "22632",
+  "outcome": "SKIP",
+  "detail": "s_or_saveexec_b64",
+  "secs": 0.02
+ },
+ {
+  "idx": "22633",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 2,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.34
+ },
+ {
+  "idx": "22642",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 14,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.43
+ },
+ {
+  "idx": "22651",
+  "outcome": "SKIP",
+  "detail": "op_sel on v_add_co_u32",
+  "secs": 0.05
+ },
+ {
+  "idx": "22652",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 51,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.67
+ },
+ {
+  "idx": "22653",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "22654",
+  "outcome": "SKIP",
+  "detail": "s_setreg_imm32_b32",
+  "secs": 0.01
+ },
+ {
+  "idx": "22655",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 27,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.51
+ },
+ {
+  "idx": "22657",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 27,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.41
+ },
+ {
+  "idx": "22659",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 66,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.5
+ },
+ {
+  "idx": "22660",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 36,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.51
+ },
+ {
+  "idx": "22663",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": true,
+  "steps": 99,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.45
+ },
+ {
+  "idx": "22664",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 127,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.44
+ },
+ {
+  "idx": "22665",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.05
+ },
+ {
+  "idx": "22668",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "22672",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "22673",
+  "outcome": "SKIP",
+  "detail": "image class img2a",
+  "secs": 0.0
+ },
+ {
+  "idx": "22674",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "22675",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "22676",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 27,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.47
+ },
+ {
+  "idx": "22683",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 24,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.54
+ },
+ {
+  "idx": "22684",
+  "outcome": "SKIP",
+  "detail": "op_sel on v_add_co_u32",
+  "secs": 0.04
+ },
+ {
+  "idx": "22686",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 28,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.52
+ },
+ {
+  "idx": "22688",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 27,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.47
+ },
+ {
+  "idx": "22690",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 58,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.46
+ },
+ {
+  "idx": "22691",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 13,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.41
+ },
+ {
+  "idx": "22692",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.08
+ },
+ {
+  "idx": "22695",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 72,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.9
+ },
+ {
+  "idx": "22696",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 69,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.85
+ },
+ {
+  "idx": "22700",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 43,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.7
+ },
+ {
+  "idx": "22701",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.04
+ },
+ {
+  "idx": "22704",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "22705",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "22706",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "22707",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 13,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.42
+ },
+ {
+  "idx": "22710",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 27,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.74
+ },
+ {
+  "idx": "22711",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 17,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.42
+ },
+ {
+  "idx": "22714",
+  "outcome": "SKIP",
+  "detail": "format VOP2+SDWA/DPP (v_lshlrev_b32)",
+  "secs": 0.02
+ },
+ {
+  "idx": "22718",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 17,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.44
+ },
+ {
+  "idx": "22721",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 82,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.86
+ },
+ {
+  "idx": "22727",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 5,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.23
+ },
+ {
+  "idx": "22758",
+  "outcome": "SKIP",
+  "detail": "ds_write2st64_b32",
+  "secs": 0.07
+ },
+ {
+  "idx": "22759",
+  "outcome": "SKIP",
+  "detail": "ds_write2st64_b32",
+  "secs": 0.07
+ },
+ {
+  "idx": "22760",
+  "outcome": "SKIP",
+  "detail": "ds_write2st64_b32",
+  "secs": 0.07
+ },
+ {
+  "idx": "22761",
+  "outcome": "SKIP",
+  "detail": "ds_write2st64_b32",
+  "secs": 0.07
+ },
+ {
+  "idx": "22762",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 84,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 1.15
+ },
+ {
+  "idx": "22763",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 49,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.27
+ },
+ {
+  "idx": "22768",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 19,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.51
+ },
+ {
+  "idx": "22769",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 19,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.51
+ },
+ {
+  "idx": "22770",
+  "outcome": "SKIP",
+  "detail": "buffer_atomic_cmpswap",
+  "secs": 0.03
+ },
+ {
+  "idx": "22771",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 16,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.47
+ },
+ {
+  "idx": "22772",
+  "outcome": "SKIP",
+  "detail": "s_or_saveexec_b64",
+  "secs": 0.04
+ },
+ {
+  "idx": "22773",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 10,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.4
+ },
+ {
+  "idx": "22774",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 13,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.4
+ },
+ {
+  "idx": "22783",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 9,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.5
+ },
+ {
+  "idx": "22784",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 5,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.5
+ },
+ {
+  "idx": "22785",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 6,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.47
+ },
+ {
+  "idx": "22788",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 5,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.56
+ },
+ {
+  "idx": "22789",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 5,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.29
+ },
+ {
+  "idx": "22790",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 5,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.48
+ },
+ {
+  "idx": "22791",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 10,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.48
+ },
+ {
+  "idx": "22792",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 5,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.31
+ },
+ {
+  "idx": "22793",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 12,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.49
+ },
+ {
+  "idx": "22794",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 6,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.45
+ },
+ {
+  "idx": "22795",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 7,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.6
+ },
+ {
+  "idx": "22796",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 6,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.53
+ },
+ {
+  "idx": "22797",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.02
+ },
+ {
+  "idx": "22798",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.03
+ },
+ {
+  "idx": "22799",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.04
+ },
+ {
+  "idx": "22800",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.03
+ },
+ {
+  "idx": "22848",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 101,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.28
+ },
+ {
+  "idx": "22849",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "22850",
+  "outcome": "SKIP",
+  "detail": "ds_write2st64_b32",
+  "secs": 0.03
+ },
+ {
+  "idx": "22851",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 154,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.3
+ },
+ {
+  "idx": "22852",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 208,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.39
+ },
+ {
+  "idx": "22853",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "22854",
+  "outcome": "SKIP",
+  "detail": "s_setreg_imm32_b32",
+  "secs": 0.01
+ },
+ {
+  "idx": "22855",
+  "outcome": "SKIP",
+  "detail": "write to unmapped address 0x54675eac",
+  "secs": 0.01
+ },
+ {
+  "idx": "22856",
+  "outcome": "SKIP",
+  "detail": "s_setreg_imm32_b32",
+  "secs": 0.01
+ },
+ {
+  "idx": "22873",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 23,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.52
+ },
+ {
+  "idx": "22874",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x10dff4800",
+  "secs": 0.02
+ },
+ {
+  "idx": "22932",
+  "outcome": "SKIP",
+  "detail": "unaligned dword buffer access",
+  "secs": 0.02
+ },
+ {
+  "idx": "22934",
+  "outcome": "SKIP",
+  "detail": "s_setreg_imm32_b32",
+  "secs": 0.01
+ },
+ {
+  "idx": "22936",
+  "outcome": "SKIP",
+  "detail": "unaligned dword buffer access",
+  "secs": 0.01
+ },
+ {
+  "idx": "22939",
+  "outcome": "SKIP",
+  "detail": "unaligned dword buffer access",
+  "secs": 0.01
+ },
+ {
+  "idx": "23024",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.02
+ },
+ {
+  "idx": "23035",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "23037",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "23038",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "23041",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "23044",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "23045",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "23046",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "23047",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "23048",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "23056",
+  "outcome": "SKIP",
+  "detail": "image class img3",
+  "secs": 0.0
+ },
+ {
+  "idx": "23057",
+  "outcome": "SKIP",
+  "detail": "image class img3",
+  "secs": 0.0
+ },
+ {
+  "idx": "23058",
+  "outcome": "SKIP",
+  "detail": "image class img3",
+  "secs": 0.0
+ },
+ {
+  "idx": "23061",
+  "outcome": "SKIP",
+  "detail": "image class img3",
+  "secs": 0.0
+ },
+ {
+  "idx": "23062",
+  "outcome": "SKIP",
+  "detail": "image class img3",
+  "secs": 0.0
+ },
+ {
+  "idx": "23063",
+  "outcome": "SKIP",
+  "detail": "image class img3",
+  "secs": 0.0
+ },
+ {
+  "idx": "23064",
+  "outcome": "SKIP",
+  "detail": "image class img3",
+  "secs": 0.0
+ },
+ {
+  "idx": "23068",
+  "outcome": "SKIP",
+  "detail": "image class img3",
+  "secs": 0.0
+ },
+ {
+  "idx": "23069",
+  "outcome": "SKIP",
+  "detail": "image class img3",
+  "secs": 0.0
+ },
+ {
+  "idx": "23070",
+  "outcome": "SKIP",
+  "detail": "image class img3",
+  "secs": 0.0
+ },
+ {
+  "idx": "23071",
+  "outcome": "SKIP",
+  "detail": "image class img3",
+  "secs": 0.0
+ },
+ {
+  "idx": "23076",
+  "outcome": "SKIP",
+  "detail": "image class img3",
+  "secs": 0.0
+ },
+ {
+  "idx": "23077",
+  "outcome": "SKIP",
+  "detail": "image class img3",
+  "secs": 0.0
+ },
+ {
+  "idx": "23078",
+  "outcome": "SKIP",
+  "detail": "image class img3",
+  "secs": 0.0
+ },
+ {
+  "idx": "23079",
+  "outcome": "SKIP",
+  "detail": "image class img3",
+  "secs": 0.0
+ },
+ {
+  "idx": "23162",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 66,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.5
+ },
+ {
+  "idx": "23163",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 63,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.87
+ },
+ {
+  "idx": "23167",
+  "outcome": "SKIP",
+  "detail": "v_sin_f32",
+  "secs": 0.04
+ },
+ {
+  "idx": "23175",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 19,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.55
+ },
+ {
+  "idx": "23176",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 9985,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 4.54
+ },
+ {
+  "idx": "23177",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 35,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.3
+ },
+ {
+  "idx": "23180",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 23,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.23
+ },
+ {
+  "idx": "23188",
+  "outcome": "SKIP",
+  "detail": "v_sin_f32",
+  "secs": 0.05
+ },
+ {
+  "idx": "23189",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 120,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.44
+ },
+ {
+  "idx": "23190",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "23191",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 56,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.33
+ },
+ {
+  "idx": "23217",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 15,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.47
+ },
+ {
+  "idx": "23218",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 74,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.3
+ },
+ {
+  "idx": "23219",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 81,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.31
+ },
+ {
+  "idx": "23220",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 28,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.39
+ },
+ {
+  "idx": "23288",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.1
+ },
+ {
+  "idx": "23290",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 98,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.37
+ },
+ {
+  "idx": "23291",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 148,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.46
+ },
+ {
+  "idx": "23293",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 23,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.54
+ },
+ {
+  "idx": "23295",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.01
+ },
+ {
+  "idx": "23306",
+  "outcome": "SKIP",
+  "detail": "reads LDS that nothing has written (uninitialised on a GPU, so the result is not deterministic)",
+  "secs": 0.04
+ },
+ {
+  "idx": "23307",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 128,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.3
+ },
+ {
+  "idx": "23308",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 128,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.27
+ },
+ {
+  "idx": "23309",
+  "outcome": "SKIP",
+  "detail": "interpreter error ValueError invalid operation in fma",
+  "secs": 0.02
+ },
+ {
+  "idx": "23312",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 40,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.3
+ },
+ {
+  "idx": "23324",
+  "profile": "float",
+  "outcome": "MISMATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 143,
+  "ndiff": 11,
+  "first": [
+   [
+    1005,
+    656,
+    "0x406addec",
+    "0x406addde"
+   ],
+   [
+    1005,
+    660,
+    "0x410e4827",
+    "0x410e481e"
+   ],
+   [
+    1005,
+    664,
+    "0x40e47715",
+    "0x40e47709"
+   ],
+   [
+    1005,
+    672,
+    "0x4092e3bc",
+    "0x4092e3c1"
+   ]
+  ],
+  "secs": 0.53
+ },
+ {
+  "idx": "23326",
+  "outcome": "SKIP",
+  "detail": "non-finite sample coordinate",
+  "secs": 0.05
+ },
+ {
+  "idx": "23327",
+  "outcome": "SKIP",
+  "detail": "v_mad_legacy_f32",
+  "secs": 0.05
+ },
+ {
+  "idx": "23328",
+  "outcome": "SKIP",
+  "detail": "v_mad_legacy_f32",
+  "secs": 0.05
+ },
+ {
+  "idx": "23331",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 47,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.41
+ },
+ {
+  "idx": "23333",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "23334",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "23336",
+  "outcome": "SKIP",
+  "detail": "interpreter error ValueError invalid operation in fma",
+  "secs": 0.03
+ },
+ {
+  "idx": "23337",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.1
+ },
+ {
+  "idx": "23339",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.1
+ },
+ {
+  "idx": "23341",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 38,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.55
+ },
+ {
+  "idx": "23343",
+  "outcome": "SKIP",
+  "detail": "format VOP1+SDWA/DPP (v_not_b32)",
+  "secs": 0.03
+ },
+ {
+  "idx": "23344",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.01
+ },
+ {
+  "idx": "23346",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.01
+ },
+ {
+  "idx": "23347",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.01
+ },
+ {
+  "idx": "23349",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 34,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.23
+ },
+ {
+  "idx": "23350",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.01
+ },
+ {
+  "idx": "23352",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 6,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.34
+ },
+ {
+  "idx": "23353",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 52,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.8
+ },
+ {
+  "idx": "23354",
+  "outcome": "SKIP",
+  "detail": "s_waitcnt_vscnt",
+  "secs": 0.05
+ },
+ {
+  "idx": "23355",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 60,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.87
+ },
+ {
+  "idx": "23356",
+  "outcome": "SKIP",
+  "detail": "s_waitcnt_vscnt",
+  "secs": 0.03
+ },
+ {
+  "idx": "23357",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 56,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.6
+ },
+ {
+  "idx": "23358",
+  "outcome": "SKIP",
+  "detail": "buffer_atomic_umax",
+  "secs": 0.04
+ },
+ {
+  "idx": "23359",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.06
+ },
+ {
+  "idx": "23360",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 13,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.33
+ },
+ {
+  "idx": "23361",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.05
+ },
+ {
+  "idx": "23362",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.05
+ },
+ {
+  "idx": "23363",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 2440,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.34
+ },
+ {
+  "idx": "23364",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 78,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.26
+ },
+ {
+  "idx": "23375",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 46,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.29
+ },
+ {
+  "idx": "23376",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 202,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.51
+ },
+ {
+  "idx": "23377",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 25,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.5
+ },
+ {
+  "idx": "23378",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 25,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.5
+ },
+ {
+  "idx": "23379",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 22,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.55
+ },
+ {
+  "idx": "23388",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 43,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.52
+ },
+ {
+  "idx": "23396",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 20,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.72
+ },
+ {
+  "idx": "23398",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 5,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.54
+ },
+ {
+  "idx": "23404",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 16,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.51
+ },
+ {
+  "idx": "23410",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.05
+ },
+ {
+  "idx": "23411",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.05
+ },
+ {
+  "idx": "23412",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.05
+ },
+ {
+  "idx": "23413",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.05
+ },
+ {
+  "idx": "23416",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.01
+ },
+ {
+  "idx": "23417",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.07
+ },
+ {
+  "idx": "23418",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "23419",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 9,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.24
+ },
+ {
+  "idx": "23420",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 17,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.22
+ },
+ {
+  "idx": "23421",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 13,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.36
+ },
+ {
+  "idx": "23422",
+  "outcome": "SKIP",
+  "detail": "step limit",
+  "secs": 3.99
+ },
+ {
+  "idx": "23423",
+  "outcome": "SKIP",
+  "detail": "step limit",
+  "secs": 4.01
+ },
+ {
+  "idx": "23424",
+  "outcome": "SKIP",
+  "detail": "step limit",
+  "secs": 3.99
+ },
+ {
+  "idx": "23425",
+  "outcome": "SKIP",
+  "detail": "step limit",
+  "secs": 4.06
+ },
+ {
+  "idx": "23426",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 24,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.46
+ },
+ {
+  "idx": "23427",
+  "outcome": "SKIP",
+  "detail": "step limit",
+  "secs": 5.38
+ },
+ {
+  "idx": "23428",
+  "outcome": "SKIP",
+  "detail": "v_mad_legacy_f32",
+  "secs": 0.04
+ },
+ {
+  "idx": "23429",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 9,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.39
+ },
+ {
+  "idx": "23430",
+  "outcome": "SKIP",
+  "detail": "v_mul_hi_i32",
+  "secs": 0.02
+ },
+ {
+  "idx": "23436",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "23437",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 12,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.41
+ },
+ {
+  "idx": "23438",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 6,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.17
+ },
+ {
+  "idx": "23439",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.04
+ },
+ {
+  "idx": "23441",
+  "outcome": "SKIP",
+  "detail": "reads LDS that nothing has written (uninitialised on a GPU, so the result is not deterministic)",
+  "secs": 0.08
+ },
+ {
+  "idx": "23442",
+  "outcome": "SKIP",
+  "detail": "reads LDS that nothing has written (uninitialised on a GPU, so the result is not deterministic)",
+  "secs": 0.05
+ },
+ {
+  "idx": "23443",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 140,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.34
+ },
+ {
+  "idx": "23448",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 48,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.24
+ },
+ {
+  "idx": "23452",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.09
+ },
+ {
+  "idx": "23453",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.04
+ },
+ {
+  "idx": "23454",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 61,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.25
+ },
+ {
+  "idx": "23455",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 13,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.34
+ },
+ {
+  "idx": "23459",
+  "outcome": "SKIP",
+  "detail": "v_bfrev_b32",
+  "secs": 0.04
+ },
+ {
+  "idx": "23464",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 25,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.2
+ },
+ {
+  "idx": "23469",
+  "outcome": "SKIP",
+  "detail": "s_mulk_i32",
+  "secs": 0.01
+ },
+ {
+  "idx": "23470",
+  "outcome": "SKIP",
+  "detail": "s_mulk_i32",
+  "secs": 0.01
+ },
+ {
+  "idx": "23471",
+  "outcome": "SKIP",
+  "detail": "s_mulk_i32",
+  "secs": 0.01
+ },
+ {
+  "idx": "23475",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0xefc41960",
+  "secs": 0.01
+ },
+ {
+  "idx": "23491",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0xefc41960",
+  "secs": 0.01
+ },
+ {
+  "idx": "23590",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x557eb484",
+  "secs": 0.01
+ },
+ {
+  "idx": "24219",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 78,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.29
+ },
+ {
+  "idx": "24221",
+  "outcome": "SKIP",
+  "detail": "image class img1a",
+  "secs": 0.01
+ },
+ {
+  "idx": "24222",
+  "outcome": "SKIP",
+  "detail": "image class img1a",
+  "secs": 0.01
+ },
+ {
+  "idx": "24229",
+  "profile": "int",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 65,
+  "profiles_matched": [
+   "int"
+  ],
+  "secs": 12.64
+ },
+ {
+  "idx": "24232",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": true,
+  "steps": 79,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.3
+ },
+ {
+  "idx": "24233",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 34,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.48
+ },
+ {
+  "idx": "24235",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 23,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.43
+ },
+ {
+  "idx": "24248",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.03
+ },
+ {
+  "idx": "24259",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.03
+ },
+ {
+  "idx": "24282",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 10,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.33
+ },
+ {
+  "idx": "24284",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "24289",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 14,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.38
+ },
+ {
+  "idx": "24293",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 24,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.21
+ },
+ {
+  "idx": "24296",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 69,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.82
+ },
+ {
+  "idx": "24297",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "24298",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 10,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.39
+ },
+ {
+  "idx": "24303",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.05
+ },
+ {
+  "idx": "24306",
+  "outcome": "SKIP",
+  "detail": "ds_write2st64_b32",
+  "secs": 0.02
+ },
+ {
+  "idx": "24308",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 95,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.3
+ },
+ {
+  "idx": "24309",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "24311",
+  "outcome": "SKIP",
+  "detail": "v_mul_hi_i32",
+  "secs": 0.05
+ },
+ {
+  "idx": "24312",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "24314",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "24315",
+  "outcome": "SKIP",
+  "detail": "image class img1a",
+  "secs": 0.02
+ },
+ {
+  "idx": "24325",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 37,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.21
+ },
+ {
+  "idx": "24326",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24327",
+  "outcome": "SKIP",
+  "detail": "step limit",
+  "secs": 13.05
+ },
+ {
+  "idx": "24348",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 17,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.33
+ },
+ {
+  "idx": "24349",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 24,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.43
+ },
+ {
+  "idx": "24350",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 32,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.43
+ },
+ {
+  "idx": "24351",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 13,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.4
+ },
+ {
+  "idx": "24352",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x10dff4800",
+  "secs": 0.01
+ },
+ {
+  "idx": "24353",
+  "outcome": "GPU_FAIL",
+  "detail": "FAIL binding 64: role 10 is not implemented in the harness",
+  "secs": 0.4
+ },
+ {
+  "idx": "24354",
+  "outcome": "SKIP",
+  "detail": "v_add_co_ci_u32",
+  "secs": 0.01
+ },
+ {
+  "idx": "24355",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0xe370cb40",
+  "secs": 0.03
+ },
+ {
+  "idx": "24356",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 10,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.34
+ },
+ {
+  "idx": "24363",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 5,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.36
+ },
+ {
+  "idx": "24364",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 22,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.51
+ },
+ {
+  "idx": "24367",
+  "outcome": "SKIP",
+  "detail": "s_ff1_i32_b32",
+  "secs": 0.07
+ },
+ {
+  "idx": "24368",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.03
+ },
+ {
+  "idx": "24369",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 42,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.3
+ },
+ {
+  "idx": "24371",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "24372",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.02
+ },
+ {
+  "idx": "24373",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.09
+ },
+ {
+  "idx": "24377",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.13
+ },
+ {
+  "idx": "24378",
+  "outcome": "SKIP",
+  "detail": "v_readlane_b32",
+  "secs": 0.13
+ },
+ {
+  "idx": "24379",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.05
+ },
+ {
+  "idx": "24380",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.04
+ },
+ {
+  "idx": "24381",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24382",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 32,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.39
+ },
+ {
+  "idx": "24383",
+  "outcome": "SKIP",
+  "detail": "s_or_saveexec_b64",
+  "secs": 0.02
+ },
+ {
+  "idx": "24384",
+  "outcome": "SKIP",
+  "detail": "s_or_saveexec_b64",
+  "secs": 0.02
+ },
+ {
+  "idx": "24385",
+  "outcome": "SKIP",
+  "detail": "s_or_saveexec_b64",
+  "secs": 0.03
+ },
+ {
+  "idx": "24386",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.05
+ },
+ {
+  "idx": "24389",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "24390",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.04
+ },
+ {
+  "idx": "24392",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 76,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.31
+ },
+ {
+  "idx": "24449",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 42,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.25
+ },
+ {
+  "idx": "24450",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 6,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.42
+ },
+ {
+  "idx": "24451",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 6,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.43
+ },
+ {
+  "idx": "24454",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 192,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.25
+ },
+ {
+  "idx": "24455",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 2,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.3
+ },
+ {
+  "idx": "24456",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 5,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.39
+ },
+ {
+  "idx": "24457",
+  "profile": "int",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 12,
+  "profiles_matched": [
+   "int"
+  ],
+  "secs": 0.21
+ },
+ {
+  "idx": "24458",
+  "profile": "int",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 12,
+  "profiles_matched": [
+   "int"
+  ],
+  "secs": 0.23
+ },
+ {
+  "idx": "24459",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 5,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.45
+ },
+ {
+  "idx": "24462",
+  "outcome": "SKIP",
+  "detail": "step limit",
+  "secs": 15.22
+ },
+ {
+  "idx": "24463",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 40,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.43
+ },
+ {
+  "idx": "24469",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 7,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.36
+ },
+ {
+  "idx": "24472",
+  "outcome": "SKIP",
+  "detail": "ds_add_rtn_u32",
+  "secs": 0.03
+ },
+ {
+  "idx": "24474",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 7,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.37
+ },
+ {
+  "idx": "24480",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 7,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.38
+ },
+ {
+  "idx": "24482",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 271,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.56
+ },
+ {
+  "idx": "24483",
+  "outcome": "SKIP",
+  "detail": "format VOPC+SDWA/DPP (v_cmpx_eq_i32)",
+  "secs": 0.01
+ },
+ {
+  "idx": "24486",
+  "outcome": "SKIP",
+  "detail": "write to unmapped address 0x12100000",
+  "secs": 13.6
+ },
+ {
+  "idx": "24487",
+  "outcome": "SKIP",
+  "detail": "unaligned dword buffer access",
+  "secs": 0.01
+ },
+ {
+  "idx": "24488",
+  "outcome": "SKIP",
+  "detail": "unaligned dword buffer access",
+  "secs": 0.01
+ },
+ {
+  "idx": "24489",
+  "outcome": "SKIP",
+  "detail": "unaligned dword buffer access",
+  "secs": 0.01
+ },
+ {
+  "idx": "24490",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0xc",
+  "secs": 0.0
+ },
+ {
+  "idx": "24491",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 29,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.25
+ },
+ {
+  "idx": "24492",
+  "outcome": "SKIP",
+  "detail": "unaligned dword buffer access",
+  "secs": 0.01
+ },
+ {
+  "idx": "24493",
+  "outcome": "SKIP",
+  "detail": "reads LDS that nothing has written (uninitialised on a GPU, so the result is not deterministic)",
+  "secs": 0.02
+ },
+ {
+  "idx": "24494",
+  "outcome": "SKIP",
+  "detail": "unaligned dword buffer access",
+  "secs": 0.01
+ },
+ {
+  "idx": "24495",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0xc",
+  "secs": 0.01
+ },
+ {
+  "idx": "24496",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 16,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.4
+ },
+ {
+  "idx": "24497",
+  "outcome": "SKIP",
+  "detail": "format VOP2+SDWA/DPP (v_add_nc_u32)",
+  "secs": 0.06
+ },
+ {
+  "idx": "24500",
+  "outcome": "SKIP",
+  "detail": "ds_add_rtn_u32",
+  "secs": 0.02
+ },
+ {
+  "idx": "24501",
+  "outcome": "SKIP",
+  "detail": "ds_add_rtn_u32",
+  "secs": 0.02
+ },
+ {
+  "idx": "24506",
+  "outcome": "SKIP",
+  "detail": "write to unmapped address 0x12100000",
+  "secs": 15.04
+ },
+ {
+  "idx": "24507",
+  "outcome": "SKIP",
+  "detail": "unaligned dword buffer access",
+  "secs": 0.01
+ },
+ {
+  "idx": "24508",
+  "outcome": "SKIP",
+  "detail": "unaligned dword buffer access",
+  "secs": 0.01
+ },
+ {
+  "idx": "24509",
+  "outcome": "SKIP",
+  "detail": "unaligned dword buffer access",
+  "secs": 0.01
+ },
+ {
+  "idx": "24510",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0xc",
+  "secs": 0.0
+ },
+ {
+  "idx": "24511",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 29,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.23
+ },
+ {
+  "idx": "24512",
+  "outcome": "SKIP",
+  "detail": "unaligned dword buffer access",
+  "secs": 0.01
+ },
+ {
+  "idx": "24513",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0xc",
+  "secs": 0.0
+ },
+ {
+  "idx": "24516",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 6,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.27
+ },
+ {
+  "idx": "24517",
+  "outcome": "SKIP",
+  "detail": "format VOP1+SDWA/DPP (v_cvt_f32_u32)",
+  "secs": 0.02
+ },
+ {
+  "idx": "24519",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x1",
+  "secs": 0.03
+ },
+ {
+  "idx": "24520",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x1",
+  "secs": 0.03
+ },
+ {
+  "idx": "24521",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24522",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24523",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "24524",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "24525",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "24526",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "24527",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 57,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.23
+ },
+ {
+  "idx": "24528",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 12,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.35
+ },
+ {
+  "idx": "24529",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "24530",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "24531",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "24535",
+  "outcome": "SKIP",
+  "detail": "v_mad_legacy_f32",
+  "secs": 0.05
+ },
+ {
+  "idx": "24536",
+  "outcome": "SKIP",
+  "detail": "v_mad_legacy_f32",
+  "secs": 0.05
+ },
+ {
+  "idx": "24537",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24538",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24539",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 24,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.39
+ },
+ {
+  "idx": "24544",
+  "outcome": "SKIP",
+  "detail": "step limit",
+  "secs": 43.46
+ },
+ {
+  "idx": "24545",
+  "outcome": "SKIP",
+  "detail": "step limit",
+  "secs": 45.22
+ },
+ {
+  "idx": "24551",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 5,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.3
+ },
+ {
+  "idx": "24553",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.03
+ },
+ {
+  "idx": "24554",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.02
+ },
+ {
+  "idx": "24555",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.02
+ },
+ {
+  "idx": "24556",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.02
+ },
+ {
+  "idx": "24557",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.02
+ },
+ {
+  "idx": "24558",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.02
+ },
+ {
+  "idx": "24559",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.02
+ },
+ {
+  "idx": "24560",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.02
+ },
+ {
+  "idx": "24561",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.03
+ },
+ {
+  "idx": "24562",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.03
+ },
+ {
+  "idx": "24563",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.02
+ },
+ {
+  "idx": "24564",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.02
+ },
+ {
+  "idx": "24565",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.02
+ },
+ {
+  "idx": "24566",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.03
+ },
+ {
+  "idx": "24567",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.02
+ },
+ {
+  "idx": "24568",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.03
+ },
+ {
+  "idx": "24569",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "24570",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 50,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.41
+ },
+ {
+  "idx": "24571",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "24572",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 50,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.4
+ },
+ {
+  "idx": "24573",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "24574",
+  "profile": "int",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 53,
+  "profiles_matched": [
+   "int"
+  ],
+  "secs": 0.24
+ },
+ {
+  "idx": "24575",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "24576",
+  "profile": "int",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 53,
+  "profiles_matched": [
+   "int"
+  ],
+  "secs": 0.24
+ },
+ {
+  "idx": "24577",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 23,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.36
+ },
+ {
+  "idx": "24584",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24586",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24588",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.05
+ },
+ {
+  "idx": "24589",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.07
+ },
+ {
+  "idx": "24590",
+  "outcome": "SKIP",
+  "detail": "format VOP2+SDWA/DPP (v_add_nc_u32)",
+  "secs": 0.05
+ },
+ {
+  "idx": "24591",
+  "outcome": "SKIP",
+  "detail": "format VOP2+SDWA/DPP (v_add_nc_u32)",
+  "secs": 0.05
+ },
+ {
+  "idx": "24592",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.04
+ },
+ {
+  "idx": "24593",
+  "outcome": "SKIP",
+  "detail": "format VOP3P (v_fma_mix_f32)",
+  "secs": 0.04
+ },
+ {
+  "idx": "24594",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.05
+ },
+ {
+  "idx": "24595",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.05
+ },
+ {
+  "idx": "24596",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.05
+ },
+ {
+  "idx": "24597",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.05
+ },
+ {
+  "idx": "24598",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 13,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.37
+ },
+ {
+  "idx": "24599",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 19,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.41
+ },
+ {
+  "idx": "24602",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 13,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.36
+ },
+ {
+  "idx": "24603",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 122,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.41
+ },
+ {
+  "idx": "24604",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 71,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.3
+ },
+ {
+  "idx": "24605",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 71,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.34
+ },
+ {
+  "idx": "24609",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 53,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.28
+ },
+ {
+  "idx": "24618",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 72,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.34
+ },
+ {
+  "idx": "24619",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.05
+ },
+ {
+  "idx": "24620",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 17,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.45
+ },
+ {
+  "idx": "24621",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.02
+ },
+ {
+  "idx": "24622",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 27,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.48
+ },
+ {
+  "idx": "24623",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 62,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.29
+ },
+ {
+  "idx": "24624",
+  "outcome": "SKIP",
+  "detail": "image class img1a",
+  "secs": 0.01
+ },
+ {
+  "idx": "24626",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.04
+ },
+ {
+  "idx": "24627",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "24628",
+  "outcome": "SKIP",
+  "detail": "s_waitcnt_vscnt",
+  "secs": 0.02
+ },
+ {
+  "idx": "24629",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "24630",
+  "outcome": "SKIP",
+  "detail": "s_waitcnt_vscnt",
+  "secs": 0.02
+ },
+ {
+  "idx": "24631",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "24632",
+  "outcome": "SKIP",
+  "detail": "s_waitcnt_vscnt",
+  "secs": 0.02
+ },
+ {
+  "idx": "24633",
+  "outcome": "SKIP",
+  "detail": "s_waitcnt_vscnt",
+  "secs": 0.2
+ },
+ {
+  "idx": "24634",
+  "outcome": "SKIP",
+  "detail": "s_mulk_i32",
+  "secs": 0.01
+ },
+ {
+  "idx": "24635",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0xb13987a0",
+  "secs": 0.02
+ },
+ {
+  "idx": "24650",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 2,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.29
+ },
+ {
+  "idx": "24652",
+  "profile": "int",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 101,
+  "profiles_matched": [
+   "int"
+  ],
+  "secs": 5.51
+ },
+ {
+  "idx": "24653",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x525a3e10",
+  "secs": 0.03
+ },
+ {
+  "idx": "24654",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x106fd2000",
+  "secs": 0.02
+ },
+ {
+  "idx": "24655",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x106fd2010",
+  "secs": 0.02
+ },
+ {
+  "idx": "24656",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x106fd2010",
+  "secs": 0.02
+ },
+ {
+  "idx": "24657",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x106fd2010",
+  "secs": 0.03
+ },
+ {
+  "idx": "24658",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x106fd2000",
+  "secs": 0.02
+ },
+ {
+  "idx": "24659",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 38,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.23
+ },
+ {
+  "idx": "24660",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x10cfe9200",
+  "secs": 0.02
+ },
+ {
+  "idx": "24661",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "24662",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "24663",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "24664",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "24665",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24666",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.05
+ },
+ {
+  "idx": "24667",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.05
+ },
+ {
+  "idx": "24668",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.05
+ },
+ {
+  "idx": "24669",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.05
+ },
+ {
+  "idx": "24670",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.05
+ },
+ {
+  "idx": "24671",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.05
+ },
+ {
+  "idx": "24672",
+  "outcome": "SKIP",
+  "detail": "image class img1a",
+  "secs": 0.01
+ },
+ {
+  "idx": "24673",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24674",
+  "outcome": "SKIP",
+  "detail": "s_waitcnt_vscnt",
+  "secs": 0.03
+ },
+ {
+  "idx": "24675",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.02
+ },
+ {
+  "idx": "24676",
+  "outcome": "SKIP",
+  "detail": "v_bfrev_b32",
+  "secs": 0.01
+ },
+ {
+  "idx": "24677",
+  "outcome": "SKIP",
+  "detail": "v_bfrev_b32",
+  "secs": 0.02
+ },
+ {
+  "idx": "24678",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24679",
+  "outcome": "SKIP",
+  "detail": "s_waitcnt_vscnt",
+  "secs": 0.0
+ },
+ {
+  "idx": "24680",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 35,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.2
+ },
+ {
+  "idx": "24684",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 2,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.28
+ },
+ {
+  "idx": "24685",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 55,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.23
+ },
+ {
+  "idx": "24686",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 36,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.23
+ },
+ {
+  "idx": "24687",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 285,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.31
+ },
+ {
+  "idx": "24688",
+  "outcome": "SKIP",
+  "detail": "op_sel on v_add_co_u32",
+  "secs": 0.03
+ },
+ {
+  "idx": "24689",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 28,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.39
+ },
+ {
+  "idx": "24690",
+  "outcome": "SKIP",
+  "detail": "reads LDS that nothing has written (uninitialised on a GPU, so the result is not deterministic)",
+  "secs": 0.03
+ },
+ {
+  "idx": "24691",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.15
+ },
+ {
+  "idx": "24692",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.04
+ },
+ {
+  "idx": "24693",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.02
+ },
+ {
+  "idx": "24694",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.02
+ },
+ {
+  "idx": "24695",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.09
+ },
+ {
+  "idx": "24698",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.01
+ },
+ {
+  "idx": "24699",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.02
+ },
+ {
+  "idx": "24700",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.03
+ },
+ {
+  "idx": "24701",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.04
+ },
+ {
+  "idx": "24702",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.01
+ },
+ {
+  "idx": "24703",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24704",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24705",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.02
+ },
+ {
+  "idx": "24706",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.03
+ },
+ {
+  "idx": "24707",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24708",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24709",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.02
+ },
+ {
+  "idx": "24710",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.03
+ },
+ {
+  "idx": "24711",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24712",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24713",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.02
+ },
+ {
+  "idx": "24714",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.03
+ },
+ {
+  "idx": "24715",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 271,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.5
+ },
+ {
+  "idx": "24716",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.04
+ },
+ {
+  "idx": "24717",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 199,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.52
+ },
+ {
+  "idx": "24718",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.07
+ },
+ {
+  "idx": "24719",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.01
+ },
+ {
+  "idx": "24720",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.02
+ },
+ {
+  "idx": "24721",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24722",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.02
+ },
+ {
+  "idx": "24723",
+  "outcome": "SKIP",
+  "detail": "a16/d16 image access",
+  "secs": 0.01
+ },
+ {
+  "idx": "24724",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24725",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24726",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.02
+ },
+ {
+  "idx": "24727",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 41,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.22
+ },
+ {
+  "idx": "24728",
+  "outcome": "SKIP",
+  "detail": "image class img1a",
+  "secs": 0.01
+ },
+ {
+  "idx": "24729",
+  "outcome": "SKIP",
+  "detail": "image access out of bounds",
+  "secs": 0.03
+ },
+ {
+  "idx": "24730",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x110ffffe0",
+  "secs": 0.03
+ },
+ {
+  "idx": "24731",
+  "outcome": "SKIP",
+  "detail": "read of unmapped address 0x110ffffe0",
+  "secs": 0.03
+ },
+ {
+  "idx": "24766",
+  "outcome": "SKIP",
+  "detail": "image class img1a",
+  "secs": 0.04
+ },
+ {
+  "idx": "24767",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 72,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.29
+ },
+ {
+  "idx": "24768",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 64,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.28
+ },
+ {
+  "idx": "24769",
+  "outcome": "SKIP",
+  "detail": "MIMG opcode 0x47",
+  "secs": 0.04
+ },
+ {
+  "idx": "24770",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 55,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.23
+ },
+ {
+  "idx": "24773",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 21,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.24
+ },
+ {
+  "idx": "24774",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "24775",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "24776",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "24778",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "24779",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "24780",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "24782",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "24787",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "24788",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "24789",
+  "outcome": "SKIP",
+  "detail": "image class img2",
+  "secs": 0.0
+ },
+ {
+  "idx": "24797",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": true,
+  "steps": 52,
+  "profiles_matched": [
+   "float"
+  ],
+  "secs": 0.28
+ },
+ {
+  "idx": "24798",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": false,
+  "approx": false,
+  "steps": 17,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.48
+ },
+ {
+  "idx": "24799",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 32,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.46
+ },
+ {
+  "idx": "24800",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 39,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.57
+ },
+ {
+  "idx": "24801",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 28,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.51
+ },
+ {
+  "idx": "24802",
+  "outcome": "SKIP",
+  "detail": "v_mad_legacy_f32",
+  "secs": 0.01
+ },
+ {
+  "idx": "24803",
+  "profile": "float",
+  "outcome": "MATCH",
+  "cpu_changed_memory": true,
+  "approx": false,
+  "steps": 32,
+  "profiles_matched": [
+   "float",
+   "int"
+  ],
+  "secs": 0.63
+ }
+]

@@ -2,7 +2,7 @@
 
 An experiment: can the RDNA2 shaders from an Xbox Series game go through [AnyPS5](https://github.com/boykopovar/AnyPS5)'s shader recompiler (the Series X GPU shares the PS5's RDNA2 ISA)? This is a local fork on branch `xbox-series`. The shaders come from the author's own console dump.
 
-"Valid" below means the recompiler produced SPIR-V that passes `spirv-val` (Vulkan SDK 1.4.363.1, `--target-env vulkan1.3`). It does not mean the output is correct. Separately, a subset of shaders has been **executed** on a GPU and compared bit for bit with an independent CPU interpreter: 242 compute shaders (up to 1500 bytes) and 157 of the 738 pixel shaders match; the pixel run found none that differ, the compute run found a recompiler bug (fixed) and 6 mismatches still unexplained (3 are flaky workgroup-memory reads). The pixel check uses one constant input vector, so it says little about interpolation. Details and limits: `docs/xbox/XBOX_SHADERS.md`.
+"Valid" below means the recompiler produced SPIR-V that passes `spirv-val` (Vulkan SDK 1.4.363.1, `--target-env vulkan1.3`). It does not mean the output is correct. Separately, a subset of shaders has been **executed** on a GPU and compared bit for bit with an independent CPU interpreter: 242 compute shaders (up to 1500 bytes) and 157 of the 738 pixel shaders match; the pixel run found none that differ, the compute run found a recompiler bug (fixed) and 1 remaining difference of a few ulp that a 1-ulp hardware reciprocal explains (five former mismatches read workgroup memory nothing wrote, so they are now skipped as not comparable). The pixel check uses one constant input vector, so it says little about interpolation. Details and limits: `docs/xbox/XBOX_SHADERS.md`.
 
 ## Progress
 
@@ -17,7 +17,7 @@ Corpus: `shaders.rpf` holds 26,503 shaders: 24,804 in the main entry run plus 1,
 | Stage | Shaders | Valid SPIR-V | Notes |
 |---|---|---|---|
 | Compute | 2,689 | **2,601 (96.7%)** | union of four fake-memory variants, longer limit for the slow ones; 0 invalid |
-| Pixel | 12,098 | **6,697 (55.4%, strict)** | 6,931 if the host has `VK_KHR_fragment_shader_barycentric`; 11,044 (91.3%) with that and the f16 approximation (below) |
+| Pixel | 12,098 | **7,037 (58.2%, strict)** | 7,271 if the host has `VK_KHR_fragment_shader_barycentric`; 11,993 (99.1%) with that and the f16 approximation (below) |
 | Vertex | 2,233 | 1,371 (61.4%) | the rest mostly need the real vertex fetch shader |
 | Mesh | 9,282 | 8,035 (86.6%) | mesh configuration is a guess |
 | Geometry | 195 | not run | no driver mode for geometry shaders |
@@ -38,7 +38,7 @@ All SPIR-V that was produced validates (0 invalid). "Valid" is `spirv-val` only;
 Float mode, export mapping, mesh configuration and descriptor contents are harness defaults, not read from the game.
 
 ### Why the full corpus fails (counts are shaders)
-- **Pixel, strict (5,167 fail):** 4,776 read a 16-bit interpolant, which is refused unless the f16 approximation is on (Xbox sets round-toward-zero and the recompiler has no measured model for it). With the approximation 1,054 still fail, mostly 952 atomic image descriptors with an unsupported format (not investigated: in the first sample this was a harness gap, so it may be again), plus descriptor and sampler chains.
+- **Pixel, strict:** most failures read a 16-bit interpolant, which is refused unless the f16 approximation is on (Xbox sets round-toward-zero and the recompiler has no measured model for it). With every opt-in 105 still fail: descriptor and sampler chains, 15 over the barycentric location limit, 14 sampling with clamps the emitter rejects. (952 more failed on atomic image formats in the first full run; that was the harness again: the new shaders' bindings had been made with an old copy of `bindings.py` that does not mark atomic images. Regenerated, 949 of them pass.)
 - **Vertex (862):** 562 computed `s_swappc` targets and 223 fetch-shader calls with no parsed plan: vertex input layout comes from the pipeline state, so these wait for the executable.
 - **Mesh (1,247):** 996 descriptor sources read through a null pointer (likely a harness gap, user data is not real), plus sampler and image chains.
 - **Compute (88):** see below.

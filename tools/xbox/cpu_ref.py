@@ -108,6 +108,7 @@ class Memory:
         return struct.unpack('<I', self.read(addr, 4))[0]
 
 
+RCP_JITTER = None   # experiments only: callable returning an integer added to the bits of every v_rcp_f32 result (hardware rcp is within 1 ulp)
 FLOAT_APPROX = {"v_rcp_f32", "v_rcp_iflag_f32", "v_sqrt_f32", "v_exp_f32", "v_log_f32", "v_rsq_f32"}
 
 
@@ -123,6 +124,7 @@ class Wave:
         self.s[126], self.s[127] = M32, M32      # exec = all 64 lanes
         self.scc = 0
         self.lds = bytearray(65536)
+        self.lds_written = set()      # dword addresses written so far: reading any other LDS dword is uninitialised memory on a GPU
         self.approx = False
         self.images = {}    # id -> {w, h, data (floats), written}
         self.by_off = {}
@@ -563,7 +565,10 @@ class Wave:
             self.approx = True
             x = f32(A)
             if n in ("v_rcp_f32", "v_rcp_iflag_f32"):
-                return b32(math.copysign(math.inf, x)) if x == 0 else (0 if math.isinf(x) else b32(1.0 / x))
+                if x == 0 or math.isinf(x):
+                    return b32(math.copysign(math.inf, x)) if x == 0 else 0
+                r = b32(1.0 / x)
+                return (r + RCP_JITTER()) & M32 if RCP_JITTER else r
             if n == "v_sqrt_f32":
                 return b32(math.sqrt(x)) if x >= 0 else 0x7fc00000
             if n == "v_exp_f32":
@@ -771,8 +776,13 @@ class Wave:
             if not (ex >> lane) & 1:
                 continue
             a = self.v[addr_r][lane]
-            def rd(x): return struct.unpack_from('<I', self.lds, x)[0]
-            def wr(x, v): struct.pack_into('<I', self.lds, x, v & M32)
+            def rd(x):
+                if x not in self.lds_written:
+                    raise Unsupported("reads LDS that nothing has written (uninitialised on a GPU, so the result is not deterministic)")
+                return struct.unpack_from('<I', self.lds, x)[0]
+            def wr(x, v):
+                self.lds_written.add(x)
+                struct.pack_into('<I', self.lds, x, v & M32)
             if n == "ds_write_b32":
                 wr(a + off16, self.v[d0][lane])
             elif n == "ds_read_b32":
