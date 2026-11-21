@@ -3,7 +3,8 @@
 It runs ONE wave64 workgroup of a compute shader on the CPU over the same memory image that tools/xbox/exec.cpp builds from
 a scenario, and compares the resulting buffers with what the recompiled SPIR-V did on the GPU.
 
-Mnemonics and instruction formats come from out_disasm/rdna2.py (the 'name' and 'fmt' fields). Operand fields are decoded
+Mnemonics and instruction formats come from out_disasm/rdna2.py, or from rdna2_recomp.py when that is not found (the 'name' and 'fmt'
+fields; rdna2_llvm.py has no instruction words, so it cannot serve here). Operand fields are decoded
 here from the raw instruction words, because the disassembler's operand text is not faithful for VOP3 (compare destinations,
 modifiers). Anything not implemented raises Unsupported, so a result is either a real comparison or an explicit skip.
 
@@ -15,12 +16,18 @@ Assumptions that are NOT checked against hardware (the reference shares them wit
 import math, os, struct, sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "..", "rpf9shaders", "out_disasm"))
-sys.path.insert(0, r"E:/Programming/rpf9shaders/out_disasm")
-import rdna2
+sys.path.insert(0, os.environ.get("XBOX_RDNA2_DIR", r"E:/Programming/rpf9shaders/out_disasm"))
+try:
+    if os.environ.get("XBOX_RDNA2") == "recomp":
+        raise ImportError
+    import rdna2
+except ImportError:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import rdna2_recomp as rdna2
 
 M32 = 0xffffffff
 WAVE = 64
-RECOMPILER_DECODER = r"E:/Programming/anyps5_src/repo/core/shader/recompiler/RdnaDecoder/src/RdnaVectorOpDecoder.cpp"
+RECOMPILER_DECODER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "core", "shader", "recompiler", "RdnaDecoder", "src", "RdnaVectorOpDecoder.cpp")
 
 
 def _vopc_names():
