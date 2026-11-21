@@ -11,6 +11,7 @@ cl /nologo /LD /O2 /EHsc /std:c++17 gen\xgr_stub.cpp /Fe:xgameruntime.dll /link 
 :: with the runtime: XTaskQueue/XAsync and system info (vendored from GrandTheftXbox, MIT, runtime\GTX_LICENSE.txt) plus an offline local user (runtime\impl_user.cpp)
 cl /nologo /LD /O2 /EHsc /std:c++20 /DXGR_WITH_RUNTIME /I runtime gen\xgr_stub.cpp runtime\xtask.cpp runtime\impl.cpp runtime\impl_user.cpp runtime\impl_storage.cpp runtime\impl_package.cpp runtime\impl_save.cpp runtime\impl_system.cpp runtime\gtx\gtx_log.cpp /Fe:xgameruntime.dll /link /DEF:gen\xgameruntime.def
 cl /nologo /EHsc test_client.cpp
+cl /nologo /EHsc /std:c++20 test_user.cpp
 cl /nologo /EHsc /std:c++20 test_package.cpp
 cl /nologo /EHsc /std:c++20 test_save.cpp
 cl /nologo /EHsc /std:c++20 test_system.cpp
@@ -34,3 +35,7 @@ Behaviour of the implemented methods where the console is not matched exactly (w
 * A buffer shorter than the text plus its terminator gets `HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER)`; the console's code for that case is not verified.
 * `XPackageIsPackagedProcess` (`runtime/impl_package.cpp`): true, as for a console title. `XPackageGetUserLocale`: `XGR_LOCALE`, else the first of the user's preferred Windows UI languages that `MicrosoftGame.Config` lists under `Resources` (case-insensitive), then the first listed language with the same primary subtag, then the first listed language; with none listed, the user's default locale. The console's matching rules (script subtags, regional fallbacks) are not verified.
 * `runtime/impl.cpp` (vendored) also registers `impl_storage.cpp`'s and `impl_package.cpp`'s overrides, next to `impl_user.cpp`'s.
+* The offline user has no Xbox network identity, so nothing is invented for it: `XUserGetTokenAndSignature(Utf16)Async` and `XUserGetMsaTokenSilentlyAsync` complete with `E_GAMEUSER_FAILED_TO_GET_TOKEN` and their ResultSize/Result calls return that error; `XUserGetGamerPictureAsync` completes with `HRESULT_FROM_WIN32(ERROR_NOT_FOUND)` (no picture; no XUser page documents a code for this case).
+  `XUserResolvePrivilegeWithUiAsync` succeeds without UI, matching `XUserCheckPrivilege` (every privilege granted); `XUserResolveIssueWithUi(Utf16)Async` completes with `E_ABORT` like the headless game UI; `XUserAddByIdWithUiAsync` adds the local user for its own id and returns `E_GAMEUSER_USER_NOT_FOUND` for any other.
+  `XUserSignOutAsync` completes with `E_NOTIMPL` and the user stays signed in (`XUserIsSignOutPresent` is false here). The remote-connect and SPOP handlers (documented for Steam Deck) are stored and never called; `XUserPlatformRemoteConnectCancelPrompt` and `XUserPlatformSpopPromptComplete` return `E_INVALIDARG` because no prompt is ever active.
+  These calls reject a null async block or out pointer, a handle that is not the local user and unknown option bits with `E_INVALIDARG`.
