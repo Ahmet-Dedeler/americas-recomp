@@ -36,6 +36,14 @@ t = t.replace("%dx.types.ResBind", "%dx.types.ResBind")
 decl = ("%dx.types.ResBind = type { i32, i32, i32, i8 }\n%dx.types.ResourceProperties = type { i32, i32 }\n")
 t = t.replace("%dx.types.Handle = type { i8* }\n", "%dx.types.Handle = type { i8* }\n" + decl, 1)
 t = re.sub(r"declare %dx\.types\.Handle @dx\.op\.createHandle\([^\n]*\n\n?", "", t)
-t = t.replace("\ndeclare ", "\n; Function Attrs: nounwind readnone\ndeclare %dx.types.Handle @dx.op.createHandleFromBinding(i32, %dx.types.ResBind, i32, i1) #0\n\n; Function Attrs: nounwind readnone\ndeclare %dx.types.Handle @dx.op.annotateHandle(i32, %dx.types.Handle, %dx.types.ResourceProperties) #0\n\ndeclare ", 1)
+newdecls = ("; Function Attrs: nounwind readnone\n"
+            "declare %dx.types.Handle @dx.op.createHandleFromBinding(i32, %dx.types.ResBind, i32, i1) #0\n\n"
+            "; Function Attrs: nounwind readnone\n"
+            "declare %dx.types.Handle @dx.op.annotateHandle(i32, %dx.types.Handle, %dx.types.ResourceProperties) #0\n\n")
+m = re.search(r"^(?:declare|define) ", t, re.M)
+if m:
+    t = t[:m.start()] + newdecls + t[m.start():]
+else:
+    t = t.rstrip("\n") + "\n\n" + newdecls
 open(dst, "w", encoding="utf-8", newline="\n").write(t)
 print("wrote", dst, "wave size", wave)
