@@ -301,9 +301,11 @@ int main(int argc, char** argv) {
     try {
         std::uint32_t wave = 32;
         std::uint32_t groups[3] = {1, 1, 1};
-        bool lowGuest = false, pixel = false, hasDepth = false;
+        bool lowGuest = false, pixel = false, geometry = false, hasDepth = false;
         std::uint32_t targetW = 8, targetH = 8, inputAddr = 2, interpCount = 0, fp16Mask = 0;
-        std::string vsPath;
+        std::uint32_t geomInputPrimitive = 3, geomOutputTopology = 3, geomMaxOutputVertices = 3;
+        std::uint32_t geomEsgsItemSize = 8, geomGsvsVertexSize = 8, geomInputAttributes = 1, geomOutputAttributes = 1;
+        std::string vsPath, fsPath;
         std::uint8_t expMode[8] = {4, 4, 4, 4, 4, 4, 4, 4}, expMap[8] = {0xe4, 0xe4, 0xe4, 0xe4, 0xe4, 0xe4, 0xe4, 0xe4};
         std::uint32_t threads[3] = {0, 1, 1};
         std::uint32_t ldsDwords = 0, userCount = 16;
@@ -325,11 +327,22 @@ int main(int argc, char** argv) {
             else if (l.w[0] == "groups") for (int i = 0; i < 3; ++i) groups[i] = static_cast<std::uint32_t>(Num(l.w[1 + i]));
             else if (l.w[0] == "code") codePath = l.w[1];
             else if (l.w[0] == "lowguest") lowGuest = true;
-            else if (l.w[0] == "stage") pixel = l.w[1] == "ps";
+            else if (l.w[0] == "stage") { pixel = l.w[1] == "ps"; geometry = l.w[1] == "gs"; }
             else if (l.w[0] == "target") { targetW = static_cast<std::uint32_t>(Num(l.w[1])); targetH = static_cast<std::uint32_t>(Num(l.w[2])); }
             else if (l.w[0] == "inputaddr") inputAddr = static_cast<std::uint32_t>(std::stoul(l.w[1], nullptr, 16));
             else if (l.w[0] == "interp") { interpCount = static_cast<std::uint32_t>(Num(l.w[1])); fp16Mask = static_cast<std::uint32_t>(std::stoul(l.w[2], nullptr, 16)); }
             else if (l.w[0] == "vs") vsPath = l.w[1];
+            else if (l.w[0] == "fs") fsPath = l.w[1];
+            else if (l.w[0] == "geom") {
+                if (l.w.size() < 8) throw std::runtime_error("geom needs seven numbers");
+                geomInputPrimitive = static_cast<std::uint32_t>(Num(l.w[1]));
+                geomOutputTopology = static_cast<std::uint32_t>(Num(l.w[2]));
+                geomMaxOutputVertices = static_cast<std::uint32_t>(Num(l.w[3]));
+                geomEsgsItemSize = static_cast<std::uint32_t>(Num(l.w[4]));
+                geomGsvsVertexSize = static_cast<std::uint32_t>(Num(l.w[5]));
+                geomInputAttributes = static_cast<std::uint32_t>(Num(l.w[6]));
+                geomOutputAttributes = static_cast<std::uint32_t>(Num(l.w[7]));
+            }
             else if (l.w[0] == "depth") hasDepth = true;
             else if (l.w[0] == "export") { const auto t = Num(l.w[1]) & 7u; expMode[t] = static_cast<std::uint8_t>(Num(l.w[2])); expMap[t] = static_cast<std::uint8_t>(Num(l.w[3])); }
             else if (l.w[0] == "threads") for (int i = 0; i < 3; ++i) threads[i] = static_cast<std::uint32_t>(Num(l.w[1 + i]));
@@ -337,6 +350,8 @@ int main(int argc, char** argv) {
             else if (l.w[0] == "userdwords") userCount = static_cast<std::uint32_t>(Num(l.w[1]));
             else if (l.w[0] == "out") outDir = l.w[1];
         }
+        const bool graphics = pixel || geometry;
+        if (geometry && userCount == 16) userCount = 40;
         Device dev = CreateDevice(wave, pixel && !std::getenv("XBOX_NO_FRAGMENT_BARY"));
         std::map<std::uint32_t, Region> regions;
         for (auto& l : lines) {
@@ -472,7 +487,7 @@ int main(int argc, char** argv) {
         request.context.memory = MemoryRegionView(std::span<const MemoryRegion>(memory));
         const std::vector<std::uint32_t> caps{1u,55u,56u,32u,33u,5283u,9u,10u,11u,22u,39u,61u,62u,63u,64u,65u,66u,67u,68u,4427u,4433u,4434u,4435u,4436u,4437u,4438u,4445u,4447u,4448u,4449u,4450u,5345u,5346u,5347u,5301u,5302u,5303u,5304u,5305u,6u,38u,41u,5u,17u,18u,19u,3u,2u,4u,7u,8u,45u,5249u};
         const std::array<std::string_view, 7> ext{"SPV_EXT_mesh_shader", "SPV_KHR_storage_buffer_storage_class", "SPV_KHR_physical_storage_buffer", "SPV_KHR_16bit_storage", "SPV_KHR_8bit_storage", "SPV_KHR_vulkan_memory_model", "SPV_KHR_shader_ballot"};
-        request.shader = {pixel ? ShaderStage::Fragment : ShaderStage::Compute, 0x20000u, code};
+        request.shader = {geometry ? ShaderStage::Geometry : pixel ? ShaderStage::Fragment : ShaderStage::Compute, 0x20000u, code};
         if (pixel) {
             ShaderPixelStageInfo px{};
             px.interpolatorCount = interpCount;
@@ -490,17 +505,36 @@ int main(int argc, char** argv) {
             request.context.pixel = px;
             request.context.floatMode = ShaderFloatMode{0xc0u, true, false, false};
         }
+        if (geometry) {
+            ShaderVertexStageInfo vx{};
+            request.context.vertex = vx;
+            GraphicsCompileContext g{};
+            g.firstUserSgpr = 0;
+            GeometryConfiguration geom{};
+            const std::uint32_t inVerts = geomInputPrimitive == 1u ? 1u : geomInputPrimitive == 2u ? 2u : geomInputPrimitive == 3u ? 3u : geomInputPrimitive == 4u ? 4u : 6u;
+            geom.inputPrimitive = geomInputPrimitive;
+            geom.outputTopology = geomOutputTopology;
+            geom.maxOutputVertices = geomMaxOutputVertices;
+            geom.esgsItemSize = geomEsgsItemSize;
+            geom.gsvsVertexSize = geomGsvsVertexSize;
+            geom.gsvsOffsetDwords = std::max(64u, (inVerts * geomEsgsItemSize + 63u) & ~63u);
+            geom.inputAttributeCount = geomInputAttributes;
+            geom.outputAttributeCount = geomOutputAttributes;
+            g.geometry = geom;
+            request.graphics = g;
+            request.context.floatMode = ShaderFloatMode{0xc0u, true, false, false};
+        }
         request.context.waveSize = wave;
         request.context.userDataBaseRegister = 0;
         request.context.userData = userData;
-        if (!pixel) request.context.compute = ShaderComputeStageInfo{{threads[0], threads[1], threads[2]}, ldsDwords, {true, true, true}, false, 1u};
+        if (!graphics) request.context.compute = ShaderComputeStageInfo{{threads[0], threads[1], threads[2]}, ldsDwords, {true, true, true}, false, 1u};
         request.target.vulkanVersion = 0x00403000u;
         const bool computeSizes = (dev.subgroup.requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT) != 0;
         const auto fits = [&](std::uint32_t size) { return computeSizes ? size >= dev.subgroup.minSubgroupSize && size <= dev.subgroup.maxSubgroupSize : size == dev.nativeSubgroupSize; };
-        std::uint32_t hostSubgroup = fits(wave) || pixel ? wave : wave == 64u && fits(32u) ? 32u : wave;
+        std::uint32_t hostSubgroup = fits(wave) || graphics ? wave : wave == 64u && fits(32u) ? 32u : wave;
         if (const char* forced = std::getenv("XBOX_HOST_SUBGROUP")) hostSubgroup = static_cast<std::uint32_t>(Num(forced));
         request.target.subgroupSize = hostSubgroup;
-        const bool nativeSubgroup = !pixel && !computeSizes && hostSubgroup == dev.nativeSubgroupSize;
+        const bool nativeSubgroup = !graphics && !computeSizes && hostSubgroup == dev.nativeSubgroupSize;
         request.target.spirvVersion = nativeSubgroup ? 0x00010500u : 0x00010600u;
         request.target.bdaAbiVersion = 1;
         std::vector<std::uint32_t> capsLocal = caps;
@@ -523,7 +557,7 @@ int main(int argc, char** argv) {
         if (result.spirv.empty()) throw std::runtime_error("recompile produced no module");
         std::printf("compiled: %zu words, %zu bindings, push %zu bytes, bdaAbi %u\n", result.spirv.Words().size(), result.bindings.size(), result.pushConstants.size(), result.bdaAbiVersion);
 
-        const VkShaderStageFlags stageBits = pixel ? VK_SHADER_STAGE_FRAGMENT_BIT : VK_SHADER_STAGE_COMPUTE_BIT;
+        const VkShaderStageFlags stageBits = graphics ? (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_FRAGMENT_BIT) : VK_SHADER_STAGE_COMPUTE_BIT;
         // Descriptor layout + resources for each binding.
         std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
         std::vector<std::vector<VkDescriptorBufferInfo>> infos(result.bindings.size());
@@ -653,7 +687,7 @@ int main(int argc, char** argv) {
         for (const auto& c : result.specialization) { entries.push_back({c.id, static_cast<std::uint32_t>(specData.size() * 4), 4}); specData.push_back(c.value); }
         VkSpecializationInfo spec{static_cast<std::uint32_t>(entries.size()), entries.data(), specData.size() * 4, specData.data()};
         VkPipeline pipeline;
-        if (!pixel) {
+        if (!graphics) {
         VkPipelineShaderStageRequiredSubgroupSizeCreateInfo sub{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO};
         sub.requiredSubgroupSize = result.hostSubgroupSize != 0 ? result.hostSubgroupSize : wave;
         const bool unpinned = nativeSubgroup && sub.requiredSubgroupSize == dev.nativeSubgroupSize;
@@ -664,15 +698,30 @@ int main(int argc, char** argv) {
         cpi.layout = pipelineLayout;
         VK(vkCreateComputePipelines(dev.device, VK_NULL_HANDLE, 1, &cpi, nullptr, &pipeline));
         } else {
-            if (vsPath.empty()) throw std::runtime_error("stage ps needs a `vs <file.spv>` line");
+            if (vsPath.empty()) throw std::runtime_error("a graphics stage needs a `vs <file.spv>` line");
             const auto vsRaw = ReadFile(vsPath);
             VkShaderModuleCreateInfo vmi{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
             vmi.codeSize = vsRaw.size(); vmi.pCode = reinterpret_cast<const std::uint32_t*>(vsRaw.data());
             VkShaderModule vsModule;
             VK(vkCreateShaderModule(dev.device, &vmi, nullptr, &vsModule));
-            VkPipelineShaderStageCreateInfo stages[2]{};
+            VkShaderModule fsModule = VK_NULL_HANDLE;
+            if (geometry) {
+                if (fsPath.empty()) throw std::runtime_error("stage gs needs a `fs <file.spv>` line");
+                const auto fsRaw = ReadFile(fsPath);
+                VkShaderModuleCreateInfo fmi{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
+                fmi.codeSize = fsRaw.size(); fmi.pCode = reinterpret_cast<const std::uint32_t*>(fsRaw.data());
+                VK(vkCreateShaderModule(dev.device, &fmi, nullptr, &fsModule));
+            }
+            VkPipelineShaderStageCreateInfo stages[3]{};
             stages[0] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, 0, VK_SHADER_STAGE_VERTEX_BIT, vsModule, "main", nullptr};
-            stages[1] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, 0, VK_SHADER_STAGE_FRAGMENT_BIT, module, "main", entries.empty() ? nullptr : &spec};
+            std::uint32_t stageCount = 2;
+            if (pixel) {
+                stages[1] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, 0, VK_SHADER_STAGE_FRAGMENT_BIT, module, "main", entries.empty() ? nullptr : &spec};
+            } else {
+                stages[1] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, 0, VK_SHADER_STAGE_GEOMETRY_BIT, module, "main", entries.empty() ? nullptr : &spec};
+                stages[2] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, 0, VK_SHADER_STAGE_FRAGMENT_BIT, fsModule, "main", nullptr};
+                stageCount = 3;
+            }
             VkPipelineVertexInputStateCreateInfo vin{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
             VkPipelineInputAssemblyStateCreateInfo ia{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
             ia.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -696,7 +745,7 @@ int main(int argc, char** argv) {
             dss.depthTestEnable = hasDepth ? VK_TRUE : VK_FALSE; dss.depthWriteEnable = hasDepth ? VK_TRUE : VK_FALSE; dss.depthCompareOp = VK_COMPARE_OP_ALWAYS;
             if (hasDepth) rci.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
             VkGraphicsPipelineCreateInfo gpi{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, &rci};
-            gpi.stageCount = 2; gpi.pStages = stages; gpi.pVertexInputState = &vin; gpi.pInputAssemblyState = &ia; gpi.pViewportState = &vps;
+            gpi.stageCount = stageCount; gpi.pStages = stages; gpi.pVertexInputState = &vin; gpi.pInputAssemblyState = &ia; gpi.pViewportState = &vps;
             gpi.pDepthStencilState = &dss; gpi.pRasterizationState = &rs; gpi.pMultisampleState = &ms; gpi.pColorBlendState = &cb; gpi.layout = pipelineLayout;
             VK(vkCreateGraphicsPipelines(dev.device, VK_NULL_HANDLE, 1, &gpi, nullptr, &pipeline));
         }
@@ -758,16 +807,16 @@ int main(int argc, char** argv) {
             VkImageMemoryBarrier toGeneral = toTransfer;
             toGeneral.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; toGeneral.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
             toGeneral.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL; toGeneral.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-            vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, pixel ? VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &toGeneral);
+            vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, graphics ? VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &toGeneral);
         }
-        const VkPipelineBindPoint bindPoint = pixel ? VK_PIPELINE_BIND_POINT_GRAPHICS : VK_PIPELINE_BIND_POINT_COMPUTE;
+        const VkPipelineBindPoint bindPoint = graphics ? VK_PIPELINE_BIND_POINT_GRAPHICS : VK_PIPELINE_BIND_POINT_COMPUTE;
         vkCmdBindPipeline(cmd, bindPoint, pipeline);
         vkCmdBindDescriptorSets(cmd, bindPoint, pipelineLayout, 0, 1, &set, 0, nullptr);
         if (!result.pushConstants.empty()) vkCmdPushConstants(cmd, pipelineLayout, stageBits, 0, static_cast<std::uint32_t>(result.pushConstants.size()), result.pushConstants.data());
         struct Target { VkImage image = VK_NULL_HANDLE; VkDeviceMemory memory = VK_NULL_HANDLE; VkImageView view = VK_NULL_HANDLE; Region readback; };
         std::vector<Target> targets;
         Target depthTarget;
-        if (!pixel) {
+        if (!graphics) {
             vkCmdDispatch(cmd, groups[0], groups[1], groups[2]);
         } else {
             targets.resize(8);
@@ -854,7 +903,7 @@ int main(int argc, char** argv) {
             Region& rb = readback[iid];
             MakeBuffer(dev, rb, ImageBytes(im), VK_BUFFER_USAGE_TRANSFER_DST_BIT);
             VkMemoryBarrier mb{VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT};
-            vkCmdPipelineBarrier(cmd, pixel ? VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &mb, 0, nullptr, 0, nullptr);
+            vkCmdPipelineBarrier(cmd, graphics ? VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &mb, 0, nullptr, 0, nullptr);
             const auto copies = LevelCopies(im);
             vkCmdCopyImageToBuffer(cmd, im.image, VK_IMAGE_LAYOUT_GENERAL, rb.buffer, static_cast<std::uint32_t>(copies.size()), copies.data());
         }
