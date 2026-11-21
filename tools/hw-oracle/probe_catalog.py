@@ -22,11 +22,12 @@ MODE_LIMITS = {"ieee": 2, "denorm32": 4, "denorm16": 4, "dx10_clamp": 2,
                "round32": 4, "round16": 4, "fp16_overflow": 2}
 PROBE_KEYS = {"id", "instruction", "description", "body", "output_registers", "wave_size",
               "floating_point_modes", "lds_bytes", "memory", "rows"}
-OPTIONAL_PROBE_KEYS = {"default"}
+OPTIONAL_PROBE_KEYS = {"default", "body_gfx11", "only_on"}
 CATALOG_KEYS = {"schema_version", "probes"}
 ROW_KEYS = {"name", "input"}
 PS5_CHIP_ID = 0x13fc
 PS5_TARGET = "gfx1013"
+TARGET = re.compile(r"gfx[0-9]+\Z")
 IDENTIFIER = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
 INSTRUCTION = re.compile(r"[a-z][a-z0-9_]*\Z")
 DECIMAL_WORD = re.compile(r"[0-9]+\Z")
@@ -46,6 +47,15 @@ def parse_word(value, context):
     if number < 0 or number > 0xffffffff:
         raise ValueError(f"{context} must be an unsigned 32-bit integer")
     return number
+
+
+def validate_body(probe_id, body, instruction):
+    body_lines = [line.strip() for line in body.splitlines() if line.strip()] if isinstance(body, str) else []
+    mnemonics = [line.split()[0] for line in body_lines]
+    if not body_lines or mnemonics.count(instruction) != 1 or any(
+            not INSTRUCTION.fullmatch(mnemonic) or mnemonic == "s_endpgm" for mnemonic in mnemonics) or any(
+            marker in line for line in body_lines for marker in ("#", ";")):
+        raise ValueError(f"probe {probe_id} body must contain exactly one uncommented declared instruction and explicit support instructions")
 
 
 def validate_probe(probe, index):
@@ -73,13 +83,14 @@ def validate_probe(probe, index):
     description = probe["description"]
     if not isinstance(description, str) or not description.strip():
         raise ValueError(f"probe {probe_id} description must be nonempty text")
-    body = probe["body"]
-    body_lines = [line.strip() for line in body.splitlines() if line.strip()] if isinstance(body, str) else []
-    mnemonics = [line.split()[0] for line in body_lines]
-    if not body_lines or mnemonics.count(instruction) != 1 or any(
-            not INSTRUCTION.fullmatch(mnemonic) or mnemonic == "s_endpgm" for mnemonic in mnemonics) or any(
-            marker in line for line in body_lines for marker in ("#", ";")):
-        raise ValueError(f"probe {probe_id} body must contain exactly one uncommented declared instruction and explicit support instructions")
+    validate_body(probe_id, probe["body"], instruction)
+    if "body_gfx11" in probe:
+        validate_body(probe_id, probe["body_gfx11"], instruction)
+    if "only_on" in probe:
+        only_on = probe["only_on"]
+        if not isinstance(only_on, list) or not only_on or any(
+                not isinstance(target, str) or TARGET.fullmatch(target) is None for target in only_on):
+            raise ValueError(f"probe {probe_id} only_on must be a nonempty array of assembly targets")
     output_registers = probe["output_registers"]
     if type(output_registers) is not int or output_registers not in range(1, 17):
         raise ValueError(f"probe {probe_id} output_registers must be from 1 to 16")
@@ -304,18 +315,28 @@ def run_probes(probes, digest, output_dir, device_label, hardware_identity=None,
                runtime_name=None, assembly_target=None):
     device_label = validate_device_label(device_label)
     directory = Path(output_dir) / device_label
+    runtime = hw_oracle.runtime() if runtime_name is None else runtime_name
+    target = hw_oracle.target() if assembly_target is None else assembly_target
+    selected = []
+    for probe in probes:
+        only_on = probe.get("only_on")
+        if only_on and target not in only_on:
+            print(f"Skipped {probe['id']}: only on {', '.join(only_on)}, target is {target}")
+            continue
+        selected.append(probe)
+    probes = selected
     destinations = [directory / f"{probe['id']}.json" for probe in probes]
     existing = [str(path) for path in destinations if path.exists()]
     if existing:
         raise ValueError("refusing to replace existing measurement reports: " + ", ".join(existing))
     directory.mkdir(parents=True, exist_ok=True)
-    runtime = hw_oracle.runtime() if runtime_name is None else runtime_name
-    target = hw_oracle.target() if assembly_target is None else assembly_target
     reports = []
     for probe, destination in zip(probes, destinations):
         rows = [tuple(row["input"]) for row in probe["rows"]]
+        body = probe["body_gfx11"] if target.startswith("gfx11") and "body_gfx11" in probe else probe["body"]
+        executed = {**probe, "body": body}
         outputs = hw_oracle.run(
-            probe["body"], rows, wave64=probe["wave_size"] == 64,
+            body, rows, wave64=probe["wave_size"] == 64,
             coarse=probe["memory"] == "coarse", **probe["floating_point_modes"],
             lds=probe["lds_bytes"],
         )
@@ -324,7 +345,7 @@ def run_probes(probes, digest, output_dir, device_label, hardware_identity=None,
         if any(type(word) is not int or word < 0 or word > 0xffffffff
                for output in outputs for word in output[:probe["output_registers"]]):
             raise ValueError(f"hardware oracle returned a non-dword result for {probe['id']}")
-        report = make_result(probe, digest, device_label, target, runtime, outputs, hardware_identity)
+        report = make_result(executed, digest, device_label, target, runtime, outputs, hardware_identity)
         reports.append((probe, destination, json.dumps(report, indent=2) + "\n"))
     for probe, destination, report in reports:
         write_atomic(destination, report)

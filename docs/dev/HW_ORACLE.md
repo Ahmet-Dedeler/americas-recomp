@@ -102,6 +102,11 @@ A probe body may contain explicit setup, waits and readback around exactly one i
 target that most supported GPUs cannot assemble are excluded from the default generate, run and coverage sets; select
 them by ID with `--probe` on a compatible device.
 
+Two optional fields keep one catalog usable across ISA generations. `body_gfx11` replaces `body` when the assembly
+target starts with `gfx11`: gfx11 requires explicit `v_add_f16 v10.l, v4.l, v5.l` operands where gfx1013 rejects the
+`.l` suffix, and both forms encode identically. `only_on` lists the assembly targets a probe may run on; selecting it
+elsewhere skips the probe with a message instead of failing assembly.
+
 List the curated cases, then generate portable input bundles without a GPU:
 
 ```sh
