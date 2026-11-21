@@ -5,7 +5,8 @@
   "xbox_intrinsics": [
    "global_store_dword_with_cache",
    "global_store_dwordx4_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "1": {
   "name": "PT_WriteOfflinePartition",
@@ -13,14 +14,16 @@
   "xbox_intrinsics": [
    "global_load_dwordx3_with_cache",
    "global_load_dwordx4_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "2": {
   "name": "PT_WritePartitions",
   "result_on_amd_pc_compiler": "CRASH",
   "xbox_intrinsics": [
    "global_load_dword_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "3": {
   "name": "PT_WriteInstances",
@@ -28,7 +31,8 @@
   "xbox_intrinsics": [
    "global_load_dword_with_cache",
    "global_load_dwordx3_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "4": {
   "name": "PT_LoadInstances",
@@ -42,7 +46,8 @@
    "global_load_dword_with_cache",
    "global_load_dwordx3_with_cache",
    "global_load_dwordx4_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "5": {
   "name": "PT_BeginPass",
@@ -50,12 +55,14 @@
   "xbox_intrinsics": [
    "global_load_dword_with_cache",
    "global_store_dwordx3_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "6": {
   "name": "ResetCounterValues",
   "result_on_amd_pc_compiler": "OK",
-  "xbox_intrinsics": []
+  "xbox_intrinsics": [],
+  "lowered_compiles_on_amd_pc": true
  },
  "7": {
   "name": "InitHeaders",
@@ -63,22 +70,26 @@
   "xbox_intrinsics": [
    "global_store_dwordx3_with_cache",
    "global_store_dwordx4_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "8": {
   "name": "CopyForBVHUpdate",
   "result_on_amd_pc_compiler": "OK",
-  "xbox_intrinsics": []
+  "xbox_intrinsics": [],
+  "lowered_compiles_on_amd_pc": true
  },
  "9": {
   "name": "ResetToIndexBuffer",
   "result_on_amd_pc_compiler": "OK",
-  "xbox_intrinsics": []
+  "xbox_intrinsics": [],
+  "lowered_compiles_on_amd_pc": true
  },
  "10": {
   "name": "CopyCounters",
   "result_on_amd_pc_compiler": "OK",
-  "xbox_intrinsics": []
+  "xbox_intrinsics": [],
+  "lowered_compiles_on_amd_pc": true
  },
  "11": {
   "name": "CalculateMortonCodes",
@@ -91,7 +102,8 @@
    "global_load_dwordx3_with_cache",
    "global_load_dwordx4_with_cache",
    "s_load_dword_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "12": {
   "name": "CalculateMortonCodes64",
@@ -104,7 +116,8 @@
    "global_load_dwordx3_with_cache",
    "global_load_dwordx4_with_cache",
    "s_load_dword_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "13": {
   "name": "BitonicPreSortCS",
@@ -112,7 +125,8 @@
   "xbox_intrinsics": [
    "BFI",
    "s_load_dword_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "14": {
   "name": "BitonicOuterSortCS",
@@ -120,7 +134,8 @@
   "xbox_intrinsics": [
    "BFI",
    "s_load_dword_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "15": {
   "name": "BitonicInnerSortCS",
@@ -128,7 +143,8 @@
   "xbox_intrinsics": [
    "BFI",
    "s_load_dword_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "16": {
   "name": "BitonicPreSort64CS",
@@ -136,7 +152,8 @@
   "xbox_intrinsics": [
    "BFI",
    "s_load_dword_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "17": {
   "name": "BitonicOuterSort64CS",
@@ -144,7 +161,8 @@
   "xbox_intrinsics": [
    "BFI",
    "s_load_dword_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "18": {
   "name": "BitonicInnerSort64CS",
@@ -152,12 +170,14 @@
   "xbox_intrinsics": [
    "BFI",
    "s_load_dword_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "19": {
   "name": "RadixReset",
   "result_on_amd_pc_compiler": "OK",
-  "xbox_intrinsics": []
+  "xbox_intrinsics": [],
+  "lowered_compiles_on_amd_pc": true
  },
  "20": {
   "name": "RadixCount",
@@ -165,7 +185,8 @@
   "xbox_intrinsics": [
    "Ballot64",
    "MakeUniform.i32"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": true
  },
  "21": {
   "name": "PrefixSum64",
@@ -173,7 +194,8 @@
   "xbox_intrinsics": [
    "LaneSwizzle.i32",
    "V_CNDMASK_B32"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": true
  },
  "22": {
   "name": "PrefixSum128",
@@ -181,7 +203,8 @@
   "xbox_intrinsics": [
    "LaneSwizzle.i32",
    "V_CNDMASK_B32"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": true
  },
  "23": {
   "name": "PrefixSum256",
@@ -190,7 +213,8 @@
    "LaneSwizzle.i32",
    "ReadLane.i32",
    "V_CNDMASK_B32"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": true
  },
  "24": {
   "name": "PrefixSum512",
@@ -199,7 +223,8 @@
    "LaneSwizzle.i32",
    "ReadLane.i32",
    "V_CNDMASK_B32"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": true
  },
  "25": {
   "name": "PrefixSum1024",
@@ -209,7 +234,8 @@
    "LaneSwizzle.i32",
    "ReadLane.i32",
    "V_CNDMASK_B32"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": true
  },
  "26": {
   "name": "PrefixSum2048",
@@ -219,7 +245,8 @@
    "LaneSwizzle.i32",
    "ReadLane.i32",
    "V_CNDMASK_B32"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": true
  },
  "27": {
   "name": "PrefixSum4096",
@@ -229,7 +256,8 @@
    "LaneSwizzle.i32",
    "ReadLane.i32",
    "V_CNDMASK_B32"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": true
  },
  "28": {
   "name": "RadixAlloc",
@@ -243,14 +271,16 @@
    "ReadLane.i32",
    "S_BCNT1_U64",
    "V_CNDMASK_B32"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": true
  },
  "29": {
   "name": "RearrangeTriangles",
   "result_on_amd_pc_compiler": "CRASH",
   "xbox_intrinsics": [
    "s_load_dword_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "30": {
   "name": "RearrangeBVHs",
@@ -258,7 +288,8 @@
   "xbox_intrinsics": [
    "global_load_dword_with_cache",
    "s_load_dword_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "31": {
   "name": "LoadInstances",
@@ -275,7 +306,8 @@
    "global_load_dwordx2_with_cache",
    "global_load_dwordx3_with_cache",
    "global_load_dwordx4_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "32": {
   "name": "SplitInstances",
@@ -286,7 +318,8 @@
    "global_atomic_sub",
    "global_load_dwordx3_with_cache",
    "global_load_dwordx4_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "33": {
   "name": "LoadTriangles",
@@ -300,7 +333,8 @@
    "global_load_dword_with_cache",
    "global_load_dwordx4_with_cache",
    "s_load_dword_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "34": {
   "name": "LoadProceduralGeometry",
@@ -310,7 +344,8 @@
    "global_atomic_fmax",
    "global_atomic_fmin",
    "global_atomic_sub"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "35": {
   "name": "ReloadTriangles",
@@ -323,7 +358,8 @@
    "global_load_dwordx2_with_cache",
    "global_load_dwordx3_with_cache",
    "global_load_dwordx4_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "36": {
   "name": "ReloadProcedurals",
@@ -332,19 +368,22 @@
    "global_atomic_fmax",
    "global_atomic_fmin",
    "global_load_dwordx3_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "37": {
   "name": "PT_ConstructBVH4",
   "result_on_amd_pc_compiler": "OK",
-  "xbox_intrinsics": []
+  "xbox_intrinsics": [],
+  "lowered_compiles_on_amd_pc": true
  },
  "38": {
   "name": "ConstructBVH4",
   "result_on_amd_pc_compiler": "CRASH",
   "xbox_intrinsics": [
    "Med3_F32"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": true
  },
  "39": {
   "name": "RefitBVH4",
@@ -356,7 +395,8 @@
    "global_load_dword_with_cache",
    "global_load_dwordx3_with_cache",
    "global_load_dwordx4_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "40": {
   "name": "BuildBVHSplits",
@@ -364,7 +404,8 @@
   "xbox_intrinsics": [
    "global_load_dword_with_cache",
    "s_load_dword_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "41": {
   "name": "BuildBVHSplits64",
@@ -372,7 +413,8 @@
   "xbox_intrinsics": [
    "global_load_dword_with_cache",
    "s_load_dword_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "42": {
   "name": "FindTreelets",
@@ -386,12 +428,14 @@
    "WaveMin_U32",
    "global_load_dword_with_cache",
    "s_load_dword_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "43": {
   "name": "ResetKDOP",
   "result_on_amd_pc_compiler": "OK",
-  "xbox_intrinsics": []
+  "xbox_intrinsics": [],
+  "lowered_compiles_on_amd_pc": true
  },
  "44": {
   "name": "BuildKDOP",
@@ -404,14 +448,16 @@
    "global_load_dword_with_cache",
    "global_load_dwordx3_with_cache",
    "s_load_dword_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "45": {
   "name": "BuildApexPointMap",
   "result_on_amd_pc_compiler": "FAIL",
   "xbox_intrinsics": [
    "Med3_F32"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": true
  },
  "46": {
   "name": "GetBVHCompactedSize",
@@ -419,12 +465,14 @@
   "xbox_intrinsics": [
    "global_load_dword_with_cache",
    "s_load_dword_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "47": {
   "name": "DecompressHeader",
   "result_on_amd_pc_compiler": "OK",
-  "xbox_intrinsics": []
+  "xbox_intrinsics": [],
+  "lowered_compiles_on_amd_pc": true
  },
  "48": {
   "name": "LeafRehydration",
@@ -436,7 +484,8 @@
    "global_load_dwordx2_with_cache",
    "global_load_dwordx3_with_cache",
    "global_load_dwordx4_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  },
  "49": {
   "name": "Box16Rehydration",
@@ -444,7 +493,8 @@
   "xbox_intrinsics": [
    "V_PK_MAX_F16",
    "V_PK_MIN_F16"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": true
  },
  "50": {
   "name": "Box32Rehydration",
@@ -452,12 +502,14 @@
   "xbox_intrinsics": [
    "V_PK_MAX_F16",
    "V_PK_MIN_F16"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": true
  },
  "51": {
   "name": "CopyAndCompactBVH",
   "result_on_amd_pc_compiler": "OK",
-  "xbox_intrinsics": []
+  "xbox_intrinsics": [],
+  "lowered_compiles_on_amd_pc": true
  },
  "52": {
   "name": "GetBVHCompactedSize",
@@ -465,6 +517,7 @@
   "xbox_intrinsics": [
    "global_load_dword_with_cache",
    "s_load_dword_with_cache"
-  ]
+  ],
+  "lowered_compiles_on_amd_pc": false
  }
 }
