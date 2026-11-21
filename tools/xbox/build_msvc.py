@@ -49,7 +49,7 @@ def main():
             ap.error(f"missing Vulkan headers or x64 import library under {sdk}")
         agc = ROOT / "core/libs/prx/libSceAgcDriver/Graphics/src"
         agc_sources = [agc / f"{name}.cpp" for name in ("GuestSamplerResource", "GuestTextureResource", "RuntimeSwitches", "TextureFormat", "TextureTiling")]
-        agc_sources.append(ROOT / "core/libs/prx/libc/src/RunReport.cpp")
+        agc_sources.append(HERE / "stub_run_report.cpp")
         sources = " ".join(f'"{path}"' for path in agc_sources)
         tools.append(("exec.cpp", "exec.exe", f'/I"{sdk / "Include"}" /I"{ROOT / "core"}" {sources}'))
     B = pathlib.Path(a.build_dir)

@@ -151,9 +151,18 @@ Device CreateDevice(std::uint32_t wave, bool bary) {
     VkPhysicalDeviceVulkan11Features f11{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES, &f12};
     VkPhysicalDeviceFeatures2 f2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &f11};
     VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR fbary{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR};
+    const std::string noBary = "the device has no VK_KHR_fragment_shader_barycentric; set XBOX_NO_FRAGMENT_BARY=1 to recompile pixel shaders without it";
+    if (bary) {
+        std::uint32_t extensionCount = 0;
+        VK(vkEnumerateDeviceExtensionProperties(d.physical, nullptr, &extensionCount, nullptr));
+        std::vector<VkExtensionProperties> extensions(extensionCount);
+        VK(vkEnumerateDeviceExtensionProperties(d.physical, nullptr, &extensionCount, extensions.data()));
+        const bool listed = std::any_of(extensions.begin(), extensions.end(), [](const VkExtensionProperties& e) { return std::strcmp(e.extensionName, VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME) == 0; });
+        if (!listed) throw std::runtime_error(noBary);
+    }
     if (bary) f13.pNext = &fbary;
     vkGetPhysicalDeviceFeatures2(d.physical, &f2);
-    if (bary && !fbary.fragmentShaderBarycentric) throw std::runtime_error("the device has no VK_KHR_fragment_shader_barycentric");
+    if (bary && !fbary.fragmentShaderBarycentric) throw std::runtime_error(noBary);
     d.samplerAnisotropy = f2.features.samplerAnisotropy == VK_TRUE;
     VkPhysicalDeviceProperties limits{};
     vkGetPhysicalDeviceProperties(d.physical, &limits);
@@ -423,7 +432,11 @@ int main(int argc, char** argv) {
         if (!pixel) request.context.compute = ShaderComputeStageInfo{{threads[0], threads[1], threads[2]}, ldsDwords, {true, true, true}, false, 1u};
         request.target.vulkanVersion = 0x00403000u;
         request.target.spirvVersion = 0x00010600u;
-        request.target.subgroupSize = wave;
+        const bool computeSizes = (dev.subgroup.requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT) != 0;
+        const auto fits = [&](std::uint32_t size) { return computeSizes && size >= dev.subgroup.minSubgroupSize && size <= dev.subgroup.maxSubgroupSize; };
+        std::uint32_t hostSubgroup = fits(wave) || pixel ? wave : wave == 64u && fits(32u) ? 32u : wave;
+        if (const char* forced = std::getenv("XBOX_HOST_SUBGROUP")) hostSubgroup = static_cast<std::uint32_t>(Num(forced));
+        request.target.subgroupSize = hostSubgroup;
         request.target.bdaAbiVersion = 1;
         std::vector<std::uint32_t> capsLocal = caps;
         std::vector<std::string_view> extLocal(ext.begin(), ext.end());

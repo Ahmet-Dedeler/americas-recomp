@@ -21,13 +21,15 @@ Experimental tooling for running Xbox Series shader code through the shader reco
    `exec_tests.py`, `exec_bvh_tests.py` and `image_tests.py` hold the tests. Set `XBOX_EXEC` to the `exec.exe` path. Supported: guest
    buffers, shader data, flattened SRT, identity BDA page table and fault reporting, single-level linear 1D, 2D, 2D array and 3D images in
    any format the AGC driver maps and the device can sample, T#s encoded with the AGC driver's `EncodeTextureResource`, samplers built
-   from the guest S# with its `DecodeSamplerResource`. Pixel shaders (`stage ps`, see the pixel smoke test): one triangle over a single
-   RGBA32F target. Scenario lines for images: `image <id> <w> <h> [format <IMG_FORMAT>] [dim 1d|2d|3d] [depth <d>] [layers <n>]
+   from the guest S# with its `DecodeSamplerResource`. Pixel shaders (`stage ps`, see the pixel smoke, interpolation and per-vertex
+   tests): one triangle over up to eight RGBA32F targets; per-vertex inputs need `VK_KHR_fragment_shader_barycentric`. Scenario lines for images: `image <id> <w> <h> [format <IMG_FORMAT>] [dim 1d|2d|3d] [depth <d>] [layers <n>]
    [clear r g b a] [init <file>]` (default format 77, 32_32_32_32_FLOAT; init files hold raw texels in the image format, row-major, slice
    after slice; clear values are integers for UINT/SINT formats; read back as `out/image<id>.bin` in the image format) and
-   `timg <region> <offset> <image>`, which writes the image's linear T#. `exec` compiles six AGC driver and libc sources for this
+   `timg <region> <offset> <image>`, which writes the image's linear T#. `exec` compiles five AGC driver sources and a no-op run-report stand-in (`stub_run_report.cpp`) for this
    (`CMakeLists.txt`, `build_msvc.py --with-exec`). Not yet: block-compressed and cube images, mip levels, image tables, texel buffers,
    other graphics stages.
+   Compute shaders get the device's subgroup size for their wave size; a wave64 shader on a device whose largest compute subgroup is 32
+   (NVIDIA, Intel) is recompiled for 32-wide subgroups, two guest lanes per invocation. `XBOX_HOST_SUBGROUP=<n>` forces the host size.
 
 ## Pixel smoke test
 
@@ -60,6 +62,22 @@ the corresponding W, then normalizes their sum to one. Covered pixels must match
 within 0.00001 per channel. Outside pixels must exactly retain the clear value.
 The triangle edges avoid pixel centers, so the reference needs no edge tie-break.
 
+## Per-vertex input test
+
+With a built execution harness and the Vulkan SDK's `glslangValidator` on PATH:
+
+```powershell
+python tools/xbox/per_vertex_test.py --exec "build-xbox/exec.exe"
+```
+
+The fragment program reads the P0, P10 and P20 interpolation parameters of one
+attribute with `VINTRP MOV` and writes them to three RGBA32F targets. The vertex
+shader assigns red, green and blue to the three vertices. P10 and P20 are the
+vertex-1 and vertex-2 plane coefficients (P1 - P0 and P2 - P0), not the raw
+vertex colours. Every pixel must read P0 = (1, 0, 0, 1), P10 = (-1, 1, 0, 0) and
+P20 = (-1, 0, 1, 0). The test needs `VK_KHR_fragment_shader_barycentric`; without
+a geometry shader the host path is not a valid reference for per-vertex inputs.
+
 ## Windows compute smoke test
 
 From the repository root in PowerShell, with Python 3, the x64 MSVC C++ toolchain,
@@ -76,3 +94,15 @@ installation. For a custom build directory, pass `--exec "path to exec.exe"` to
 the smoke test. It generates a standalone RDNA2 compute program, dispatches one
 32-lane workgroup, and checks all 1024 output bytes. A successful run prints
 `PASS`. This test requires neither a shader corpus nor an external decoder.
+
+### Test texture sampling
+
+With the Vulkan execution harness built and the SDK's `glslangValidator` on PATH,
+run `python tools/xbox/texture_test.py --exec "build-xbox/exec.exe"`.
+
+A GLSL vertex shader supplies UVs and unequal clip-space W. An RDNA2 fragment
+program interpolates U and V, samples a generated 4 by 3 RGBA32F texture at mip
+level zero, and exports the result. The CPU calculates perspective-correct UVs
+at each pixel center and independently selects the nearest texel with clamp-to-edge
+addressing. All 12 texels must appear, all 192 covered pixels must match exactly,
+and all 832 outside pixels must retain the clear value.
