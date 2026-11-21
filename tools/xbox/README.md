@@ -17,9 +17,23 @@ Experimental tooling for running Xbox Series shader code through the shader reco
    host GPU and writes the memory regions (and images) back. Build it on Windows with `build_msvc.py --with-exec`.
    `rdna_asm.py` assembles small RDNA2 test programs (opcode numbers come from the decoder tables; each program is decoded back to check it),
    `exec_tests.py` and `exec_bvh_tests.py` hold the tests. Set `XBOX_EXEC` to the `exec.exe` path. Supported: guest buffers, shader data,
-   flattened SRT, identity BDA page table and fault reporting, 2D RGBA32F images, samplers. Not yet: other image formats/dimensions, image
-   tables, texel buffers, graphics stages.
+   flattened SRT, identity BDA page table and fault reporting, 2D RGBA32F images, samplers. Pixel shaders (`stage ps`, see the pixel smoke test): one triangle over
+   a single RGBA32F target. Not yet: other image formats/dimensions, image tables, texel buffers, other graphics stages.
 
+## Pixel smoke test
+
+With the Vulkan SDK's `glslangValidator` on PATH and the execution harness built,
+run this from the repository root:
+
+```powershell
+python tools/xbox/pixel_smoke.py --exec "build-xbox/exec.exe"
+```
+
+The vertex shader draws a full-screen triangle. The standalone RDNA2 pixel shader
+writes the pixel-center X and Y coordinates, zero blue, and unit alpha to a
+13 by 7 RGBA32F attachment. The test checks every channel at every coordinate
+and reports the first mismatch. It uses no external shader corpus. The scenario's `export 0 9 0xe4` selects
+the 32-bit ABGR export mode with the identity component mapping.
 
 ## Windows compute smoke test
 
