@@ -1,4 +1,4 @@
-"""Image execution tests: formats other than RGBA32F, 1D, 3D and cube images, and samplers built from the guest S#."""
+"""Image execution tests: formats other than RGBA32F, 1D, 3D and cube images, mip levels, and samplers built from the guest S#."""
 import os, struct, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import rdna_asm
@@ -207,7 +207,72 @@ def test_sample_cube_array_layer():
     _sample_cube(12)
 
 
-TESTS = [test_resinfo_reports_the_image_extent, test_store_rgba8_unorm, test_store_r32_uint, test_load_3d_r32_uint, test_load_1d_r32_uint, test_sampler_from_guest_ssharp, test_load_cube_array_r32_uint, test_store_cube_array_r32_uint, test_sample_cube_face_coordinates, test_sample_cube_array_layer]
+MIP_SIZE, MIP_LEVELS = 8, 4
+
+
+def _mip_lanes():
+    lanes = []
+    for lane in range(32):
+        level = lane & 3
+        size = MIP_SIZE >> level
+        texel = (lane >> 2) * 3 % (size * size)
+        lanes.append((texel % size, texel // size, level))
+    return lanes
+
+
+def _mip_value(x, y, level):
+    return 1000 * level + 10 * y + x
+
+
+def _mip_init(pack):
+    data = b"".join(pack(_mip_value(x, y, level)) for level in range(MIP_LEVELS) for y in range(MIP_SIZE >> level) for x in range(MIP_SIZE >> level))
+    init = os.path.join(T.tempfile.mkdtemp(prefix="img_"), "init.bin")
+    open(init, 'wb').write(data)
+    return init
+
+
+def _mip_read(op, fmt, coords, ssharp=None):
+    p = rdna_asm.Program()
+    p.smem('s_load_dwordx8', 8, 4, 0)
+    if ssharp is not None:
+        p.smem('s_load_dwordx4', 16, 4, 32)
+    _out_vsharp(p, 20, 48)
+    _out_vsharp(p, 24, 64)
+    p.sopp('s_waitcnt', 0)
+    p.vop2('v_lshlrev_b32', 5, 4, 'v0')
+    p.mubuf('buffer_load_dwordx3', 1, 5, 24, 128, 0)
+    p.sopp('s_waitcnt', 0)
+    p.mimg(op, 4, 1, 8, dmask=1, ssamp=16)
+    p.sopp('s_waitcnt', 0)
+    p.vop2('v_lshlrev_b32', 5, 2, 'v0')
+    p.mubuf('buffer_store_dword', 4, 5, 20, 128, 0)
+    p.sopp('s_endpgm')
+    pokes = [f"poke 0 {32 + 4 * k} {w}" for k, w in enumerate(ssharp or [])] + T.vsharp(0, 48, 2, 128) + T.vsharp(0, 64, 3, 512)
+    init = _mip_init(lambda v: struct.pack('<' + fmt, v))
+    image = f"image 1 {MIP_SIZE} {MIP_SIZE} format {20 if fmt == 'I' else 22} mips {MIP_LEVELS} init {init}"
+    r = T.run(p.bytes(), {0: (256, None), 2: (128, None), 3: (512, coords)}, pokes, extra=[image, "timg 0 0 1"])
+    return struct.unpack('<32' + fmt, r[2][:128])
+
+
+def test_load_mip_r32_uint():
+    lanes = _mip_lanes()
+    coords = b"".join(struct.pack('<4I', x, y, level, 0) for x, y, level in lanes)
+    got = _mip_read('image_load_mip', 'I', coords)
+    want = tuple(_mip_value(*lane) for lane in lanes)
+    assert got == want, [(lane, got[lane], want[lane]) for lane in range(32) if got[lane] != want[lane]][:8]
+
+
+def test_sample_explicit_lod_point_mip():
+    lanes = _mip_lanes()
+    coords = b"".join(struct.pack('<4f', (x + 0.5) / (MIP_SIZE >> level), (y + 0.5) / (MIP_SIZE >> level), float(level), 0.0) for x, y, level in lanes)
+    clamp, point_mip = 2, 1
+    ssharp = [clamp | (clamp << 3) | (clamp << 6), 0xfff << 12, point_mip << 26, 0]
+    got = _mip_read('image_sample_l', 'f', coords, ssharp)
+    want = tuple(float(_mip_value(*lane)) for lane in lanes)
+    assert got == want, [(lane, got[lane], want[lane]) for lane in range(32) if got[lane] != want[lane]][:8]
+
+
+TESTS = [test_resinfo_reports_the_image_extent, test_store_rgba8_unorm, test_store_r32_uint, test_load_3d_r32_uint, test_load_1d_r32_uint, test_sampler_from_guest_ssharp, test_load_cube_array_r32_uint, test_store_cube_array_r32_uint, test_sample_cube_face_coordinates, test_sample_cube_array_layer, test_load_mip_r32_uint, test_sample_explicit_lod_point_mip]
 
 if __name__ == "__main__":
     bad = 0

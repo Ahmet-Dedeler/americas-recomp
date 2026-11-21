@@ -64,6 +64,8 @@ struct ImageRes {
     VkImageView view = VK_NULL_HANDLE;
     std::uint32_t layers = 1;   // > 1 makes a 2D array image
     std::uint32_t depth = 1;
+    std::uint32_t mips = 1;
+    VkImageViewType ownType = VK_IMAGE_VIEW_TYPE_2D;
     std::uint32_t format = 77;
     AgcDriver::Graphics::TextureDimension dimension = AgcDriver::Graphics::TextureDimension::k2D;
     VkFormat vkFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
@@ -213,16 +215,42 @@ std::vector<char> ReadFile(const std::string& path) {
 
 std::uint64_t Num(const std::string& s) { return std::stoull(s, nullptr, 0); }
 
-VkImageView ImageView(const Device& dev, ImageRes& im, VkImageViewType type) {
-    const auto found = im.views.find(static_cast<int>(type));
+VkImageView ImageView(const Device& dev, ImageRes& im, VkImageViewType type, std::uint32_t levels = 0) {
+    if (levels == 0) levels = im.mips;
+    const int key = static_cast<int>(type) * 32 + static_cast<int>(levels);
+    const auto found = im.views.find(key);
     if (found != im.views.end()) return found->second;
     VkImageViewCreateInfo vi{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
     vi.image = im.image; vi.viewType = type; vi.format = im.vkFormat;
-    vi.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, im.layers};
+    vi.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, levels, 0, im.layers};
     VkImageView view;
     VK(vkCreateImageView(dev.device, &vi, nullptr, &view));
-    im.views.emplace(static_cast<int>(type), view);
+    im.views.emplace(key, view);
     return view;
+}
+
+std::uint64_t LevelBytes(const ImageRes& im, std::uint32_t level) {
+    return static_cast<std::uint64_t>(std::max(im.width >> level, 1u)) * std::max(im.height >> level, 1u) * std::max(im.depth >> level, 1u) * im.bytesPerTexel * im.layers;
+}
+
+std::uint64_t ImageBytes(const ImageRes& im) {
+    std::uint64_t bytes = 0;
+    for (std::uint32_t level = 0; level < im.mips; ++level) bytes += LevelBytes(im, level);
+    return bytes;
+}
+
+std::vector<VkBufferImageCopy> LevelCopies(const ImageRes& im) {
+    std::vector<VkBufferImageCopy> copies;
+    std::uint64_t offset = 0;
+    for (std::uint32_t level = 0; level < im.mips; ++level) {
+        VkBufferImageCopy copy{};
+        copy.bufferOffset = offset;
+        copy.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, level, 0, im.layers};
+        copy.imageExtent = {std::max(im.width >> level, 1u), std::max(im.height >> level, 1u), std::max(im.depth >> level, 1u)};
+        copies.push_back(copy);
+        offset += LevelBytes(im, level);
+    }
+    return copies;
 }
 
 VkImageViewType ViewTypeFor(DescriptorImageShape shape, const ImageRes& im) {
@@ -242,7 +270,7 @@ VkImageViewType ViewTypeFor(DescriptorImageShape shape, const ImageRes& im) {
 std::array<std::uint32_t, 8> EncodeImage(const ImageRes& im) {
     using AgcDriver::Graphics::TextureDimension;
     AgcDriver::Graphics::GuestTextureResource t{};
-    t.baseAddress = im.fakeAddress; t.width = im.width; t.height = im.height; t.mipCount = 1; t.samples = 1;
+    t.baseAddress = im.fakeAddress; t.width = im.width; t.height = im.height; t.mipCount = im.mips; t.lastLevel = im.mips - 1; t.samples = 1;
     t.tileMode = AgcDriver::Graphics::TextureTileMode::kLinear; t.format = im.format;
     t.dstSelX = 4; t.dstSelY = 5; t.dstSelZ = 6; t.dstSelW = 7;
     std::array<std::uint32_t, 8> words{};
@@ -259,7 +287,7 @@ std::array<std::uint32_t, 8> EncodeImage(const ImageRes& im) {
     }
     const auto back = AgcDriver::Graphics::DecodeTextureResource(words);
     const auto wantDepth = im.dimension == TextureDimension::k3D ? im.depth - 1 : im.layers - 1;
-    if (back.baseAddress != im.fakeAddress || back.width != im.width || back.height != im.height || back.format != im.format || back.dimension != im.dimension || back.depthOrLastArray != wantDepth)
+    if (back.baseAddress != im.fakeAddress || back.width != im.width || back.height != im.height || back.format != im.format || back.mipCount != im.mips || back.dimension != im.dimension || back.depthOrLastArray != wantDepth)
         throw std::runtime_error("image " + std::to_string(im.id) + ": the T# does not decode back to the image");
     return words;
 }
@@ -341,6 +369,7 @@ int main(int argc, char** argv) {
                 else if (l.w[k] == "init" && more) im.initFile = l.w[++k];
                 else if (l.w[k] == "layers" && more) im.layers = static_cast<std::uint32_t>(Num(l.w[++k]));
                 else if (l.w[k] == "depth" && more) im.depth = static_cast<std::uint32_t>(Num(l.w[++k]));
+                else if (l.w[k] == "mips" && more) im.mips = static_cast<std::uint32_t>(Num(l.w[++k]));
                 else if (l.w[k] == "format" && more) im.format = static_cast<std::uint32_t>(Num(l.w[++k]));
                 else if (l.w[k] == "dim" && more) {
                     const auto& d = l.w[++k];
@@ -363,6 +392,7 @@ int main(int argc, char** argv) {
             if (im.layers > 1 && im.dimension == TextureDimension::k2D) im.dimension = TextureDimension::k2DArray;
             if (im.dimension != TextureDimension::k3D && im.depth != 1) throw std::runtime_error("image " + l.w[1] + ": depth needs dim 3d");
             if (im.dimension == TextureDimension::k1D && im.height != 1) throw std::runtime_error("image " + l.w[1] + ": a 1D image has height 1");
+            if (im.mips == 0 || (std::max({im.width, im.height, im.depth}) >> (im.mips - 1)) == 0) throw std::runtime_error("image " + l.w[1] + ": " + std::to_string(im.mips) + " mip levels do not fit the image extent");
             if (AgcDriver::Graphics::IsBlockCompressed(im.format)) throw std::runtime_error("image " + l.w[1] + ": block-compressed formats are not implemented in the harness");
             im.vkFormat = AgcDriver::Graphics::ResolveTextureFormat(im.format);
             im.bytesPerTexel = AgcDriver::Graphics::BytesPerElement(im.format);
@@ -377,7 +407,7 @@ int main(int argc, char** argv) {
             VkImageCreateInfo ici{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
             ici.imageType = im.dimension == TextureDimension::k1D ? VK_IMAGE_TYPE_1D : im.dimension == TextureDimension::k3D ? VK_IMAGE_TYPE_3D : VK_IMAGE_TYPE_2D;
             ici.format = im.vkFormat;
-            ici.extent = {im.width, im.height, im.depth}; ici.mipLevels = 1; ici.arrayLayers = im.layers; ici.samples = VK_SAMPLE_COUNT_1_BIT;
+            ici.extent = {im.width, im.height, im.depth}; ici.mipLevels = im.mips; ici.arrayLayers = im.layers; ici.samples = VK_SAMPLE_COUNT_1_BIT;
             ici.tiling = VK_IMAGE_TILING_OPTIMAL;
             ici.usage = (im.storage ? VK_IMAGE_USAGE_STORAGE_BIT : 0u) | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
             ici.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -390,6 +420,7 @@ int main(int argc, char** argv) {
             VK(vkAllocateMemory(dev.device, &ai, nullptr, &im.memory));
             VK(vkBindImageMemory(dev.device, im.image, im.memory, 0));
             const VkImageViewType own = im.dimension == TextureDimension::k1D ? VK_IMAGE_VIEW_TYPE_1D : im.dimension == TextureDimension::k3D ? VK_IMAGE_VIEW_TYPE_3D : im.layers > 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
+            im.ownType = own;
             im.view = ImageView(dev, im, own);
         }
         const auto region = [&](const std::string& id) -> Region& {
@@ -539,7 +570,9 @@ int main(int argc, char** argv) {
                         if (found == nullptr) found = &images.at(9999);
                         if (b.kind == DescriptorKind::StorageImage && !found->storage) throw std::runtime_error("binding " + std::to_string(b.binding) + ": the device has no storage support for image format " + std::to_string(found->format));
                         const auto shape = e < b.imageShapes.size() ? std::optional<DescriptorImageShape>(b.imageShapes[e]) : b.imageShape;
-                        ii.imageView = shape ? ImageView(dev, *found, ViewTypeFor(*shape, *found)) : found->view;
+                        if (b.kind == DescriptorKind::StorageImage && found->mips > 1) throw std::runtime_error("binding " + std::to_string(b.binding) + ": storage access to an image with mip levels is not implemented in the harness");
+                        const std::uint32_t levels = found->mips;
+                        ii.imageView = shape ? ImageView(dev, *found, ViewTypeFor(*shape, *found), levels) : ImageView(dev, *found, found->ownType, levels);
                     }
                     imageInfos[bi].push_back(ii);
                 }
@@ -699,25 +732,24 @@ int main(int argc, char** argv) {
         for (auto& [iid, im] : images) {
             VkImageMemoryBarrier toTransfer{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
             toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; toTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED; toTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            toTransfer.srcQueueFamilyIndex = toTransfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; toTransfer.image = im.image; toTransfer.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, im.layers};
+            toTransfer.srcQueueFamilyIndex = toTransfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; toTransfer.image = im.image; toTransfer.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, im.mips, 0, im.layers};
             vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &toTransfer);
             if (!im.initFile.empty()) {
                 std::ifstream in(im.initFile, std::ios::binary);
                 if (!in) throw std::runtime_error("cannot open image init file " + im.initFile);
                 staging.emplace_back();
-                MakeBuffer(dev, staging.back(), static_cast<std::uint64_t>(im.width) * im.height * im.depth * im.bytesPerTexel * im.layers, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+                MakeBuffer(dev, staging.back(), ImageBytes(im), VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
                 in.read(static_cast<char*>(staging.back().mapped), static_cast<std::streamsize>(staging.back().size));
                 if (static_cast<std::uint64_t>(in.gcount()) != staging.back().size) throw std::runtime_error("image init file " + im.initFile + " holds " + std::to_string(in.gcount()) + " bytes, the image " + std::to_string(staging.back().size));
-                VkBufferImageCopy up{};
-                up.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, im.layers}; up.imageExtent = {im.width, im.height, im.depth};
-                vkCmdCopyBufferToImage(cmd, staging.back().buffer, im.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &up);
+                const auto up = LevelCopies(im);
+                vkCmdCopyBufferToImage(cmd, staging.back().buffer, im.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, static_cast<std::uint32_t>(up.size()), up.data());
             } else {
                 VkClearColorValue color{};
                 for (int c = 0; c < 4; ++c) {
                     if (im.integer) color.int32[c] = static_cast<std::int32_t>(std::stoll(im.clear[c], nullptr, 0));
                     else color.float32[c] = std::stof(im.clear[c]);
                 }
-                VkImageSubresourceRange range{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, im.layers};
+                VkImageSubresourceRange range{VK_IMAGE_ASPECT_COLOR_BIT, 0, im.mips, 0, im.layers};
                 vkCmdClearColorImage(cmd, im.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &color, 1, &range);
             }
             VkImageMemoryBarrier toGeneral = toTransfer;
@@ -817,12 +849,11 @@ int main(int argc, char** argv) {
         std::map<std::uint32_t, Region> readback;
         for (auto& [iid, im] : images) {
             Region& rb = readback[iid];
-            MakeBuffer(dev, rb, static_cast<std::uint64_t>(im.width) * im.height * im.depth * im.bytesPerTexel * im.layers, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            MakeBuffer(dev, rb, ImageBytes(im), VK_BUFFER_USAGE_TRANSFER_DST_BIT);
             VkMemoryBarrier mb{VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT};
             vkCmdPipelineBarrier(cmd, pixel ? VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &mb, 0, nullptr, 0, nullptr);
-            VkBufferImageCopy copy{};
-            copy.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, im.layers}; copy.imageExtent = {im.width, im.height, im.depth};
-            vkCmdCopyImageToBuffer(cmd, im.image, VK_IMAGE_LAYOUT_GENERAL, rb.buffer, 1, &copy);
+            const auto copies = LevelCopies(im);
+            vkCmdCopyImageToBuffer(cmd, im.image, VK_IMAGE_LAYOUT_GENERAL, rb.buffer, static_cast<std::uint32_t>(copies.size()), copies.data());
         }
         VK(vkEndCommandBuffer(cmd));
         VkSubmitInfo si{VK_STRUCTURE_TYPE_SUBMIT_INFO};
