@@ -112,6 +112,16 @@ Device CreateDevice(std::uint32_t wave, bool bary) {
     app.apiVersion = VK_API_VERSION_1_3;
     VkInstanceCreateInfo ici{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
     ici.pApplicationInfo = &app;
+    std::uint32_t ic = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &ic, nullptr);
+    std::vector<VkExtensionProperties> ie(ic);
+    vkEnumerateInstanceExtensionProperties(nullptr, &ic, ie.data());
+    const char* portabilityEnum = VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
+    for (const auto& e : ie) if (std::strcmp(e.extensionName, portabilityEnum) == 0) {
+        ici.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+        ici.enabledExtensionCount = 1;
+        ici.ppEnabledExtensionNames = &portabilityEnum;
+    }
     VK(vkCreateInstance(&ici, nullptr, &d.instance));
     std::uint32_t count = 0;
     vkEnumeratePhysicalDevices(d.instance, &count, nullptr);
@@ -156,8 +166,15 @@ Device CreateDevice(std::uint32_t wave, bool bary) {
     qi.queueCount = 1;
     qi.pQueuePriorities = &priority;
     VkDeviceCreateInfo dci{VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, &f2};
-    const char* baryExt = VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME;
-    if (bary) { dci.enabledExtensionCount = 1; dci.ppEnabledExtensionNames = &baryExt; }
+    std::uint32_t dc = 0;
+    vkEnumerateDeviceExtensionProperties(d.physical, nullptr, &dc, nullptr);
+    std::vector<VkExtensionProperties> de(dc);
+    vkEnumerateDeviceExtensionProperties(d.physical, nullptr, &dc, de.data());
+    std::vector<const char*> exts;
+    if (bary) exts.push_back(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
+    for (const auto& e : de) if (std::strcmp(e.extensionName, "VK_KHR_portability_subset") == 0) exts.push_back("VK_KHR_portability_subset");
+    dci.enabledExtensionCount = static_cast<std::uint32_t>(exts.size());
+    dci.ppEnabledExtensionNames = exts.data();
     dci.queueCreateInfoCount = 1;
     dci.pQueueCreateInfos = &qi;
     VK(vkCreateDevice(d.physical, &dci, nullptr, &d.device));
