@@ -3,6 +3,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import operator
 import shlex
 import shutil
@@ -155,6 +156,11 @@ def target():
     return detected_target(oracle(), os.environ.get("ROCR_VISIBLE_DEVICES"))
 
 
+def has_ieee_and_dx10_clamp_modes(name):
+    match = re.fullmatch(r"gfx(\d+)", name)
+    return match is None or int(match.group(1)) < 1170
+
+
 def assemble(body, work, wave64, *, ieee, denorm32, denorm16, dx10_clamp, round32, round16, fp16_overflow, lds=DEFAULT_LDS):
     modes = (("ieee", ieee, 2), ("denorm32", denorm32, 4), ("denorm16", denorm16, 4),
              ("dx10_clamp", dx10_clamp, 2), ("round32", round32, 4), ("round16", round16, 4),
@@ -165,6 +171,11 @@ def assemble(body, work, wave64, *, ieee, denorm32, denorm16, dx10_clamp, round3
     if not isinstance(lds, int) or lds not in range(MAX_LDS + 1):
         raise ValueError(f"lds must be an integer from 0 to {MAX_LDS}")
     text = (HERE / "template.s").read_text(encoding="utf-8")
+    if not has_ieee_and_dx10_clamp_modes(target()):
+        if ieee != 1 or dx10_clamp != 1:
+            raise ValueError(f"{target()} has no IEEE or DX10_CLAMP mode bit: ieee and dx10_clamp must be 1")
+        text = "".join(line for line in text.splitlines(keepends=True)
+                       if line.split()[:1] not in ([".amdhsa_ieee_mode"], [".amdhsa_dx10_clamp"]))
     for key, value in (("@TARGET@", target()), ("@WAVE32@", "0" if wave64 else "1"), ("@WAVESIZE@", "64" if wave64 else "32"),
                        ("@DENORM@", str(int(denorm32))), ("@DENORM16@", str(int(denorm16))), ("@IEEE@", str(int(ieee))),
                        ("@DX10_CLAMP@", str(int(dx10_clamp))), ("@ROUND32@", str(int(round32))), ("@ROUND16@", str(int(round16))),
