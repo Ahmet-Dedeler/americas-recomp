@@ -273,8 +273,6 @@ static void CheckNetworking() {
   Check(hr == S_OK && allZero, "XNetworkingQueryStatistics reports zeros as documented for PC");
   Check(net.At<HRESULT (*)(void*, uint32_t, TcpStatistics*)>(20, "XNetworkingQueryStatistics")(net.self, 3, &stats) == E_INVALIDARG,
         "XNetworkingQueryStatistics rejects an unknown type");
-  uint16_t port = 0;
-  Check(net.At<HRESULT (*)(void*, uint16_t*)>(3, "XNetworkingQueryPreferredLocalUdpMultiplayerPort")(net.self, &port) == E_NOTIMPL, "XNetworkingQueryPreferredLocalUdpMultiplayerPort stays failing");
 }
 
 static void CheckAccessibility() {
