@@ -138,9 +138,18 @@ Device CreateDevice(std::uint32_t wave, bool bary) {
     VkPhysicalDeviceVulkan11Features f11{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES, &f12};
     VkPhysicalDeviceFeatures2 f2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &f11};
     VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR fbary{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR};
+    const std::string noBary = "the device has no VK_KHR_fragment_shader_barycentric; set XBOX_NO_FRAGMENT_BARY=1 to recompile pixel shaders without it";
+    if (bary) {
+        std::uint32_t extensionCount = 0;
+        VK(vkEnumerateDeviceExtensionProperties(d.physical, nullptr, &extensionCount, nullptr));
+        std::vector<VkExtensionProperties> extensions(extensionCount);
+        VK(vkEnumerateDeviceExtensionProperties(d.physical, nullptr, &extensionCount, extensions.data()));
+        const bool listed = std::any_of(extensions.begin(), extensions.end(), [](const VkExtensionProperties& e) { return std::strcmp(e.extensionName, VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME) == 0; });
+        if (!listed) throw std::runtime_error(noBary);
+    }
     if (bary) f13.pNext = &fbary;
     vkGetPhysicalDeviceFeatures2(d.physical, &f2);
-    if (bary && !fbary.fragmentShaderBarycentric) throw std::runtime_error("the device has no VK_KHR_fragment_shader_barycentric");
+    if (bary && !fbary.fragmentShaderBarycentric) throw std::runtime_error(noBary);
     const float priority = 1.0f;
     VkDeviceQueueCreateInfo qi{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
     qi.queueFamilyIndex = d.family;
