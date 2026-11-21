@@ -32,6 +32,11 @@ Static imports only: this does not include what the DLLs call through COM/vtable
    blobs alone (`BVH_ONLY=n`): 9 compile, 39 crash the compiler (access violation inside `amdxc64.dll`), 5 fail with an error (one message:
    "Unknown pointer operation encountered during ParseAddress"); after a crash the device is removed, so they have to be run one per process.
    WARP creating the pipelines does not show that they compile: it may defer that.
+   **NVIDIA GeForce RTX 5090** (driver 617.42, Windows 11): compiling each blob alone, 52 of 53 are accepted, including the 44 that call
+   `@xbox.*` (acceptance may be deferred compilation, as on WARP). Blob 48 (`LeafRehydration`, the only one with `TypedLoad.i32`) ends the
+   process with a fail-fast in the user-mode driver (`nvwgf2umx.dll`, `0xc0000409`), which `__try` cannot catch; in one full run it
+   returned `E_OUTOFMEMORY` instead and the constructor finished. The full constructor therefore usually dies with no output after
+   "constructing"; `BVH_ONLY` runs are the way to test the other blobs on NVIDIA.
    **Cause**: not a random driver bug. The shaders are Xbox DXIL: 44 of the 53 call non-standard functions `@xbox.*` (declared with opaque
    `i32` opcode first arguments, written by the Xbox DXC, `dxcxbox`), and those 44 are exactly the 44 that fail; the 9 that compile have
    none (`ResetCounterValues`, `CopyForBVHUpdate`, `ResetToIndexBuffer`, `CopyCounters`, `RadixReset`, `PT_ConstructBVH4`, `ResetKDOP`,
@@ -110,7 +115,15 @@ Where the Xbox device differs from the PC one, as found by running it:
 |---|---|---|
 | device slot 76 (resource creation, heap properties / heap flags / description / state / clear value / iid / output) | slot 27 is CreateCommittedResource; slot 76 is something else | forwarded to CreateCommittedResource; the description is 56 bytes plus extension words and its layout field is `0x101` (tiled) or `0x1` (row-major buffer), replaced by driver-chosen layout |
 | descriptor heap `GetCPU/GPUDescriptorHandleForHeapStart` (slots 9, 10) | returns through a hidden pointer in RDX | the Xbox build returns the 8-byte handle in RAX; heaps are wrapped so the call is made the PC way |
-| slots 1, 15, 18, 19, 27, 38 on the device | same | forwarded unchanged (AddRef, descriptor increment size, SRV, UAV, committed resource for uploads, copyable footprints) |
+| slots 1, 15, 18, 19, 27, 38 on the device | same | forwarded unchanged (AddRef, descriptor increment size, SRV, UAV, committed resource for uploads, copyable footprints); 18 and 19 see the RGB9E5 note below |
+**NVIDIA**: the fourth slot-76 resource is a 1920x1080 `R9G9B9E5_SHAREDEXP` texture with `ALLOW_UNORDERED_ACCESS`. The RTX 5090 (driver 617.42)
+does not report `TYPED_UNORDERED_ACCESS_VIEW` for that format (WARP does), so `CreateCommittedResource` returns `E_INVALIDARG` and the
+upscaler throws a C++ exception out of `ffxCreateContext`. `xbox_device_overrides.h` creates such a resource as `R16G16B16A16_FLOAT` when
+the device lacks the support (every RGB9E5 value is exact in f16; writes are not rounded to RGB9E5 and the memory layout differs) and
+rewrites RGB9E5 views of it in slots 18/19; `XS_NO_FORMAT_FALLBACK=1` turns it off. With it, flags `0x29` create and destroy return 0 on
+the RTX 5090; the upscaler builds its views of that resource from the resource's own format (f16), so the view rewrite is not reached
+here. Nothing was dispatched, so whether the upscaler's output is unchanged by the substitution is not checked.
+The first-chance `0xe06d7363` that `ffx_test` prints during `D3D12CreateDevice` also appears on WARP and is caught inside `D3D12Core`.
 This is the same finding the Xbox2Windows project reports (slot 76, layout `0x101`), reached here by running the code instead of translating it.
 No dispatch was run: it needs real textures, a command list and the package's shaders.
 
