@@ -73,6 +73,10 @@ That covers the four arithmetic-only shaders, and on the RX 7800 XT (one shader 
 - WARP gives a different result (6429 vs 6552 non-zero words for 4 groups), and WARP rejects SM 6.6, so it cannot be used to check the pinned version.
 - One earlier run hung the GPU (device removed). It followed runs that used root UAVs, which have no bounds checking, so I attribute it to that and not to the shader;
   it did not recur once the views were bounds-checked.
+- **The lowered operations themselves are checked.** `tools/xbox/platform/oplower_kernel.ll` is a small Xbox-style kernel that applies `Med3_F32`, `V_PK_MIN_F16` and `V_PK_MAX_F16` to
+  random bit patterns; it goes through `xbox_dxil_lower.py` and `dxasm`, runs with `dispatch_test` (`DT_RAW=1 DT_DUMP=<prefix>`), and `oplower_check.py` compares every result with a
+  software model (min/max return the other operand when one is NaN; sign of zero and denormals are not distinguished). On 262,144 cases the RX 7800 XT and WARP both match exactly (0 mismatches, NaN and infinity included).
+  That is the whole of what the lowering changed in the four arithmetic-only shaders, so what remains unchecked is the shaders' own logic, which no reference exists for.
 - This shows the lowered shader is stable, not that it is correct: the original cannot run anywhere, so there is no reference output.
   A CPU model of the rehydration (from the shader text and `BVH_CONTAINER.md`) is the next way to check it.
 

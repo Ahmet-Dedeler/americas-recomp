@@ -51,7 +51,7 @@ static std::vector<uint8_t> Run(bool warp, const std::vector<char>& dxil, UINT g
 
     // input: words whose high byte is a small count (0..4) and whose low 24 bits are a random mask, as the shader reads them
     { uint32_t* p; up->Map(0, nullptr, (void**)&p); uint32_t s = seed;
-      for (UINT i = 0; i < U0_BYTES / 4; i++) { s = s * 1664525u + 1013904223u; uint32_t cnt = (s >> 29) % 5; p[i] = (cnt << 24) | ((s >> 3) & 0xFFFFFF); }
+      for (UINT i = 0; i < U0_BYTES / 4; i++) { s = s * 1664525u + 1013904223u; uint32_t cnt = (s >> 29) % 5; p[i] = (cnt << 24) | ((s >> 3) & 0xFFFFFF); if (getenv("DT_RAW")) { uint32_t x = s * 2654435761u; x ^= x >> 15; x *= 2246822519u; x ^= x >> 13; p[i] = x; } }
       up->Unmap(0, nullptr); }
     { uint32_t* c; cb->Map(0, nullptr, (void**)&c); c[0] = 0; c[1] = 0; c[2] = 0; c[3] = 0; cb->Unmap(0, nullptr); }
 
@@ -88,6 +88,10 @@ static std::vector<uint8_t> Run(bool warp, const std::vector<char>& dxil, UINT g
     std::vector<uint8_t> out(U1_BYTES), o0(U0_BYTES);
     void* p; rb1->Map(0, nullptr, &p); memcpy(out.data(), p, U1_BYTES); rb1->Unmap(0, nullptr);
     rb0->Map(0, nullptr, &p); memcpy(o0.data(), p, U0_BYTES); rb0->Unmap(0, nullptr);
+    if (const char* dp = getenv("DT_DUMP")) {            // DT_DUMP=<prefix>: write <prefix>_gpu|warp_u0.bin / _u1.bin
+        for (int i = 0; i < 2; i++) { char fn[MAX_PATH]; sprintf_s(fn, "%s_%s_u%d.bin", dp, warp ? "warp" : "gpu", i); FILE* f = nullptr;
+            if (!fopen_s(&f, fn, "wb")) { fwrite(i ? out.data() : o0.data(), 1, i ? out.size() : o0.size(), f); fclose(f); } }
+    }
     u0out = o0; ok = true; return out;
 }
 
