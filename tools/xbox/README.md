@@ -70,6 +70,22 @@ vertex colours. Every pixel must read P0 = (1, 0, 0, 1), P10 = (-1, 1, 0, 0) and
 P20 = (-1, 0, 1, 0). The test needs `VK_KHR_fragment_shader_barycentric`; without
 a geometry shader the host path is not a valid reference for per-vertex inputs.
 
+## Quad swizzle test
+
+With a built execution harness and the Vulkan SDK's `glslangValidator` on PATH:
+
+```powershell
+python tools/xbox/quad_test.py --exec "build-xbox/exec.exe"
+```
+
+The first fragment program exchanges each pixel with its horizontal and vertical
+neighbour inside the 2x2 quad with `ds_swizzle_b32`, subtracts, and exports the
+values and differences. The second narrows EXEC to one lane per quad, expands it
+with `s_wqm_b32`, and exports a constant; a second run activates two quads only,
+so the other quads must stay clear. Both run with `XBOX_NO_FRAGMENT_BARY=1`, the
+host perspective path; the quad operations do not need the barycentric
+extension.
+
 ## Windows compute smoke test
 
 From the repository root in PowerShell, with Python 3, the x64 MSVC C++ toolchain,
