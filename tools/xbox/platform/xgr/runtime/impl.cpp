@@ -22,6 +22,7 @@ namespace gtx::xgr::system { const Override* overrides(size_t* count); }
 namespace gtx::xgr::network { const Override* overrides(size_t* count); }
 namespace gtx::xgr::streaming { const Override* overrides(size_t* count); }
 namespace gtx::xgr::accessibility { const Override* overrides(size_t* count); }
+namespace gtx::xgr::capture { const Override* overrides(size_t* count); }
 
 #include <iterator>
 #include <vector>
@@ -157,6 +158,8 @@ const Override* overrides(size_t* count) {
     v.insert(v.end(), gs, gs + n);
     const Override* ac = accessibility::overrides(&n);
     v.insert(v.end(), ac, ac + n);
+    const Override* ca = capture::overrides(&n);
+    v.insert(v.end(), ca, ca + n);
     return v;
   }();
   *count = all.size();
