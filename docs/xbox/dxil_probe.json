@@ -1,0 +1,1542 @@
+[
+ {
+  "idx": "12473",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "20197",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "101593",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "101223",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "100906",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "11598",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "14320",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "12268",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "18481",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "100883",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "17404",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "17954",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "21157",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "16302",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "101112",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "13567",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "11943",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "18231",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "11270",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "101497",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "16394",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "DXIL: error: Resource image_4 with base 69 size 1 overlap with other resource with base 68 size 14 in space 0."
+ },
+ {
+  "idx": "16931",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "20779",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "100894",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "100934",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "11041",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "21800",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "17235",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "DXIL: error: Resource image_4 with base 69 size 1 overlap with other resource with base 68 size 4 in space 0."
+ },
+ {
+  "idx": "14440",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "100558",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "101219",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "13897",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "20643",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "12057",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "15369",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "11295",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "11206",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "DXIL: error: Resource image_4 with base 69 size 1 overlap with other resource with base 68 size 23 in space 0."
+ },
+ {
+  "idx": "11242",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "21139",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "19410",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "11099",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "16315",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "DXIL: error: Resource image_4 with base 69 size 1 overlap with other resource with base 68 size 12 in space 0."
+ },
+ {
+  "idx": "21626",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "DXIL: error: Resource image_4 with base 69 size 2 overlap with other resource with base 68 size 10 in space 0."
+ },
+ {
+  "idx": "13696",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "16748",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "100594",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "11275",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "19159",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "13786",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "17030",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "18539",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "19761",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "13986",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "15942",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "13918",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "21543",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "13741",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "17715",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "DXIL: error: Resource image_4 with base 69 size 1 overlap with other resource with base 68 size 5 in space 0."
+ },
+ {
+  "idx": "14818",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "11200",
+  "stage": "PS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "DXIL: error: Resource image_4 with base 69 size 1 overlap with other resource with base 68 size 16 in space 0."
+ },
+ {
+  "idx": "20942",
+  "stage": "PS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "21551",
+  "stage": "PS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "21033",
+  "stage": "PS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "21093",
+  "stage": "PS",
+  "uses_raw_pointers": true,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "11422",
+  "stage": "PS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "20759",
+  "stage": "PS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "21594",
+  "stage": "PS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "21155",
+  "stage": "PS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "20822",
+  "stage": "PS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "21600",
+  "stage": "PS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "20852",
+  "stage": "PS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "21009",
+  "stage": "PS",
+  "uses_raw_pointers": true,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "100532",
+  "stage": "PS",
+  "uses_raw_pointers": true,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "21074",
+  "stage": "PS",
+  "uses_raw_pointers": true,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "20762",
+  "stage": "PS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "5198",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "4885",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "10650",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "9431",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "9542",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "7056",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "10653",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "236",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "8967",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "4251",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "7338",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "7527",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "3504",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "6520",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "10293",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "6671",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "1299",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "7879",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "100498",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "9556",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "2051",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "3337",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "9720",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "6594",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "9159",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "221",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "8608",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "259",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "5402",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "10850",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "10662",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "10630",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "7060",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "11003",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "3466",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "3447",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "9530",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "4091",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "27",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "3992",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "9999",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "10292",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "4122",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "7339",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "9599",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "6073",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "10629",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "6205",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "8241",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "4670",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "100083",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "10751",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "13",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "6810",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "9593",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "2738",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "9675",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "10528",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "4004",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "DXIL: error: Resource samplers with base 57 size 2 overlap with other resource with base 57 size 2 in space 0."
+ },
+ {
+  "idx": "7662",
+  "stage": "VS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "284",
+  "stage": "VS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "11013",
+  "stage": "VS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "10623",
+  "stage": "VS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "10622",
+  "stage": "VS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "10642",
+  "stage": "VS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "285",
+  "stage": "VS",
+  "uses_raw_pointers": true,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "10581",
+  "stage": "VS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "11014",
+  "stage": "VS",
+  "uses_raw_pointers": true,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "10580",
+  "stage": "VS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "11015",
+  "stage": "VS",
+  "uses_raw_pointers": true,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23841",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "22165",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "24722",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "24729",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23780",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "24384",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "22279",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23258",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "DXIL: error: Resource image_35 with base 35 size 2 overlap with other resource with base 31 size 8 in space 0."
+ },
+ {
+  "idx": "22984",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "24788",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23022",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "22552",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "24790",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "23375",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "22299",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "DXIL: error: Resource image_4 with base 4 size 1 overlap with other resource with base 3 size 21 in space 0."
+ },
+ {
+  "idx": "22460",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "22516",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "22228",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "24363",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "22218",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23493",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23352",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23441",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "22656",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23048",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23834",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "23613",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "22456",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "22922",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "22890",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "24677",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "22925",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "23458",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23630",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "24370",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23742",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "24542",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "24448",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "22680",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "22259",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23701",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "24007",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "23830",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "24205",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "23062",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23397",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "22653",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23368",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "24598",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23149",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "24268",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "22247",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23241",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "DXIL: error: Resource image_35 with base 35 size 1 overlap with other resource with base 31 size 5 in space 0."
+ },
+ {
+  "idx": "22234",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "24100",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "22831",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "22311",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "22893",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "24333",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "24582",
+  "stage": "CS",
+  "uses_raw_pointers": false,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23553",
+  "stage": "CS",
+  "uses_raw_pointers": true,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23204",
+  "stage": "CS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "24245",
+  "stage": "CS",
+  "uses_raw_pointers": true,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23564",
+  "stage": "CS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "23205",
+  "stage": "CS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "24636",
+  "stage": "CS",
+  "uses_raw_pointers": true,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "22417",
+  "stage": "CS",
+  "uses_raw_pointers": true,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23540",
+  "stage": "CS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "23518",
+  "stage": "CS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "22602",
+  "stage": "CS",
+  "uses_raw_pointers": true,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23511",
+  "stage": "CS",
+  "uses_raw_pointers": true,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "22719",
+  "stage": "CS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "23202",
+  "stage": "CS",
+  "uses_raw_pointers": true,
+  "status": "FAIL",
+  "detail": "rc=3221225477"
+ },
+ {
+  "idx": "22599",
+  "stage": "CS",
+  "uses_raw_pointers": true,
+  "status": "DXIL_VALID",
+  "detail": ""
+ },
+ {
+  "idx": "23513",
+  "stage": "CS",
+  "uses_raw_pointers": true,
+  "status": "DXIL_VALID",
+  "detail": ""
+ }
+]

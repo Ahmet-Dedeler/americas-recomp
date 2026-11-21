@@ -356,3 +356,12 @@ builds, shader code, bindings, stage, f16 opt-in, XBOX_* switches); a re-run onl
 re-run: 5 s, identical outcomes. A cached TIMEOUT is re-run only when `--limit` is raised. Timeouts within a few seconds of the limit
 can flip between runs under different CPU load (28 vs 30 in two cold runs).
 The remaining lever for cold runs is the recompiler itself: the slow shaders spend their time in the structurizer (recomputeAnalyses).
+
+## DXIL feasibility (Mesa spirv_to_dxil)
+`dxil_probe.py` runs our recompiled SPIR-V through Mesa's `spirv2dxil` (built with `-Dspirv-to-dxil=true` plus the microsoft-experimental
+Vulkan driver option, which is what turns the real NIR build on; `-m 6 -x 8` = shader model 6.6, validator 1.8) and validates with dxil.dll.
+Sample of 220 shaders our recompiler already makes valid SPIR-V for (random, plus an oversample of raw-pointer shaders; mesh is not tried,
+spirv_to_dxil has no mesh stage): **151 convert to validator-clean DXIL (69%)**. Of 69 failures, 58 crash the converter and 11 fail DXIL
+validation with overlapping resource bindings. Every one of the 58 crashes declares RuntimeDescriptorArray + SampledImageArrayDynamicIndexing
+(0 of 151 passing shaders do): bindless image arrays are the blocker, not raw pointers (shaders with raw pointers: 15 of 40 convert).
+Sample numbers, not corpus numbers. Per-shader outcomes: docs/xbox/dxil_probe.json.
