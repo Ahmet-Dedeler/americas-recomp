@@ -20,11 +20,6 @@ static HRESULT __fastcall Slot14(XboxObjectProxy* self, const D3D12_DESCRIPTOR_H
     }
     return hr;
 }
-// Typed UAVs of R9G9B9E5_SHAREDEXP: RDNA (Xbox, AMD PC) and WARP support them, NVIDIA does not (no TYPED_UNORDERED_ACCESS_VIEW in
-// FORMAT_SUPPORT1, so CreateCommittedResource with ALLOW_UNORDERED_ACCESS returns E_INVALIDARG). Such a resource is created as
-// R16G16B16A16_FLOAT instead: every RGB9E5 value (9-bit mantissa, 2^-24..65408) is exact in f16, so reads through views return the same
-// values, but writes are no longer rounded to RGB9E5 and the memory layout differs (copies to or from an RGB9E5 resource, raw reads).
-// Views of it (slots 18, 19) that name RGB9E5 get the substitute format. XS_NO_FORMAT_FALLBACK=1 keeps the original format.
 static DXGI_FORMAT UavFallback(ID3D12Device* dev, const D3D12_RESOURCE_DESC& d) {
     if (d.Format != DXGI_FORMAT_R9G9B9E5_SHAREDEXP || !(d.Flags & D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS)) return DXGI_FORMAT_UNKNOWN;
     if (GetEnvironmentVariableA("XS_NO_FORMAT_FALLBACK", nullptr, 0)) return DXGI_FORMAT_UNKNOWN;

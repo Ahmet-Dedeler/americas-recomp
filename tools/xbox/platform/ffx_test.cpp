@@ -47,7 +47,7 @@ static HRESULT __fastcall Slot76(XboxDeviceProxy* self, const D3D12_HEAP_PROPERT
         for (int i = 56; i < 80; i += 4) printf(" %08x", *(const unsigned*)(desc + i));
         printf("\n");
     }
-    return xbox_overrides::CreateResource((ID3D12Device*)self->real, hp, heapFlags, desc, state, cv, riid, out);   // layout 0x101 -> driver's choice, RGB9E5 UAV fallback
+    return xbox_overrides::CreateResource((ID3D12Device*)self->real, hp, heapFlags, desc, state, cv, riid, out);
 }
 
 struct Header { uint64_t type; Header* next; };
