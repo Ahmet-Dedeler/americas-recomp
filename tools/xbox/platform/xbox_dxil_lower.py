@@ -23,6 +23,8 @@ Lowered so far (more are added as shaders need them):
   MBCNT64                  number of set mask bits below this lane (v_mbcnt_lo + v_mbcnt_hi)
   S_BCNT1_U64              popcount of the 64-bit mask
   Min3/Max3_F32, Min3/Max3/Med3_U32, BFI, V_ALIGNBYTE_B32, WaveMin_U32, MakeUniform.i64   the obvious standard operations
+  TypedLoad.i32            (handle, byte offset, format 65 = 8_UINT): the dword at (offset & ~3) of the raw buffer, byte (offset & 3);
+                           only component 0 of the result may be used
 The wave intrinsics assume the 64-lane waves the shaders were built for: run the result with the wave size pinned to 64 (dxil_sm66_wave.py).
 """
 import re, sys
@@ -151,6 +153,7 @@ DECLS = {
     "@dx.op.binary.i32(": "declare i32 @dx.op.binary.i32(i32, i32, i32) #0",
     "@dx.op.waveActiveOp.i32(": "declare i32 @dx.op.waveActiveOp.i32(i32, i32, i8, i8) #1",
     "@dx.op.waveReadLaneFirst.i64(": "declare i64 @dx.op.waveReadLaneFirst.i64(i32, i64) #1",
+    "@dx.op.rawBufferLoad.i32(": "declare %dx.types.ResRet.i32 @dx.op.rawBufferLoad.i32(i32, %dx.types.Handle, i32, i32, i8, i32) #1",
 }
 
 
@@ -167,6 +170,7 @@ def lower(text):
     n_lowered = 0
     pairs = {}            # SSA name of a pair value -> (scalar0, scalar1)
     alias = {}            # SSA name of a scalar produced by extractvalue -> the scalar that replaces it
+    bytes_ = {}
     out = []
     counter = [0]
     used = set()
@@ -182,6 +186,7 @@ def lower(text):
 
     ins_re = re.compile(r"^\s*(%[\w.]+) = insertvalue " + PAIR_RE + r" (undef|%[\w.]+), (?:half|i32) (%[\w.]+|[-+\w.]+), ([01])\s*$")
     ext_re = re.compile(r"^\s*(%[\w.]+) = extractvalue " + PAIR_RE + r" (%[\w.]+), ([01])\s*$")
+    resret_re = re.compile(r"^(\s*)(%[\w.]+) = extractvalue %dx\.types\.ResRet\.i32 (%[\w.]+), (\d+)\s*$")
     call_re = re.compile(r"^(\s*)(%[\w.]+) = call ([^@]+?) @xbox\.([\w.]+)\(i32 \d+(?:, (.*?))?\)\s*(?:,\s*![^;]*)?(?:;.*)?$")
 
     def operand(a):
@@ -207,6 +212,12 @@ def lower(text):
         m = ext_re.match(line)
         if m and m.group(2) in pairs:
             alias[m.group(1)] = pairs[m.group(2)][int(m.group(3))]
+            continue
+        m = resret_re.match(line)
+        if m and m.group(3) in bytes_:
+            if m.group(4) != "0":
+                raise SystemExit("TypedLoad.i32 result component %s is used; only component 0 is lowered" % m.group(4))
+            out.append("%s%s = and i32 %s, 255" % (m.group(1), m.group(2), bytes_[m.group(3)]))
             continue
         m = call_re.match(line)
         if not m:
@@ -355,6 +366,15 @@ def lower(text):
         elif name == "MakeUniform.i64":
             emit("%s = call i64 @dx.op.waveReadLaneFirst.i64(i32 118, i64 %s)" % (dst, operand(args[0])))
             used.add("@dx.op.waveReadLaneFirst.i64(")
+        elif name == "TypedLoad.i32" and len(args) == 3 and operand(args[2]) == "65":
+            h, off = operand(args[0]), operand(args[1])
+            r = fresh()
+            emit("%s = call %%dx.types.ResRet.i32 @dx.op.rawBufferLoad.i32(i32 139, %%dx.types.Handle %s, i32 %s, i32 undef, i8 1, i32 4)"
+                 % (r, h, i("and", off, -4)))
+            used.add("@dx.op.rawBufferLoad.i32(")
+            w = fresh()
+            emit("%s = extractvalue %%dx.types.ResRet.i32 %s, 0" % (w, r))
+            bytes_[dst] = i("lshr", w, i("shl", i("and", off, 3), 3))
         else:
             out.append(line)
             continue

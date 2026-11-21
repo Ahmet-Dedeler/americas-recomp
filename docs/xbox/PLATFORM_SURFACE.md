@@ -92,6 +92,31 @@ they are 64-bit fields read from buffers (for example `rawBufferLoad.i64` at off
 Design for them: the proxy records every resource's (virtual address, size, descriptor) when it is created, the lowered shader looks the address up in that table
 (range search in a constant table) and loads through `ResourceDescriptorHeap[i]` (SM 6.6) at `address - base`. It needs the real addresses, so it waits for the game or a captured input;
 raw buffers are limited to 4 GiB per view.
+
+**`TypedLoad.i32` and LeafRehydration (blob 48) on NVIDIA**: blob 48 is the only `TypedLoad.i32` user, with two calls
+`TypedLoad.i32(i32 138, handle u0 = compressedBVH (RWByteAddressBuffer), i32 offset, i32 65)`; only component 0 of the `ResRet.i32` is used.
+- Format 65 read as the GFX6-9 MTBUF encoding `dfmt | nfmt << 4` = `DFMT_8 | NFMT_UINT << 4` (LLVM `llvm/lib/Target/AMDGPU/SIDefines.h`, `MTBUFFormat`),
+  an 8-bit unsigned load. Inferred, not documented: in the GFX10 unified table (`UfmtGFX10`) 65 is `16_16_16_16_UNORM`, a float format that the
+  shader's use does not fit. Checked against the shader: the offsets are byte offsets (`base + 3 * count + i`, right after a packed array of
+  24-bit indices that the shader itself reads with `rawBufferLoad.i64` at `offset & ~3`), and the results are used only as bytes
+  (`(index24 << 8) | b`; `(b & 0xF) | ((b << 4) & 0xF00)`).
+- Lowered (`xbox_dxil_lower.py`) to `rawBufferLoad.i32` at `offset & ~3`, shifted right by `8 * (offset & 3)`, `& 0xFF`. A byte in the last,
+  partial dword of a buffer whose size is not a multiple of 4 reads as 0 (the dword is out of bounds); the shader's own unaligned loads do the same.
+  `typedload_kernel.ll` + `typedload_check.py` (4096 threads, offsets `t` and `5t + 3` over random bytes): 0 mismatches on the RTX 5090 and on WARP.
+- Blob 48 still calls `global_load_dword{,x2,x3,x4}` (64-bit addresses: index and vertex buffers read from the `D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC`
+  records), so `dxil.dll` does not validate it. `dxasm --hash-only` assembles it without validation and writes the container hash: the retail
+  hash of DXC's `lib/DxilHash/DxilHash.cpp` (`ComputeHashRetail`, MD5 rounds with the bit count in the first dword and `1 | size << 1` in the last
+  dword of the final block), reimplemented in `dxil_hash.h`; it reproduces the hash of all 53 original blobs and of `dxil.dll`-signed ones.
+  The PC runtime rejects a container with a zeroed hash (`E_INVALIDARG`).
+- RTX 5090, driver 617.42, `BVH_ONLY=48`: the original blob, and the same text reassembled unchanged, make the driver's compiler run out of memory
+  (private bytes seen at 24 and 51 GB of a 65 GB commit limit; `E_OUTOFMEMORY` after about 90 s, or the fail-fast `0xC0000409`).
+  With only the two `TypedLoad.i32` calls lowered (everything else, triple included, as in the original) the pipeline is created in under a second
+  (about 100 MB), and also with the whole `xbox_dxil_lower.py` output (`V_ALIGNBYTE_B32` lowered too); replacing the two calls with an aligned dword
+  load at offset 0 has the same effect, so the two typed byte loads are what the driver cannot handle.
+- Full constructor with only blob 48 replaced: 53 of 53 pipelines, no failures, prebuild 204800/128704, destructor ok (3 runs).
+  This is pipeline creation only: the `global_load_*` calls are still Xbox intrinsics, so blob 48 cannot run until the 64-bit address mapping exists.
+- Not caused by this: with the 22 `lower_all.py` replacements, the 11 that pin the wave size to 64 (20 to 28, 49, 50) are rejected with
+  `E_INVALIDARG` on the RTX 5090, which has no 64-lane waves; the 11 others are accepted.
 Not reached: any build or rehydrate call. They take GPU virtual addresses, which the builder's DXIL shaders read by 64-bit address (no PC
 D3D12 equivalent), and real inputs would also need the matching vertex/index buffers (BVH_CONTAINER.md).
 
