@@ -397,6 +397,8 @@ if(BUILD_TESTING)
             ${CMAKE_CURRENT_SOURCE_DIR}/tools/tests/test_progress_report_inputs.py)
         add_test(NAME xbox_fssm_header COMMAND ${Python3_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/tools/tests/test_xbox_fssm_header.py)
+        add_test(NAME xbox_platform_results COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/tools/tests/test_xbox_platform_results.py)
         add_test(NAME tools_compdb_inventory COMMAND ${Python3_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/tests/test_compile_database_inventory.py)
         set_tests_properties(tools_compdb_inventory PROPERTIES TIMEOUT 20)
         add_test(NAME xbox_rdna2_llvm COMMAND ${Python3_EXECUTABLE}
