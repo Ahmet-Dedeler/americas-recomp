@@ -714,9 +714,12 @@ private:
         return multiple;
     }
 
-    bool MatchFirstLaneOffset(IrValue* value, IrValue*& key, std::uint32_t& stride) const {
+    bool MatchKnownMultipleOffset(IrValue* value, IrValue*& key, std::uint32_t& stride) const {
         value = value->Resolve();
-        if (value->Opcode() != IrOpcode::ReadFirstLane || value->ArgumentCount() != 2u || value->Type() != IrType::U32) {
+        if (value->HasImmediate() || value->Type() != IrType::U32) {
+            return false;
+        }
+        if (value->Opcode() == IrOpcode::ReadFirstLane && value->ArgumentCount() != 2u) {
             return false;
         }
         MultipleSearch search;
@@ -726,6 +729,132 @@ private:
         }
         key = value;
         stride = multiple;
+        return true;
+    }
+
+    static void DiscardPendingPhis(std::vector<std::pair<IrBlock*, IrValue*>>& pendingPhis) {
+        for (const auto& [block, phi] : pendingPhis) {
+            for (std::size_t index = 0; index < phi->ArgumentCount(); index++) {
+                phi->ReplaceArgument(index, nullptr);
+            }
+        }
+        for (const auto& [block, phi] : pendingPhis) {
+            phi->Invalidate();
+        }
+        pendingPhis.clear();
+    }
+
+    bool TryMergePhiTableReads(IrValue& handle, std::uint32_t words, IrValue*& heapHandle, IrValue*& offset, std::uint32_t& first, bool& address, TableColumnPlan& plan, std::vector<std::pair<IrBlock*, IrValue*>>& pendingPhis) {
+        std::unordered_map<const IrBlock*, std::size_t> order;
+        const auto& blocks = m_program.BlockOrder();
+        for (std::size_t index = 0; index < blocks.size(); index++) {
+            order.emplace(blocks[index], index);
+        }
+        std::map<std::vector<IrValue*>, IrValue*> memo;
+        std::unordered_map<IrValue*, IrValue*> invariantCache;
+        bool initialized = false;
+        constexpr std::size_t maxStates = 128u;
+
+        auto resolve = [&](auto& self, std::vector<IrValue*> tuple) -> IrValue* {
+            for (IrValue*& value : tuple) {
+                value = value->Resolve();
+                if (!value->IsPhi()) continue;
+                const auto [entry, inserted] = invariantCache.try_emplace(value, value);
+                if (inserted) {
+                    IrValue* invariant = ResolveInvariantPhi(m_program.Resources(), value);
+                    entry->second = invariant == nullptr ? value : invariant->Resolve();
+                }
+                value = entry->second;
+            }
+            if (const auto known = memo.find(tuple); known != memo.end()) {
+                return known->second;
+            }
+            const bool hasPhi = std::ranges::any_of(tuple, [](const IrValue* value) { return value->IsPhi(); });
+            if (!hasPhi) {
+                IrValue* leafOffset = nullptr;
+                for (std::uint32_t dword = 0; dword < words; dword++) {
+                    IrValue* read = tuple[dword];
+                    std::uint32_t memoryIndex = 0;
+                    const MemoryInfo* memory = ScalarReadMemory(*read, memoryIndex);
+                    const bool addressRead = memory == nullptr && (memory = ScalarAddressMemory(*read, memoryIndex)) != nullptr;
+                    if (memory == nullptr || !MemoryIndexBelongsTo(memoryIndex, *read)) {
+                        return nullptr;
+                    }
+                    IrValue* currentHandle = read->Argument(0)->Resolve();
+                    IrValue* currentOffset = read->Argument(1)->Resolve();
+                    if (!initialized) {
+                        if (dword != 0u) return nullptr;
+                        initialized = true;
+                        first = memory->offset;
+                        address = addressRead;
+                        heapHandle = currentHandle;
+                    } else if (addressRead != address || memory->offset != first + dword * static_cast<std::uint32_t>(sizeof(std::uint32_t)) || (currentHandle != heapHandle && !EquivalentValue(m_program.Resources(), heapHandle, currentHandle))) {
+                        return nullptr;
+                    }
+                    if (dword == 0u) {
+                        leafOffset = currentOffset;
+                    } else if (currentOffset != leafOffset && !EquivalentValue(m_program.Resources(), leafOffset, currentOffset)) {
+                        return nullptr;
+                    }
+                    if (std::ranges::find(plan.reads, read) == plan.reads.end()) {
+                        plan.memory.push_back(memoryIndex);
+                        plan.reads.push_back(read);
+                    }
+                }
+                return leafOffset;
+            }
+            if (memo.size() >= maxStates) {
+                return nullptr;
+            }
+            IrBlock* block = nullptr;
+            std::size_t latest = 0;
+            for (const IrValue* value : tuple) {
+                if (!value->IsPhi()) continue;
+                const auto found = order.find(value->Parent());
+                if (found == order.end()) return nullptr;
+                if (block == nullptr || found->second > latest) {
+                    block = value->Parent();
+                    latest = found->second;
+                }
+            }
+            if (block == nullptr) return nullptr;
+            const auto& predecessors = block->Predecessors();
+            if (predecessors.size() < 2u) return nullptr;
+            for (const IrValue* value : tuple) {
+                if (value->IsPhi() && value->Parent() == block && value->PhiBlockCount() != predecessors.size()) {
+                    return nullptr;
+                }
+            }
+            IrValue& phiOffset = m_program.CreateValue(IrOpcode::Phi, IrType::U32);
+            memo.emplace(tuple, &phiOffset);
+            pendingPhis.emplace_back(block, &phiOffset);
+            for (IrBlock* predecessor : predecessors) {
+                std::vector<IrValue*> incoming;
+                incoming.reserve(words);
+                for (IrValue* value : tuple) {
+                    IrValue* edge = value->IsPhi() && value->Parent() == block ? PhiIncoming(*value, predecessor) : value;
+                    if (edge == nullptr) return nullptr;
+                    incoming.push_back(edge);
+                }
+                IrValue* edgeOffset = self(self, std::move(incoming));
+                if (edgeOffset == nullptr) return nullptr;
+                phiOffset.AddPhiOperand(predecessor, edgeOffset);
+            }
+            return &phiOffset;
+        };
+
+        std::vector<IrValue*> root;
+        root.reserve(words);
+        for (std::uint32_t dword = 0; dword < words; dword++) {
+            root.push_back(handle.Argument(dword)->Resolve());
+        }
+        offset = resolve(resolve, std::move(root));
+        if (offset == nullptr || !initialized) {
+            DiscardPendingPhis(pendingPhis);
+            plan.memory.clear();
+            plan.reads.clear();
+            return false;
+        }
         return true;
     }
 
@@ -850,59 +979,77 @@ private:
         bool address = false;
         FirstLaneOffset baseLane;
         bool laneBase = false;
+        std::vector<std::pair<IrBlock*, IrValue*>> pendingPhis;
+        bool hasNonInvariantPhi = false;
         for (std::uint32_t dword = 0; dword < words; dword++) {
-            IrValue* read = ResolveInvariantPhi(m_program.Resources(), handle.Argument(dword));
-            if (read == nullptr) return false;
-            std::uint32_t memoryIndex = 0;
-            const MemoryInfo* memory = ScalarReadMemory(*read, memoryIndex);
-            const bool addressRead = memory == nullptr && (memory = ScalarAddressMemory(*read, memoryIndex)) != nullptr;
-            if (memory == nullptr || !MemoryIndexBelongsTo(memoryIndex, *read)) {
+            if (ResolveInvariantPhi(m_program.Resources(), handle.Argument(dword)) == nullptr) {
+                hasNonInvariantPhi = true;
+                break;
+            }
+        }
+        if (hasNonInvariantPhi) {
+            if (buffer || !TryMergePhiTableReads(handle, words, heapHandle, offset, first, address, plan, pendingPhis)) {
                 return false;
             }
-            std::uint32_t readAddend = 0;
-            IrValue* readBase = SplitImmediateAddend(read->Argument(1), readAddend);
-            bool sameBase = dword == 0u || EquivalentValue(m_program.Resources(), base, readBase);
-            if (!sameBase && laneBase) {
-                FirstLaneOffset lane;
-                if (ParseFirstLaneOffset(read->Argument(1)->Resolve(), nullptr, lane, phiSearchDepth) && SameFirstLaneOffset(baseLane, lane)) {
-                    readAddend = lane.addend;
-                    sameBase = true;
-                }
-            }
-            if (dword == 0u) {
-                first = memory->offset;
-                address = addressRead;
-                base = readBase;
-                baseAddend = readAddend;
-                laneBase = ParseFirstLaneOffset(read->Argument(1)->Resolve(), nullptr, baseLane, phiSearchDepth) && baseLane.addend == baseAddend;
-            } else if (addressRead != address || memory->offset + readAddend != first + baseAddend + dword * static_cast<std::uint32_t>(sizeof(std::uint32_t))) {
-                return false;
-            } else if (readAddend != baseAddend) {
-                if (readAddend < baseAddend || static_cast<std::uint64_t>(memory->offset) + (readAddend - baseAddend) > 0x7fffffffu) {
+        } else {
+            for (std::uint32_t dword = 0; dword < words; dword++) {
+                IrValue* read = ResolveInvariantPhi(m_program.Resources(), handle.Argument(dword));
+                if (read == nullptr) return false;
+                std::uint32_t memoryIndex = 0;
+                const MemoryInfo* memory = ScalarReadMemory(*read, memoryIndex);
+                const bool addressRead = memory == nullptr && (memory = ScalarAddressMemory(*read, memoryIndex)) != nullptr;
+                if (memory == nullptr || !MemoryIndexBelongsTo(memoryIndex, *read)) {
                     return false;
                 }
-                folded = true;
-                carry = std::max(carry, readAddend - baseAddend);
+                std::uint32_t readAddend = 0;
+                IrValue* readBase = SplitImmediateAddend(read->Argument(1), readAddend);
+                bool sameBase = dword == 0u || EquivalentValue(m_program.Resources(), base, readBase);
+                if (!sameBase && laneBase) {
+                    FirstLaneOffset lane;
+                    if (ParseFirstLaneOffset(read->Argument(1)->Resolve(), nullptr, lane, phiSearchDepth) && SameFirstLaneOffset(baseLane, lane)) {
+                        readAddend = lane.addend;
+                        sameBase = true;
+                    }
+                }
+                if (dword == 0u) {
+                    first = memory->offset;
+                    address = addressRead;
+                    base = readBase;
+                    baseAddend = readAddend;
+                    laneBase = ParseFirstLaneOffset(read->Argument(1)->Resolve(), nullptr, baseLane, phiSearchDepth) && baseLane.addend == baseAddend;
+                } else if (addressRead != address || memory->offset + readAddend != first + baseAddend + dword * static_cast<std::uint32_t>(sizeof(std::uint32_t))) {
+                    return false;
+                } else if (readAddend != baseAddend) {
+                    if (readAddend < baseAddend || static_cast<std::uint64_t>(memory->offset) + (readAddend - baseAddend) > 0x7fffffffu) {
+                        return false;
+                    }
+                    folded = true;
+                    carry = std::max(carry, readAddend - baseAddend);
+                }
+                IrValue* currentHandle = read->Argument(0)->Resolve();
+                if (heapHandle != nullptr && currentHandle != heapHandle && !EquivalentValue(m_program.Resources(), heapHandle, currentHandle)) {
+                    return false;
+                }
+                if (heapHandle == nullptr) heapHandle = currentHandle;
+                if (dword == 0u) {
+                    offset = read->Argument(1)->Resolve();
+                } else if (!sameBase) {
+                    return false;
+                }
+                plan.memory.push_back(memoryIndex);
+                plan.reads.push_back(read);
             }
-            IrValue* currentHandle = read->Argument(0)->Resolve();
-            if (heapHandle != nullptr && currentHandle != heapHandle && !EquivalentValue(m_program.Resources(), heapHandle, currentHandle)) {
-                return false;
-            }
-            if (heapHandle == nullptr) heapHandle = currentHandle;
-            if (dword == 0u) {
-                offset = read->Argument(1)->Resolve();
-            } else if (!sameBase) {
-                return false;
-            }
-            plan.memory.push_back(memoryIndex);
-            plan.reads.push_back(read);
         }
-        if (address) {
+        const auto failColumn = [&]() {
+            DiscardPendingPhis(pendingPhis);
+            return false;
+        };
+        if (address && pendingPhis.empty()) {
             DescriptorSource direct;
             MakeSource(handle, width, false, false, direct);
             std::uint32_t badDword = 0;
             if (ValidateSource(direct, badDword)) {
-                return false;
+                return failColumn();
             }
         }
         IrValue* key = nullptr;
@@ -911,10 +1058,11 @@ private:
         bool masked = false;
         std::uint32_t descriptorOffset = 0;
         if (address && immediateU32(offset, descriptorOffset)) {
+            if (!pendingPhis.empty()) return failColumn();
             return TryMakeIndirectColumn(handle, *heapHandle, sampler, words, descriptorOffset, first, plan);
         }
         if (!MatchAffineOffset(offset, key, stride, addend)) {
-            if (!MatchMaskedOffset(offset, key, stride) && (address || !MatchFirstLaneOffset(offset, key, stride))) {
+            if (!MatchMaskedOffset(offset, key, stride) && !MatchKnownMultipleOffset(offset, key, stride)) {
                 // XBOX-FORK (assumption; disable with XBOX_NO_OPAQUE_HEAP_INDEX=1): the heap offset is an opaque wave-uniform
                 // value (e.g. a validity test selecting between a loaded index and a fallback). The emitter indexes the table by
                 // the actual byte offset, so only a record size is needed: use the descriptor size, assuming heap entries are
@@ -922,7 +1070,7 @@ private:
                 static const bool noOpaque = std::getenv("XBOX_NO_OPAQUE_HEAP_INDEX") != nullptr;
                 IrValue* lane = offset->Resolve();
                 if (noOpaque || !address || lane->Opcode() != IrOpcode::ReadFirstLane || lane->Type() != IrType::U32) {
-                    return false;
+                    return failColumn();
                 }
                 key = lane;
                 stride = words * static_cast<std::uint32_t>(sizeof(std::uint32_t));
@@ -933,6 +1081,7 @@ private:
         DescriptorSource heapSource;
         std::uint32_t heapIndex = 0;
         if (!MakeRuntimeSource(*heapHandle, address ? IrOpcode::GetAddressResource : IrOpcode::GetBufferResource, address ? 2u : 4u, heapIndex, heapSource)) {
+            if (!pendingPhis.empty()) return failColumn();
             if (sampler || address || buffer || heapHandle->Opcode() != IrOpcode::GetBufferResource || !std::ranges::all_of(heapHandle->Uses(), [&](const IrValue* use) { return std::ranges::find(plan.reads, use) != plan.reads.end(); })) return false;
             const auto sameHandle = [&](const IrValue* user) {
                 if (user->Opcode() != handle.Opcode() || user->ArgumentCount() != handle.ArgumentCount()) return false;
@@ -954,6 +1103,9 @@ private:
             heapSource = m_sources[heapIndex];
             plan.parentPointer = parent.parentPointer;
             m_tableColumns.push_back(std::move(parent));
+        }
+        for (const auto& [block, phi] : pendingPhis) {
+            block->InsertInstructionBefore(nullptr, phi);
         }
         TableColumn column;
         column.heapSource = heapIndex;
@@ -1443,6 +1595,7 @@ private:
         }
         std::array<IrValue*, 2> handles {};
         std::array<bool, 2> split {};
+        std::array<std::vector<IrValue*>, 2> slotPhis {};
         std::vector<IrValue*> phis;
         for (std::uint32_t slot = 0; slot < handleCount; slot++) {
             IrValue* handle = inst.Argument(slot)->Resolve();
@@ -1451,12 +1604,11 @@ private:
                 return;
             }
             handles[slot] = handle;
-            std::vector<IrValue*> handlePhis;
             for (std::size_t dword = 0; dword < handle->ArgumentCount(); dword++) {
-                CollectDescriptorPhis(handle->Argument(dword), handlePhis, phiSearchDepth);
+                CollectDescriptorPhis(handle->Argument(dword), slotPhis[slot], phiSearchDepth);
             }
-            split[slot] = !handlePhis.empty();
-            for (IrValue* phi : handlePhis) {
+            split[slot] = !slotPhis[slot].empty();
+            for (IrValue* phi : slotPhis[slot]) {
                 if (std::ranges::find(phis, phi) == phis.end()) {
                     phis.push_back(phi);
                 }
@@ -1465,8 +1617,20 @@ private:
         if (phis.empty()) {
             return;
         }
-        if (!SplitDescriptorEdges(inst, handles, split, handleCount, phis)) {
-            SplitDescriptorWeb(inst, handles, split, handleCount);
+        const bool both = split[0] && split[1];
+        if (SplitDescriptorEdges(inst, handles, split, handleCount, phis) || SplitDescriptorWeb(inst, handles, split, handleCount, !both)) {
+            return;
+        }
+        if (both) {
+            const std::array<bool, 2> samplerOnly {false, true};
+            if (SplitDescriptorEdges(inst, handles, samplerOnly, handleCount, slotPhis[1]) || SplitDescriptorWeb(inst, handles, samplerOnly, handleCount, false)) {
+                return;
+            }
+            const std::array<bool, 2> imageOnly {true, false};
+            if (SplitDescriptorEdges(inst, handles, imageOnly, handleCount, slotPhis[0]) || SplitDescriptorWeb(inst, handles, imageOnly, handleCount, false)) {
+                return;
+            }
+            static_cast<void>(SplitDescriptorWeb(inst, handles, split, handleCount, true));
         }
     }
 
@@ -1694,6 +1858,17 @@ private:
         if (const auto known = web.selectors.find(tuple); known != web.selectors.end()) {
             return known->second;
         }
+        if (!StrictDescriptorWebs()) {
+            for (IrValue* value : tuple) {
+                if (value->IsPhi() || value->Opcode() == IrOpcode::SelectU32 || value->Opcode() == IrOpcode::ReadFirstLane) {
+                    continue;
+                }
+                if (Detail::HoldsFoldableValue(value, phiSearchDepth) || Rematerialize(value, position, false, phiSearchDepth) == nullptr) {
+                    web.foldedValue = true;
+                    return &m_builder.Constant(DescriptorWeb::foldedArm);
+                }
+            }
+        }
         if (web.order.empty()) {
             const auto& order = m_program.BlockOrder();
             for (std::size_t index = 0; index < order.size(); index++) {
@@ -1858,7 +2033,7 @@ private:
         return &node;
     }
 
-    void SplitDescriptorWeb(IrValue& inst, const std::array<IrValue*, 2>& handles, const std::array<bool, 2>& split, std::uint32_t handleCount) {
+    bool SplitDescriptorWeb(IrValue& inst, const std::array<IrValue*, 2>& handles, const std::array<bool, 2>& split, std::uint32_t handleCount, bool recordFailure = true) {
         std::vector<IrValue*> tuple;
         std::array<std::size_t, 2> offsets {};
         for (std::uint32_t slot = 0; slot < handleCount; slot++) {
@@ -1900,13 +2075,15 @@ private:
             }
         }
         if (selector == nullptr || web.arms.empty()) {
-            const std::string reason = !web.failure.empty() ? web.failure : web.foldedValue ? std::string("no path's descriptor can be rebuilt from supported runtime values") : std::string("no descriptor was found on any path");
-            for (std::uint32_t slot = 0; slot < handleCount; slot++) {
-                if (split[slot]) {
-                    m_splitFailures.try_emplace(handles[slot], reason);
+            if (recordFailure) {
+                const std::string reason = !web.failure.empty() ? web.failure : web.foldedValue ? std::string("no path's descriptor can be rebuilt from supported runtime values") : std::string("no descriptor was found on any path");
+                for (std::uint32_t slot = 0; slot < handleCount; slot++) {
+                    if (split[slot]) {
+                        m_splitFailures.try_emplace(handles[slot], reason);
+                    }
                 }
             }
-            return;
+            return false;
         }
 
         if (web.foldedValue) {
@@ -1925,6 +2102,7 @@ private:
         ReplaceWithArmCopies(inst, handles, split, handleCount, conditions, true, [&](std::uint32_t arm, std::uint32_t slot, std::size_t dword) {
             return Rematerialize(web.arms[arm][offsets[slot] + dword], inst, true, phiSearchDepth);
         });
+        return true;
     }
 
     std::string SplitFailure(const IrValue& handle) const {
@@ -2085,12 +2263,23 @@ private:
                 }
             }
         }
+        const auto onlyUsedByTableColumns = [&](const IrValue* value) {
+            std::vector<const IrValue*> pending(value->Uses().begin(), value->Uses().end());
+            std::unordered_set<const IrValue*> seen;
+            while (!pending.empty()) {
+                const IrValue* user = pending.back();
+                pending.pop_back();
+                if (!seen.insert(user).second) continue;
+                if (FindTableColumn(*user) != nullptr) continue;
+                if (!user->IsPhi()) return false;
+                pending.insert(pending.end(), user->Uses().begin(), user->Uses().end());
+            }
+            return true;
+        };
         for (const auto& plan : m_tableColumns) {
             for (std::size_t index = 0; index < plan.reads.size(); index++) {
                 const IrValue* read = plan.reads[index];
-                const bool planned = std::ranges::all_of(read->Uses(), [&](const IrValue* user) {
-                    return FindTableColumn(*user) != nullptr;
-                });
+                const bool planned = onlyUsedByTableColumns(read);
                 if (planned && std::ranges::find(m_tablePlanningReads, read) == m_tablePlanningReads.end()) {
                     m_tablePlanningReads.push_back(read);
                     m_tablePlanningMemory.push_back(plan.memory[index]);
