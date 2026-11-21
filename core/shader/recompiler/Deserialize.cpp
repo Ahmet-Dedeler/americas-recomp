@@ -59,7 +59,7 @@ static ShaderStageKind ToShaderStageKind(ShaderStage stage) {
     case ShaderStage::Mesh:
         return ShaderStageKind::Mesh;
     case ShaderStage::Geometry:
-        throw std::runtime_error("unsupported geometry shader stage");
+        return ShaderStageKind::Geometry;
     }
 
     throw std::runtime_error("invalid shader stage");

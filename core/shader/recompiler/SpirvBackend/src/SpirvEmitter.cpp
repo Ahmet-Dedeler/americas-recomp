@@ -249,7 +249,7 @@ std::vector<std::uint32_t> SpirvEmitter::Emit(const IrProgram& program, const Co
 }
 
 std::vector<std::uint32_t> SpirvEmitter::Emit(const IrProgram& program, const ShaderStageInputInfo& inputInfo, const CompiledBindingLayout& bindings, const SpirvTargetOptions& target, SpirvEmitInfo* info) const {
-    if (program.Resources().stage != IrShaderStage::Compute && program.Resources().stage != IrShaderStage::Vertex && program.Resources().stage != IrShaderStage::Pixel && program.Resources().stage != IrShaderStage::Mesh && program.Resources().stage != IrShaderStage::Local && program.Resources().stage != IrShaderStage::TessellationControl && program.Resources().stage != IrShaderStage::TessellationEvaluation) {
+    if (program.Resources().stage != IrShaderStage::Compute && program.Resources().stage != IrShaderStage::Vertex && program.Resources().stage != IrShaderStage::Pixel && program.Resources().stage != IrShaderStage::Mesh && program.Resources().stage != IrShaderStage::Geometry && program.Resources().stage != IrShaderStage::Local && program.Resources().stage != IrShaderStage::TessellationControl && program.Resources().stage != IrShaderStage::TessellationEvaluation) {
         FailProgram(program, "binary SPIR-V emitter received an unsupported shader stage");
     }
     if (!program.Resources().srtPlanComplete || !program.Resources().resourceTrackingComplete || !program.Metadata().shaderInfoComplete || !program.Metadata().bindingLayoutComplete) {
@@ -311,6 +311,14 @@ std::vector<std::uint32_t> SpirvEmitter::Emit(const IrProgram& program, const Sh
         state.requirements.subgroupBallot = false;
         state.requirements.subgroupShuffle = false;
         state.requirements.subgroupLocalInvocationId = false;
+    }
+    if (program.Resources().stage == IrShaderStage::Geometry && inputInfo.vertex != nullptr) {
+        const auto& geom = inputInfo.vertex->geometry;
+        const std::uint64_t required = static_cast<std::uint64_t>(geom.gsvsOffsetDwords) + static_cast<std::uint64_t>(geom.maxOutputVertices) * static_cast<std::uint64_t>(geom.gsvsVertexSize);
+        const auto aligned = static_cast<std::uint32_t>(std::max<std::uint64_t>((required + 63u) & ~63ull, 64u));
+        state.requirements.functionLds = true;
+        state.requirements.functionLdsAddresses.clear();
+        state.requirements.functionLdsDwords = std::max(state.requirements.functionLdsDwords, aligned);
     }
     state.splitSubgroup = program.WaveSize() == 32u && target.subgroupSize > 32u;
     if (state.splitSubgroup && (state.requirements.subgroupBallot || state.requirements.subgroupShuffle)) state.requirements.subgroupLocalInvocationId = true;

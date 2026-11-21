@@ -11,6 +11,8 @@ const char* StageName(IrShaderStage stage) {
         case IrShaderStage::Pixel: return "pixel";
         case IrShaderStage::Fetch: return "fetch";
         case IrShaderStage::Compute: return "compute";
+        case IrShaderStage::Geometry: return "geometry";
+        case IrShaderStage::Mesh: return "mesh";
         default: return "unknown";
     }
 }

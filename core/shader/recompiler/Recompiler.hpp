@@ -426,6 +426,20 @@ struct MeshConfiguration {
     std::uint32_t outputPrimitiveSize = 3;
 };
 
+struct GeometryConfiguration {
+    std::uint32_t inputPrimitive = 3;
+    std::uint32_t outputTopology = 3;
+    std::uint32_t maxOutputVertices = 3;
+    std::uint32_t invocations = 1;
+    std::uint32_t esgsItemSize = 8;
+    std::uint32_t gsvsVertexSize = 20;
+    std::uint32_t gsvsOffsetDwords = 64;
+    std::uint32_t inputAttributeCount = 2;
+    std::uint32_t outputAttributeCount = 5;
+    bool inputPosition = true;
+    bool outputPosition = true;
+};
+
 struct TessellationConfiguration {
     std::uint32_t inputControlPoints;
     std::uint32_t outputControlPoints;
@@ -504,6 +518,7 @@ struct GraphicsCompileContext {
     std::optional<TessellationConfiguration> tessellation;
     GraphicsDrawParameters draw;
     std::optional<MeshBarycentricLayout> meshBarycentrics;
+    std::optional<GeometryConfiguration> geometry = std::nullopt;
 };
 
 struct RecompileRequest {

@@ -253,8 +253,20 @@ void TranslationContext::sBarrier() {
 
 void TranslationContext::sSendmsg(const RdnaInstruction& inst) {
     constexpr std::uint32_t GsAllocReq = 9u;
-    if (program.Resources().stage == IrShaderStage::Mesh && (inst.rawWords[0] & 0xfu) == GsAllocReq) {
+    constexpr std::uint32_t MsgGs = 2u;
+    constexpr std::uint32_t MsgGsDone = 3u;
+    const std::uint32_t imm = inst.rawWords[0] & 0xffffu;
+    const std::uint32_t msg = imm & 0xfu;
+    if (program.Resources().stage == IrShaderStage::Mesh && msg == GsAllocReq) {
         (void)ir.Emit(IrOpcode::MeshAllocate, IrType::Void, {&ir.GetM0()});
+        return;
+    }
+    if (program.Resources().stage == IrShaderStage::Geometry && (msg == MsgGs || msg == MsgGsDone)) {
+        const std::uint32_t op = (imm >> 4u) & 3u;
+        const std::uint32_t stream = (imm >> 8u) & 3u;
+        if (op != 0u) {
+            (void)ir.Emit(IrOpcode::EmitVertex, IrType::Void, {&ir.Constant(op), &ir.Constant(stream), &ir.GetExec()});
+        }
         return;
     }
     (void)ir.Emit(IrOpcode::Sendmsg, IrType::Void, {});
