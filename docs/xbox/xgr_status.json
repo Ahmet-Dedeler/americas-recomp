@@ -310,7 +310,7 @@ true
 ],
 [
 "XTaskQueueIsEmpty",
-false
+true
 ],
 [
 "XThreadAssertNotTimeSensitive",
@@ -386,7 +386,7 @@ false
 "IXGameEventImpl": [
 [
 "XGameEventWrite",
-false
+true
 ]
 ],
 "IXGameInviteImpl": [
