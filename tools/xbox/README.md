@@ -105,22 +105,62 @@ so the other quads must stay clear. Both run with `XBOX_NO_FRAGMENT_BARY=1`, the
 host perspective path; the quad operations do not need the barycentric
 extension.
 
-## Windows compute smoke test
+## Windows quick start
 
 From the repository root in PowerShell, with Python 3, the x64 MSVC C++ toolchain,
-the Vulkan SDK, and a Vulkan-capable GPU driver installed, run:
+the Vulkan SDK, and a Vulkan-capable GPU driver installed. Build the recompiler and
+the execution harness:
 
 ```powershell
 git submodule update --init 3rdparty/SPIRV-Headers
 python tools/xbox/build_msvc.py --with-exec
-python tools/xbox/exec_smoke.py
 ```
 
-The build reads `VULKAN_SDK`. Use `--vulkan-sdk "path to SDK"` to select another
-installation. For a custom build directory, pass `--exec "path to exec.exe"` to
-the smoke test. It generates a standalone RDNA2 compute program, dispatches one
-32-lane workgroup, and checks all 1024 output bytes. A successful run prints
-`PASS`. This test requires neither a shader corpus nor an external decoder.
+The build reads `VULKAN_SDK`; `--vulkan-sdk "path to SDK"` selects another
+installation, and `--build-dir` another output directory. It writes
+`build-xbox/driver.exe`, `stages.exe` and `exec.exe`. Smoke-test it on the GPU; this
+dispatches one 32-lane workgroup and checks all 1024 output bytes, with no shader
+corpus or external decoder:
+
+```powershell
+python tools/xbox/exec_smoke.py --exec build-xbox/exec.exe
+```
+
+`exec_tests.py`, `image_tests.py`, `exec_bvh_tests.py` and `desc_chain_tests.py`
+assemble their RDNA2 programs with `rdna_asm.py` and read the harness path from
+`XBOX_EXEC`. Two points matter on Windows:
+
+- The official Windows LLVM has no AMDGPU `llvm-mc`, so set `XBOX_RDNA2=recomp` to
+  assemble from the in-repo decoder (`rdna2_recomp.py`), which needs nothing outside
+  the repository.
+- `XBOX_EXEC` must be an absolute path: these tests run `exec.exe` from a temporary
+  working directory, where a relative path does not resolve.
+
+```powershell
+$env:XBOX_EXEC = "$PWD\build-xbox\exec.exe"
+$env:XBOX_RDNA2 = "recomp"
+python tools/xbox/exec_tests.py
+python tools/xbox/image_tests.py
+python tools/xbox/exec_bvh_tests.py
+python tools/xbox/desc_chain_tests.py
+```
+
+The standalone tests (`mad_legacy_clamp_test.py`, `permlane_test.py`,
+`quadmask_test.py`, `quad_test.py`) take `--exec "build-xbox/exec.exe"` and resolve
+it themselves. The pixel tests (`texture_test.py`, `interpolation_test.py`,
+`per_vertex_test.py`, `pixel_smoke.py`) also need the SDK's `glslangValidator` on
+`PATH`:
+
+```powershell
+$env:PATH = "$env:VULKAN_SDK\Bin;$env:PATH"
+python tools/xbox/texture_test.py --exec build-xbox/exec.exe
+```
+
+With more than one GPU, `exec.exe` runs on the last discrete device it enumerates;
+pin one with `VK_DRIVER_FILES=<icd.json>` (the loader prints the installed ICD
+manifest paths under `VK_LOADER_DEBUG=driver`). A device without
+`VK_KHR_fragment_shader_barycentric` runs the pixel tests only with
+`XBOX_NO_FRAGMENT_BARY=1`.
 
 ### Test v_mad_legacy_f32 clamp
 
