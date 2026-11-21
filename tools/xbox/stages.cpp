@@ -3,6 +3,7 @@
 #include "RdnaDecoder/RdnaInstructionDecoder.hpp"
 #include <chrono>
 #include <cstdio>
+#include <cstring>
 #include <fstream>
 #include <iterator>
 #include <vector>

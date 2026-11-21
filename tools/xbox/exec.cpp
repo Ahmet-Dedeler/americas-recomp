@@ -12,7 +12,8 @@
 //   user <sgpr> <targetId>              (user data pair: low, high dword of the region address)
 //   userval <sgpr> <u32>
 //   user32 <sgpr> <targetId>   (a single 32-bit pointer register: the guest address of the region)
-//   lowguest   (give every region a guest address below 4 GiB; the BDA page table maps guest to device addresses)
+//   lowguest   (give every region a guest address below 4 GiB; the BDA page table maps guest to device addresses; implied when a device
+//               address does not fit in 48 bits, as RADV hands out)
 //   stage ps   (a pixel shader instead of a compute shader: draws one triangle that covers the whole target; the vertex shader
 //               comes from `vs <spv>` and writes constant interpolants; colour outputs are read back as out/target<i>.bin, RGBA32F)
 //   export <target> <mode> <mapping>   (SPI_SHADER_COL_FORMAT-style output mode, default 4 = FP16_ABGR; mapping default 0xe4 = identity)
@@ -218,8 +219,9 @@ int main(int argc, char** argv) {
         }
         {
             std::uint64_t next = 0x10000000ull;
+            const bool remap = lowGuest || std::any_of(regions.begin(), regions.end(), [](const auto& e) { return (e.second.address >> 48) != 0; });
             for (auto& [rid, r] : regions) {
-                r.guest = lowGuest ? next : r.address;
+                r.guest = remap ? next : r.address;
                 next += 0x1000000ull;
             }
         }
