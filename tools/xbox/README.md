@@ -7,6 +7,9 @@ Experimental tooling for running Xbox Series shader code through the shader reco
    (needs the `SPIRV-Headers` and `Vulkan-Headers` submodules and the Vulkan loader). Without `rdna2.py`, `rdna_asm.py` takes its opcode
    tables from LLVM (`rdna2_llvm.py`, needs `llvm-mc` with the AMDGPU target), so `exec_tests.py` and `exec_bvh_tests.py` run with no
    game files: `XBOX_EXEC=build-xbox/exec python3 tools/xbox/exec_tests.py`. `VK_DRIVER_FILES=<icd.json>` picks the GPU.
+   The same commands build on macOS against MoltenVK (Homebrew `molten-vk`, `vulkan-loader`); `exec` enables portability enumeration
+   and `VK_KHR_portability_subset` when they are offered. On MoltenVK the pixel smoke test passes; compute fails because compute
+   subgroup size cannot be pinned, and the interpolation test fails because MSL has no `PerVertexKHR`.
 2. `extract_shaders.py` writes prologue-stripped, trimmed code blobs `<idx>.bin` (it depends on the RPF9
    extraction pipeline and `rdna2.py` decoder kept next to the dumped shaders; adjust its paths).
 3. `driver.exe <code.bin> <wave 32|64> <out.spv> [user_data_dwords]` recompiles one compute shader with stubbed
