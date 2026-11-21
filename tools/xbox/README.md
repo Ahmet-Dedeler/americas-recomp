@@ -7,8 +7,9 @@ Experimental tooling for running Xbox Series shader code through the shader reco
    (needs the `SPIRV-Headers` and `Vulkan-Headers` submodules; `exec` opens the Vulkan loader at run time, as the AGC driver does).
    When a device address does not fit in the 48 bits of a guest pointer (RADV hands out such addresses), `exec` gives the regions remapped
    guest addresses as `lowguest` does. Without `rdna2.py`, `rdna_asm.py` takes its opcode
-   tables from LLVM (`rdna2_llvm.py`, needs `llvm-mc` with the AMDGPU target) or, without `llvm-mc`, from the recompiler's own decoder
-   (`rdna2_recomp.py`, which needs nothing outside the repository; `XBOX_RDNA2=llvm|recomp` picks one), so `exec_tests.py` and
+   tables from LLVM (`rdna2_llvm.py`, needs `llvm-mc` with the AMDGPU target) or, without such an `llvm-mc` (the official Windows LLVM
+   builds have no AMDGPU target), from the recompiler's own decoder (`rdna2_recomp.py`, which needs nothing outside the repository;
+   `XBOX_RDNA2=llvm|recomp` picks one), so `exec_tests.py` and
    `exec_bvh_tests.py` run with no game files: `XBOX_EXEC=build-xbox/exec python3 tools/xbox/exec_tests.py`. `VK_DRIVER_FILES=<icd.json>`
    picks the GPU. `rdna2_recomp.py` has rdna2.py's whole interface (`decode`, `sweep` with instruction words and formats), so `cpu_ref.py`
    falls back to it as well; its instruction lengths and opcodes follow the recompiler's decoder.
