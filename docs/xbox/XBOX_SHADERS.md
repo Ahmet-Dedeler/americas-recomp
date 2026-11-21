@@ -1,7 +1,7 @@
 # Xbox Series shaders in the AnyPS5 recompiler (experimental fork notes)
 
 Status of the `xbox-series` branch. Everything here comes from one title's `shaders.rpf` (RPF9 container,
-24,804 shaders, all DXIL SM 6.6 stubs). Nothing was executed on hardware: "valid" means `spirv-val` accepts the output.
+26,503 shaders, all DXIL SM 6.6 stubs: 24,804 in the first entry run, 1,699 in a second run starting near file offset 0x10289c85 that was found later; only 4,147 of them were put through the recompiler, see the README). Nothing was executed on hardware: "valid" means `spirv-val` accepts the output.
 
 ## Shader format (Xbox side, not handled by AnyPS5)
 

@@ -12,7 +12,7 @@ An experiment: can the RDNA2 shaders from an Xbox Series game go through [AnyPS5
 
 The last row is the platform surface of the 16 DLLs shipped with the package (static imports only, see `docs/xbox/PLATFORM_SURFACE.md`): 605 of 611 imported functions resolve on a PC as they are; the 6 that do not belong to two Xbox-only libraries (`xmem.dll`, `d3d12_xs.dll`). Stand-ins for both are in `tools/xbox/platform/`; all six DLLs that import something load on a PC with them, and the game's Bink decoder decodes a real video through the `xmem.dll` stand-in. The grey rows below it are work that has not started and cannot be measured yet (game executable imports, pipeline state and ABI decode, the d3d12_xs runtime, BVH traversal correctness, a first rendered frame, game services at run time); the green platform row only covers the DLLs' static imports, so it is not a completion figure.
 
-Corpus: 24,804 shaders from an RPF9 archive (2,647 compute, 738 pixel, 114 vertex, 8 geometry, 640 mesh).
+Corpus: `shaders.rpf` holds 26,503 shaders: 24,804 in the main entry run plus 1,699 in a second run further on that my first scan missed (found by comparing with the shader count of the Leonida project, https://github.com/ItsNotRexed/Leonida; the 1,699 all parse, and 1,693 of them hold an FSSM program). The results below cover only 4,147 of the 24,804: all 2,647 compute shaders and a sample of 1,500 others (738 pixel, 114 vertex, 8 geometry, 640 mesh). The other 20,657 and the 1,699 have not been run through the recompiler.
 
 | Stage | Shaders | Valid SPIR-V | Notes |
 |---|---|---|---|
