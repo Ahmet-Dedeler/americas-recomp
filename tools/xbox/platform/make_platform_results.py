@@ -14,8 +14,9 @@ gp.restype = ctypes.c_void_p
 gp.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
 union = collections.defaultdict(set)
 for v in imports.values():
-    for dll, fns in v["imports"].items():
-        union[dll].update(fns)
+    for source in ("imports", "delay"):
+        for dll, fns in v.get(source, {}).items():
+            union[dll].update(fns)
 out, unresolved = {}, []
 for dll, fns in sorted(union.items()):
     for fn in sorted(fns):
@@ -25,7 +26,12 @@ for dll, fns in sorted(union.items()):
         elif dll in package:
             out[key] = "package" if fn in package[dll] else "fail"
         else:
-            h = ctypes.WinDLL(dll)._handle
+            try:
+                h = ctypes.WinDLL(dll)._handle
+            except OSError:
+                out[key] = "fail"
+                unresolved.append(key)
+                continue
             ok = gp(h, ctypes.cast(ctypes.c_void_p(int(fn[1:])), ctypes.c_char_p) if fn.startswith("#") else fn.encode())
             out[key] = "standard" if ok else "fail"
             if not ok:
