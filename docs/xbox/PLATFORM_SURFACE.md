@@ -65,6 +65,17 @@ That covers the four arithmetic-only shaders, and on the RX 7800 XT (one shader 
 | ConstructBVH4 | compiler crash | compiles |
 | BuildApexPointMap | error | compiles |
 "Compiles" means the driver accepted the pipeline; nothing has been dispatched, so the lowered shaders are not yet checked for correct results.
+**First dispatch of a lowered shader (tools/xbox/platform/dispatch_test.cpp)**: Box32Rehydration (lowered) was run with pseudo-random input
+(words whose high byte is a count 0..4 and whose low 24 bits are a random mask), on the RX 7800 XT and on WARP, through bounds-checked raw UAVs.
+- It runs to completion. On the GPU the output is identical across repeated runs for 1 and 4 groups, and identical whether the wave size is left to the driver or
+  pinned to 64 (`dxil_sm66_wave.py`: SM 6.6 `[WaveSize(64)]`; it also converts `createHandle` to `createHandleFromBinding`/`annotateHandle`, which SM 6.6 requires).
+  With 64 groups the output differs run to run: random pointers make several threads write the same node, a race in my input, not in the shader.
+- WARP gives a different result (6429 vs 6552 non-zero words for 4 groups), and WARP rejects SM 6.6, so it cannot be used to check the pinned version.
+- One earlier run hung the GPU (device removed). It followed runs that used root UAVs, which have no bounds checking, so I attribute it to that and not to the shader;
+  it did not recur once the views were bounds-checked.
+- This shows the lowered shader is stable, not that it is correct: the original cannot run anywhere, so there is no reference output.
+  A CPU model of the rehydration (from the shader text and `BVH_CONTAINER.md`) is the next way to check it.
+
 Next: the nine wave/lane shaders (`ReadLane`, `LaneSwizzle`, `Ballot64`, `MBCNT64`, `S_BCNT1_U64`, `MakeUniform`, `V_CNDMASK_B32`; these depend on the
 64-lane wave the Xbox build assumed: `__XBOX_ENABLE_WAVE32` is set in the shaders seen so far) and then the raw-address ones.
 Not reached: any build or rehydrate call. They take GPU virtual addresses, which the builder's DXIL shaders read by 64-bit address (no PC
