@@ -22,7 +22,7 @@
     X(vkCmdCopyBufferToImage) X(vkCmdCopyImageToBuffer) X(vkCmdDispatch) X(vkCmdDraw) X(vkCmdEndRendering) X(vkCmdPipelineBarrier) \
     X(vkCmdPushConstants) X(vkCreateBuffer) X(vkCreateCommandPool) X(vkCreateComputePipelines) X(vkCreateDescriptorPool) \
     X(vkCreateDescriptorSetLayout) X(vkCreateDevice) X(vkCreateGraphicsPipelines) X(vkCreateImage) X(vkCreateImageView) \
-    X(vkCreatePipelineLayout) X(vkCreateSampler) X(vkCreateShaderModule) X(vkEndCommandBuffer) X(vkEnumeratePhysicalDevices) \
+    X(vkCreatePipelineLayout) X(vkCreateSampler) X(vkCreateShaderModule) X(vkEndCommandBuffer) X(vkEnumerateDeviceExtensionProperties) X(vkEnumeratePhysicalDevices) \
     X(vkGetBufferMemoryRequirements) X(vkGetDeviceProcAddr) X(vkGetDeviceQueue) X(vkGetImageMemoryRequirements) \
     X(vkGetPhysicalDeviceFeatures2) X(vkGetPhysicalDeviceFormatProperties) X(vkGetPhysicalDeviceMemoryProperties) \
     X(vkGetPhysicalDeviceProperties) X(vkGetPhysicalDeviceProperties2) X(vkGetPhysicalDeviceQueueFamilyProperties) X(vkMapMemory) \
