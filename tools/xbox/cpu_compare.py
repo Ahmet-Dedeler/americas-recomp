@@ -34,8 +34,10 @@ def scenario_memory(lines):
         w = l.split()
         if w[0] == "image":
             iid, wd, ht = int(w[1]), int(w[2]), int(w[3])
-            data = list(struct.unpack('<%dI' % (wd * ht * 4), open(w[w.index("init") + 1], "rb").read())) if "init" in w else [0] * (wd * ht * 4)
-            images[iid] = {"w": wd, "h": ht, "data": data, "written": {}}
+            layers = int(w[w.index("layers") + 1]) if "layers" in w else 1
+            n = wd * ht * 4 * layers
+            data = list(struct.unpack('<%dI' % n, open(w[w.index("init") + 1], "rb").read())) if "init" in w else [0] * n
+            images[iid] = {"w": wd, "h": ht, "layers": layers, "data": data, "written": {}}
     def put(rid, off, v):
         struct.pack_into('<I', regions[rid], off, v & 0xffffffff)
     for l in lines:
@@ -54,7 +56,7 @@ def scenario_memory(lines):
             im = images[int(w[3])]
             fake = 0x7000000000 + 0x1000000 * int(w[3])
             o = int(w[2], 0)
-            for k, v in enumerate([fake >> 8, ((fake >> 40) & 0xff) | (77 << 20) | (3 << 30), (im["w"] - 1) | ((im["h"] - 1) << 14), 0xfac | (9 << 28), 0, 0, 0, 0]):
+            for k, v in enumerate([fake >> 8, ((fake >> 40) & 0xff) | (77 << 20) | (3 << 30), (im["w"] - 1) | ((im["h"] - 1) << 14), 0xfac | ((13 if im["layers"] > 1 else 9) << 28), im["layers"] - 1 if im["layers"] > 1 else 0, 0, 0, 0]):
                 put(int(w[1]), o + 4 * k, v)
         elif w[0] in ("user", "ptr8lo", "ptr8hi"):
             raise C.Unsupported("scenario keyword " + w[0])

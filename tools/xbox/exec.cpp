@@ -13,6 +13,11 @@
 //   userval <sgpr> <u32>
 //   user32 <sgpr> <targetId>   (a single 32-bit pointer register: the guest address of the region)
 //   lowguest   (give every region a guest address below 4 GiB; the BDA page table maps guest to device addresses)
+//   stage ps   (a pixel shader instead of a compute shader: draws one triangle that covers the whole target; the vertex shader
+//               comes from `vs <spv>` and writes constant interpolants; colour outputs are read back as out/target<i>.bin, RGBA32F)
+//   export <target> <mode> <mapping>   (SPI_SHADER_COL_FORMAT-style output mode, default 4 = FP16_ABGR; mapping default 0xe4 = identity)
+//   depth   (a D32_SFLOAT depth attachment, test ALWAYS + write; read back as out/depth.bin, cleared to 0.123456)
+//   target <w> <h>    inputaddr <hex>    interp <count> <fp16 attribute mask hex>
 //   threads <x> <y> <z>   (workgroup size, default <wave> 1 1)     lds <dwords>     userdwords <n>   (user SGPR count; the workgroup ids follow)
 // Supported bindings: guest buffers (V# bases must be region starts), shader data, flattened SRT, GDS/page-table/fault stubs.
 // Images and samplers are not implemented yet and make the run fail with a clear message.
@@ -55,6 +60,7 @@ struct ImageRes {
     VkImage image = VK_NULL_HANDLE;
     VkDeviceMemory memory = VK_NULL_HANDLE;
     VkImageView view = VK_NULL_HANDLE;
+    std::uint32_t layers = 1;   // > 1 makes a 2D array image
     float clear[4] = {0, 0, 0, 0};
     std::string initFile;   // raw R32G32B32A32 float texels, row-major; replaces the clear value
 };
@@ -98,7 +104,7 @@ void MakeBuffer(Device& d, Region& r, std::uint64_t size, VkBufferUsageFlags usa
     r.address = d.getAddress(d.device, &info);
 }
 
-Device CreateDevice(std::uint32_t wave) {
+Device CreateDevice(std::uint32_t wave, bool bary) {
     Device d;
     VkApplicationInfo app{VK_STRUCTURE_TYPE_APPLICATION_INFO};
     app.apiVersion = VK_API_VERSION_1_3;
@@ -126,13 +132,18 @@ Device CreateDevice(std::uint32_t wave) {
     VkPhysicalDeviceVulkan12Features f12{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES, &f13};
     VkPhysicalDeviceVulkan11Features f11{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES, &f12};
     VkPhysicalDeviceFeatures2 f2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &f11};
+    VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR fbary{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR};
+    if (bary) f13.pNext = &fbary;
     vkGetPhysicalDeviceFeatures2(d.physical, &f2);
+    if (bary && !fbary.fragmentShaderBarycentric) throw std::runtime_error("the device has no VK_KHR_fragment_shader_barycentric");
     const float priority = 1.0f;
     VkDeviceQueueCreateInfo qi{VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
     qi.queueFamilyIndex = d.family;
     qi.queueCount = 1;
     qi.pQueuePriorities = &priority;
     VkDeviceCreateInfo dci{VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, &f2};
+    const char* baryExt = VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME;
+    if (bary) { dci.enabledExtensionCount = 1; dci.ppEnabledExtensionNames = &baryExt; }
     dci.queueCreateInfoCount = 1;
     dci.pQueueCreateInfos = &qi;
     VK(vkCreateDevice(d.physical, &dci, nullptr, &d.device));
@@ -157,7 +168,10 @@ int main(int argc, char** argv) {
     try {
         std::uint32_t wave = 32;
         std::uint32_t groups[3] = {1, 1, 1};
-        bool lowGuest = false;
+        bool lowGuest = false, pixel = false, hasDepth = false;
+        std::uint32_t targetW = 8, targetH = 8, inputAddr = 2, interpCount = 0, fp16Mask = 0;
+        std::string vsPath;
+        std::uint8_t expMode[8] = {4, 4, 4, 4, 4, 4, 4, 4}, expMap[8] = {0xe4, 0xe4, 0xe4, 0xe4, 0xe4, 0xe4, 0xe4, 0xe4};
         std::uint32_t threads[3] = {0, 1, 1};
         std::uint32_t ldsDwords = 0, userCount = 16;
         std::string codePath, outDir = ".";
@@ -178,12 +192,19 @@ int main(int argc, char** argv) {
             else if (l.w[0] == "groups") for (int i = 0; i < 3; ++i) groups[i] = static_cast<std::uint32_t>(Num(l.w[1 + i]));
             else if (l.w[0] == "code") codePath = l.w[1];
             else if (l.w[0] == "lowguest") lowGuest = true;
+            else if (l.w[0] == "stage") pixel = l.w[1] == "ps";
+            else if (l.w[0] == "target") { targetW = static_cast<std::uint32_t>(Num(l.w[1])); targetH = static_cast<std::uint32_t>(Num(l.w[2])); }
+            else if (l.w[0] == "inputaddr") inputAddr = static_cast<std::uint32_t>(std::stoul(l.w[1], nullptr, 16));
+            else if (l.w[0] == "interp") { interpCount = static_cast<std::uint32_t>(Num(l.w[1])); fp16Mask = static_cast<std::uint32_t>(std::stoul(l.w[2], nullptr, 16)); }
+            else if (l.w[0] == "vs") vsPath = l.w[1];
+            else if (l.w[0] == "depth") hasDepth = true;
+            else if (l.w[0] == "export") { const auto t = Num(l.w[1]) & 7u; expMode[t] = static_cast<std::uint8_t>(Num(l.w[2])); expMap[t] = static_cast<std::uint8_t>(Num(l.w[3])); }
             else if (l.w[0] == "threads") for (int i = 0; i < 3; ++i) threads[i] = static_cast<std::uint32_t>(Num(l.w[1 + i]));
             else if (l.w[0] == "lds") ldsDwords = static_cast<std::uint32_t>(Num(l.w[1]));
             else if (l.w[0] == "userdwords") userCount = static_cast<std::uint32_t>(Num(l.w[1]));
             else if (l.w[0] == "out") outDir = l.w[1];
         }
-        Device dev = CreateDevice(wave);
+        Device dev = CreateDevice(wave, pixel && !std::getenv("XBOX_NO_FRAGMENT_BARY"));
         std::map<std::uint32_t, Region> regions;
         for (auto& l : lines) {
             if (l.w[0] != "region") continue;
@@ -212,9 +233,10 @@ int main(int argc, char** argv) {
             im.fakeAddress = 0x7000000000ull + 0x1000000ull * im.id;
             if (l.w.size() >= 9 && l.w[4] == "clear") for (int c = 0; c < 4; ++c) im.clear[c] = std::stof(l.w[5 + c]);
             for (std::size_t k = 4; k + 1 < l.w.size(); ++k) if (l.w[k] == "init") im.initFile = l.w[k + 1];
+            for (std::size_t k = 4; k + 1 < l.w.size(); ++k) if (l.w[k] == "layers") im.layers = static_cast<std::uint32_t>(Num(l.w[k + 1]));
             VkImageCreateInfo ici{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
             ici.imageType = VK_IMAGE_TYPE_2D; ici.format = VK_FORMAT_R32G32B32A32_SFLOAT;
-            ici.extent = {im.width, im.height, 1}; ici.mipLevels = 1; ici.arrayLayers = 1; ici.samples = VK_SAMPLE_COUNT_1_BIT;
+            ici.extent = {im.width, im.height, 1}; ici.mipLevels = 1; ici.arrayLayers = im.layers; ici.samples = VK_SAMPLE_COUNT_1_BIT;
             ici.tiling = VK_IMAGE_TILING_OPTIMAL;
             ici.usage = VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
             ici.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -226,8 +248,8 @@ int main(int argc, char** argv) {
             VK(vkAllocateMemory(dev.device, &ai, nullptr, &im.memory));
             VK(vkBindImageMemory(dev.device, im.image, im.memory, 0));
             VkImageViewCreateInfo vi{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-            vi.image = im.image; vi.viewType = VK_IMAGE_VIEW_TYPE_2D; vi.format = ici.format;
-            vi.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+            vi.image = im.image; vi.viewType = im.layers > 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D; vi.format = ici.format;
+            vi.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, im.layers};
             VK(vkCreateImageView(dev.device, &vi, nullptr, &im.view));
         }
         const auto region = [&](const std::string& id) -> Region& {
@@ -252,8 +274,9 @@ int main(int argc, char** argv) {
                 dword(r, off) = static_cast<std::uint32_t>(im.fakeAddress >> 8);
                 dword(r, off + 4) = static_cast<std::uint32_t>((im.fakeAddress >> 40) & 0xffu) | (77u << 20) | (3u << 30);
                 dword(r, off + 8) = (im.width - 1) | ((im.height - 1) << 14);
-                dword(r, off + 12) = 0xfacu | (9u << 28);
+                dword(r, off + 12) = 0xfacu | ((im.layers > 1 ? 13u : 9u) << 28);   // type 9 = 2D, 13 = 2D array
                 for (int k = 4; k < 8; ++k) dword(r, off + 4 * k) = 0;
+                if (im.layers > 1) dword(r, off + 16) = im.layers - 1;   // depth field: last array slice
             }
             else if (l.w[0] == "poke") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(Num(l.w[3]));
             else if (l.w[0] == "ptrlo") dword(region(l.w[1]), Num(l.w[2])) = static_cast<std::uint32_t>(region(l.w[3]).guest + (l.w.size() > 4 ? Num(l.w[4]) : 0));
@@ -280,18 +303,43 @@ int main(int argc, char** argv) {
         request.context.memory = MemoryRegionView(std::span<const MemoryRegion>(memory));
         const std::vector<std::uint32_t> caps{1u,55u,56u,32u,33u,5283u,9u,10u,11u,22u,39u,61u,62u,63u,64u,65u,66u,67u,68u,4427u,4433u,4434u,4435u,4436u,4437u,4438u,4445u,4447u,4448u,4449u,4450u,5345u,5346u,5347u,5301u,5302u,5303u,5304u,5305u,6u,38u,41u,5u,17u,18u,19u,3u,2u,4u,7u,8u,45u,5249u};
         const std::array<std::string_view, 7> ext{"SPV_EXT_mesh_shader", "SPV_KHR_storage_buffer_storage_class", "SPV_KHR_physical_storage_buffer", "SPV_KHR_16bit_storage", "SPV_KHR_8bit_storage", "SPV_KHR_vulkan_memory_model", "SPV_KHR_shader_ballot"};
-        request.shader = {ShaderStage::Compute, 0x20000u, code};
+        request.shader = {pixel ? ShaderStage::Fragment : ShaderStage::Compute, 0x20000u, code};
+        if (pixel) {
+            ShaderPixelStageInfo px{};
+            px.interpolatorCount = interpCount;
+            px.wave32 = wave == 32;
+            px.inputAddr = inputAddr;
+            px.depthExportEnable = hasDepth;   // SPI_SHADER_Z_FORMAT enables the MRTZ export; without it the recompiler drops it
+            px.hasPerspectiveCenterVgpr = (inputAddr & 0x2u) != 0;
+            px.posX = (inputAddr & PixelInputBit(PixelInput::PositionX)) != 0;
+            px.posY = (inputAddr & PixelInputBit(PixelInput::PositionY)) != 0;
+            px.posZ = (inputAddr & PixelInputBit(PixelInput::PositionZ)) != 0;
+            px.posW = (inputAddr & PixelInputBit(PixelInput::PositionW)) != 0;
+            px.frontFace = (inputAddr & PixelInputBit(PixelInput::FrontFace)) != 0;
+            for (std::uint32_t i = 0; i < 8; i++) { px.targetExportMapping[i] = expMap[i]; px.targetOutputMode[i] = expMode[i]; px.targetExportPacking[i] = ColorExportPacking::None; }
+            for (std::uint32_t i = 0; i < interpCount && i < 32; i++) px.interpolatorSettings[i] = i | (((fp16Mask >> i) & 1u) ? 0x80000u : 0u);
+            request.context.pixel = px;
+            request.context.floatMode = ShaderFloatMode{0xc0u, true, false, false};
+        }
         request.context.waveSize = wave;
         request.context.userDataBaseRegister = 0;
         request.context.userData = userData;
-        request.context.compute = ShaderComputeStageInfo{{threads[0], threads[1], threads[2]}, ldsDwords, {true, true, true}, false, 1u};
+        if (!pixel) request.context.compute = ShaderComputeStageInfo{{threads[0], threads[1], threads[2]}, ldsDwords, {true, true, true}, false, 1u};
         request.target.vulkanVersion = 0x00403000u;
         request.target.spirvVersion = 0x00010600u;
         request.target.subgroupSize = wave;
         request.target.bdaAbiVersion = 1;
-        request.target.supportedCapabilities = caps;
-        const std::vector<std::string_view> extVector(ext.begin(), ext.end());
-        request.target.supportedExtensions = extVector;
+        std::vector<std::uint32_t> capsLocal = caps;
+        std::vector<std::string_view> extLocal(ext.begin(), ext.end());
+        if (pixel && !std::getenv("XBOX_NO_FRAGMENT_BARY")) {
+            // the host has VK_KHR_fragment_shader_barycentric (per-vertex inputs and barycentric builtins need no geometry-shader emulation)
+            request.target.fragmentShaderBarycentricEnabled = true;
+            request.target.fragmentBarycentricBuiltins = true;
+            capsLocal.push_back(5284u);
+            extLocal.push_back("SPV_KHR_fragment_shader_barycentric");
+        }
+        request.target.supportedCapabilities = capsLocal;
+        request.target.supportedExtensions = extLocal;
         request.target.maxWorkgroupSize = {1024u, 1024u, 64u};
         request.target.maxWorkgroupInvocations = 1024;
         request.target.maxWorkgroupSharedMemoryBytes = 65536;
@@ -301,6 +349,7 @@ int main(int argc, char** argv) {
         if (result.spirv.empty()) throw std::runtime_error("recompile produced no module");
         std::printf("compiled: %zu words, %zu bindings, push %zu bytes, bdaAbi %u\n", result.spirv.Words().size(), result.bindings.size(), result.pushConstants.size(), result.bdaAbiVersion);
 
+        const VkShaderStageFlags stageBits = pixel ? VK_SHADER_STAGE_FRAGMENT_BIT : VK_SHADER_STAGE_COMPUTE_BIT;
         // Descriptor layout + resources for each binding.
         std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
         std::vector<std::vector<VkDescriptorBufferInfo>> infos(result.bindings.size());
@@ -321,7 +370,7 @@ int main(int argc, char** argv) {
             if (b.role == DescriptorRole::GuestBuffers && b.guestDescriptor.size() < static_cast<std::size_t>(b.count) * 4u) throw std::runtime_error("binding " + std::to_string(b.binding) + ": buffer descriptor has " + std::to_string(b.guestDescriptor.size()) + " dwords for " + std::to_string(b.count) + " elements");
             if (b.kind == DescriptorKind::SampledImage || b.kind == DescriptorKind::StorageImage || b.kind == DescriptorKind::Sampler) {
                 const VkDescriptorType type = b.kind == DescriptorKind::SampledImage ? VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE : b.kind == DescriptorKind::StorageImage ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE : VK_DESCRIPTOR_TYPE_SAMPLER;
-                layoutBindings.push_back({b.binding, type, b.count, VK_SHADER_STAGE_COMPUTE_BIT, nullptr});
+                layoutBindings.push_back({b.binding, type, b.count, stageBits, nullptr});
                 for (std::uint32_t e = 0; e < b.count; ++e) {
                     VkDescriptorImageInfo ii{};
                     ii.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
@@ -343,7 +392,7 @@ int main(int argc, char** argv) {
                 continue;
             }
             if (b.kind != DescriptorKind::StorageBuffer) throw std::runtime_error("binding " + std::to_string(b.binding) + ": texel buffers are not implemented in the harness");
-            layoutBindings.push_back({b.binding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, b.count, VK_SHADER_STAGE_COMPUTE_BIT, nullptr});
+            layoutBindings.push_back({b.binding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, b.count, stageBits, nullptr});
             for (std::uint32_t e = 0; e < b.count; ++e) {
                 VkDescriptorBufferInfo info{VK_NULL_HANDLE, 0, VK_WHOLE_SIZE};
                 if (b.role == DescriptorRole::GuestBuffers) {
@@ -394,7 +443,7 @@ int main(int argc, char** argv) {
         dsli.pBindings = layoutBindings.data();
         VkDescriptorSetLayout setLayout;
         VK(vkCreateDescriptorSetLayout(dev.device, &dsli, nullptr, &setLayout));
-        VkPushConstantRange pcr{VK_SHADER_STAGE_COMPUTE_BIT, 0, static_cast<std::uint32_t>(std::max<std::size_t>(result.pushConstants.size(), 128))};
+        VkPushConstantRange pcr{stageBits, 0, static_cast<std::uint32_t>(std::max<std::size_t>(result.pushConstants.size(), 128))};
         VkPipelineLayoutCreateInfo pli{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
         pli.setLayoutCount = 1; pli.pSetLayouts = &setLayout; pli.pushConstantRangeCount = 1; pli.pPushConstantRanges = &pcr;
         VkPipelineLayout pipelineLayout;
@@ -413,13 +462,51 @@ int main(int argc, char** argv) {
         std::vector<std::uint32_t> specData;
         for (const auto& c : result.specialization) { entries.push_back({c.id, static_cast<std::uint32_t>(specData.size() * 4), 4}); specData.push_back(c.value); }
         VkSpecializationInfo spec{static_cast<std::uint32_t>(entries.size()), entries.data(), specData.size() * 4, specData.data()};
+        VkPipeline pipeline;
+        if (!pixel) {
         VkPipelineShaderStageRequiredSubgroupSizeCreateInfo sub{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO};
         sub.requiredSubgroupSize = result.hostSubgroupSize != 0 ? result.hostSubgroupSize : wave;
         VkComputePipelineCreateInfo cpi{VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
         cpi.stage = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, &sub, result.fullSubgroups ? VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT : 0u, VK_SHADER_STAGE_COMPUTE_BIT, module, "main", entries.empty() ? nullptr : &spec};
         cpi.layout = pipelineLayout;
-        VkPipeline pipeline;
         VK(vkCreateComputePipelines(dev.device, VK_NULL_HANDLE, 1, &cpi, nullptr, &pipeline));
+        } else {
+            if (vsPath.empty()) throw std::runtime_error("stage ps needs a `vs <file.spv>` line");
+            const auto vsRaw = ReadFile(vsPath);
+            VkShaderModuleCreateInfo vmi{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
+            vmi.codeSize = vsRaw.size(); vmi.pCode = reinterpret_cast<const std::uint32_t*>(vsRaw.data());
+            VkShaderModule vsModule;
+            VK(vkCreateShaderModule(dev.device, &vmi, nullptr, &vsModule));
+            VkPipelineShaderStageCreateInfo stages[2]{};
+            stages[0] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, 0, VK_SHADER_STAGE_VERTEX_BIT, vsModule, "main", nullptr};
+            stages[1] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, 0, VK_SHADER_STAGE_FRAGMENT_BIT, module, "main", entries.empty() ? nullptr : &spec};
+            VkPipelineVertexInputStateCreateInfo vin{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+            VkPipelineInputAssemblyStateCreateInfo ia{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
+            ia.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            VkViewport vp{0, 0, static_cast<float>(targetW), static_cast<float>(targetH), 0, 1};
+            VkRect2D sc{{0, 0}, {targetW, targetH}};
+            VkPipelineViewportStateCreateInfo vps{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
+            vps.viewportCount = 1; vps.pViewports = &vp; vps.scissorCount = 1; vps.pScissors = &sc;
+            VkPipelineRasterizationStateCreateInfo rs{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
+            rs.polygonMode = VK_POLYGON_MODE_FILL; rs.cullMode = VK_CULL_MODE_NONE; rs.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE; rs.lineWidth = 1.0f;
+            VkPipelineMultisampleStateCreateInfo ms{VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
+            ms.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+            VkPipelineColorBlendAttachmentState cba{};
+            cba.colorWriteMask = 0xf;
+            std::array<VkPipelineColorBlendAttachmentState, 8> cbas; cbas.fill(cba);
+            VkPipelineColorBlendStateCreateInfo cb{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
+            cb.attachmentCount = 8; cb.pAttachments = cbas.data();
+            std::array<VkFormat, 8> formats; formats.fill(VK_FORMAT_R32G32B32A32_SFLOAT);
+            VkPipelineRenderingCreateInfo rci{VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO};
+            rci.colorAttachmentCount = 8; rci.pColorAttachmentFormats = formats.data();
+            VkPipelineDepthStencilStateCreateInfo dss{VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
+            dss.depthTestEnable = hasDepth ? VK_TRUE : VK_FALSE; dss.depthWriteEnable = hasDepth ? VK_TRUE : VK_FALSE; dss.depthCompareOp = VK_COMPARE_OP_ALWAYS;
+            if (hasDepth) rci.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
+            VkGraphicsPipelineCreateInfo gpi{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, &rci};
+            gpi.stageCount = 2; gpi.pStages = stages; gpi.pVertexInputState = &vin; gpi.pInputAssemblyState = &ia; gpi.pViewportState = &vps;
+            gpi.pDepthStencilState = &dss; gpi.pRasterizationState = &rs; gpi.pMultisampleState = &ms; gpi.pColorBlendState = &cb; gpi.layout = pipelineLayout;
+            VK(vkCreateGraphicsPipelines(dev.device, VK_NULL_HANDLE, 1, &gpi, nullptr, &pipeline));
+        }
 
         const std::array<VkDescriptorPoolSize, 4> ps{{{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 4096}, {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4096}, {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 4096}, {VK_DESCRIPTOR_TYPE_SAMPLER, 4096}}};
         VkDescriptorPoolCreateInfo dpi{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
@@ -455,39 +542,124 @@ int main(int argc, char** argv) {
         for (auto& [iid, im] : images) {
             VkImageMemoryBarrier toTransfer{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
             toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; toTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED; toTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            toTransfer.srcQueueFamilyIndex = toTransfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; toTransfer.image = im.image; toTransfer.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+            toTransfer.srcQueueFamilyIndex = toTransfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; toTransfer.image = im.image; toTransfer.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, im.layers};
             vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &toTransfer);
             if (!im.initFile.empty()) {
                 std::ifstream in(im.initFile, std::ios::binary);
                 if (!in) throw std::runtime_error("cannot open image init file " + im.initFile);
                 staging.emplace_back();
-                MakeBuffer(dev, staging.back(), static_cast<std::uint64_t>(im.width) * im.height * 16, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+                MakeBuffer(dev, staging.back(), static_cast<std::uint64_t>(im.width) * im.height * 16 * im.layers, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
                 in.read(static_cast<char*>(staging.back().mapped), static_cast<std::streamsize>(staging.back().size));
                 VkBufferImageCopy up{};
-                up.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}; up.imageExtent = {im.width, im.height, 1};
+                up.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, im.layers}; up.imageExtent = {im.width, im.height, 1};
                 vkCmdCopyBufferToImage(cmd, staging.back().buffer, im.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &up);
             } else {
                 VkClearColorValue color{}; std::memcpy(color.float32, im.clear, sizeof(im.clear));
-                VkImageSubresourceRange range{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+                VkImageSubresourceRange range{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, im.layers};
                 vkCmdClearColorImage(cmd, im.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &color, 1, &range);
             }
             VkImageMemoryBarrier toGeneral = toTransfer;
             toGeneral.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; toGeneral.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
             toGeneral.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL; toGeneral.newLayout = VK_IMAGE_LAYOUT_GENERAL;
-            vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &toGeneral);
+            vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, pixel ? VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &toGeneral);
         }
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0, 1, &set, 0, nullptr);
-        if (!result.pushConstants.empty()) vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, static_cast<std::uint32_t>(result.pushConstants.size()), result.pushConstants.data());
-        vkCmdDispatch(cmd, groups[0], groups[1], groups[2]);
+        const VkPipelineBindPoint bindPoint = pixel ? VK_PIPELINE_BIND_POINT_GRAPHICS : VK_PIPELINE_BIND_POINT_COMPUTE;
+        vkCmdBindPipeline(cmd, bindPoint, pipeline);
+        vkCmdBindDescriptorSets(cmd, bindPoint, pipelineLayout, 0, 1, &set, 0, nullptr);
+        if (!result.pushConstants.empty()) vkCmdPushConstants(cmd, pipelineLayout, stageBits, 0, static_cast<std::uint32_t>(result.pushConstants.size()), result.pushConstants.data());
+        struct Target { VkImage image = VK_NULL_HANDLE; VkDeviceMemory memory = VK_NULL_HANDLE; VkImageView view = VK_NULL_HANDLE; Region readback; };
+        std::vector<Target> targets;
+        Target depthTarget;
+        if (!pixel) {
+            vkCmdDispatch(cmd, groups[0], groups[1], groups[2]);
+        } else {
+            targets.resize(8);
+            std::array<VkRenderingAttachmentInfo, 8> atts{};
+            for (std::uint32_t t = 0; t < 8; ++t) {
+                Target& tg = targets[t];
+                VkImageCreateInfo ici{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+                ici.imageType = VK_IMAGE_TYPE_2D; ici.format = VK_FORMAT_R32G32B32A32_SFLOAT; ici.extent = {targetW, targetH, 1};
+                ici.mipLevels = 1; ici.arrayLayers = 1; ici.samples = VK_SAMPLE_COUNT_1_BIT; ici.tiling = VK_IMAGE_TILING_OPTIMAL;
+                ici.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT; ici.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                VK(vkCreateImage(dev.device, &ici, nullptr, &tg.image));
+                VkMemoryRequirements req{};
+                vkGetImageMemoryRequirements(dev.device, tg.image, &req);
+                VkMemoryAllocateInfo ai{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+                ai.allocationSize = req.size; ai.memoryTypeIndex = FindMemory(dev, req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                VK(vkAllocateMemory(dev.device, &ai, nullptr, &tg.memory));
+                VK(vkBindImageMemory(dev.device, tg.image, tg.memory, 0));
+                VkImageViewCreateInfo vi{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+                vi.image = tg.image; vi.viewType = VK_IMAGE_VIEW_TYPE_2D; vi.format = ici.format; vi.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+                VK(vkCreateImageView(dev.device, &vi, nullptr, &tg.view));
+                VkImageMemoryBarrier b{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+                b.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; b.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED; b.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                b.srcQueueFamilyIndex = b.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; b.image = tg.image; b.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+                vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1, &b);
+                atts[t] = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
+                atts[t].imageView = tg.view; atts[t].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                atts[t].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; atts[t].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+                atts[t].clearValue.color.float32[0] = atts[t].clearValue.color.float32[1] = atts[t].clearValue.color.float32[2] = atts[t].clearValue.color.float32[3] = -777.0f;
+            }
+            VkRenderingAttachmentInfo depthAtt{VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO};
+            if (hasDepth) {
+                VkImageCreateInfo ici{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+                ici.imageType = VK_IMAGE_TYPE_2D; ici.format = VK_FORMAT_D32_SFLOAT; ici.extent = {targetW, targetH, 1};
+                ici.mipLevels = 1; ici.arrayLayers = 1; ici.samples = VK_SAMPLE_COUNT_1_BIT; ici.tiling = VK_IMAGE_TILING_OPTIMAL;
+                ici.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT; ici.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                VK(vkCreateImage(dev.device, &ici, nullptr, &depthTarget.image));
+                VkMemoryRequirements req{};
+                vkGetImageMemoryRequirements(dev.device, depthTarget.image, &req);
+                VkMemoryAllocateInfo ai{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+                ai.allocationSize = req.size; ai.memoryTypeIndex = FindMemory(dev, req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                VK(vkAllocateMemory(dev.device, &ai, nullptr, &depthTarget.memory));
+                VK(vkBindImageMemory(dev.device, depthTarget.image, depthTarget.memory, 0));
+                VkImageViewCreateInfo vi{VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+                vi.image = depthTarget.image; vi.viewType = VK_IMAGE_VIEW_TYPE_2D; vi.format = ici.format; vi.subresourceRange = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1};
+                VK(vkCreateImageView(dev.device, &vi, nullptr, &depthTarget.view));
+                VkImageMemoryBarrier b{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+                b.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT; b.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED; b.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+                b.srcQueueFamilyIndex = b.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; b.image = depthTarget.image; b.subresourceRange = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1};
+                vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, 0, 0, nullptr, 0, nullptr, 1, &b);
+                depthAtt.imageView = depthTarget.view; depthAtt.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+                depthAtt.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; depthAtt.storeOp = VK_ATTACHMENT_STORE_OP_STORE; depthAtt.clearValue.depthStencil = {0.123456f, 0};
+            }
+            VkRenderingInfo rinfo{VK_STRUCTURE_TYPE_RENDERING_INFO};
+            if (hasDepth) rinfo.pDepthAttachment = &depthAtt;
+            rinfo.renderArea = {{0, 0}, {targetW, targetH}}; rinfo.layerCount = 1; rinfo.colorAttachmentCount = 8; rinfo.pColorAttachments = atts.data();
+            vkCmdBeginRendering(cmd, &rinfo);
+            vkCmdDraw(cmd, 3, 1, 0, 0);
+            vkCmdEndRendering(cmd);
+            if (hasDepth) {
+                VkImageMemoryBarrier b{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+                b.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT; b.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                b.oldLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL; b.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                b.srcQueueFamilyIndex = b.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; b.image = depthTarget.image; b.subresourceRange = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1};
+                vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &b);
+                MakeBuffer(dev, depthTarget.readback, static_cast<std::uint64_t>(targetW) * targetH * 4, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+                VkBufferImageCopy copy{};
+                copy.imageSubresource = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 0, 1}; copy.imageExtent = {targetW, targetH, 1};
+                vkCmdCopyImageToBuffer(cmd, depthTarget.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, depthTarget.readback.buffer, 1, &copy);
+            }
+            for (auto& tg : targets) {
+                VkImageMemoryBarrier b{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+                b.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; b.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+                b.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; b.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                b.srcQueueFamilyIndex = b.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; b.image = tg.image; b.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+                vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &b);
+                MakeBuffer(dev, tg.readback, static_cast<std::uint64_t>(targetW) * targetH * 16, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+                VkBufferImageCopy copy{};
+                copy.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}; copy.imageExtent = {targetW, targetH, 1};
+                vkCmdCopyImageToBuffer(cmd, tg.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, tg.readback.buffer, 1, &copy);
+            }
+        }
         std::map<std::uint32_t, Region> readback;
         for (auto& [iid, im] : images) {
             Region& rb = readback[iid];
-            MakeBuffer(dev, rb, static_cast<std::uint64_t>(im.width) * im.height * 16, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+            MakeBuffer(dev, rb, static_cast<std::uint64_t>(im.width) * im.height * 16 * im.layers, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
             VkMemoryBarrier mb{VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT};
-            vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &mb, 0, nullptr, 0, nullptr);
+            vkCmdPipelineBarrier(cmd, pixel ? VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &mb, 0, nullptr, 0, nullptr);
             VkBufferImageCopy copy{};
-            copy.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}; copy.imageExtent = {im.width, im.height, 1};
+            copy.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, im.layers}; copy.imageExtent = {im.width, im.height, 1};
             vkCmdCopyImageToBuffer(cmd, im.image, VK_IMAGE_LAYOUT_GENERAL, rb.buffer, 1, &copy);
         }
         VK(vkEndCommandBuffer(cmd));
@@ -504,6 +676,14 @@ int main(int argc, char** argv) {
         for (auto& [iid, rb] : readback) {
             std::ofstream o(outDir + "/image" + std::to_string(iid) + ".bin", std::ios::binary);
             o.write(static_cast<const char*>(rb.mapped), static_cast<std::streamsize>(rb.size));
+        }
+        for (std::size_t t = 0; t < targets.size(); ++t) {
+            std::ofstream o(outDir + "/target" + std::to_string(t) + ".bin", std::ios::binary);
+            o.write(static_cast<const char*>(targets[t].readback.mapped), static_cast<std::streamsize>(targets[t].readback.size));
+        }
+        if (hasDepth && depthTarget.readback.mapped != nullptr) {
+            std::ofstream o(outDir + "/depth.bin", std::ios::binary);
+            o.write(static_cast<const char*>(depthTarget.readback.mapped), static_cast<std::streamsize>(depthTarget.readback.size));
         }
         if (faultBuffer != nullptr) {
             const auto* fault = static_cast<const BdaAbi::Fault*>(faultBuffer->mapped);

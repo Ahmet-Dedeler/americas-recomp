@@ -15,6 +15,7 @@ USER_DWORDS = 10          # the wrapped compute shaders read the workgroup id fr
 NODE_BYTES = 1 << 16
 DATA_BYTES = 1 << 20
 IMG = 64
+ARRAY_LAYERS = 4
 
 def _blob(profile="mixed"):
     """seeded input data: 'mixed' = floats at even dwords and small integers at odd dwords (exercises both kinds of code, but the
@@ -74,12 +75,14 @@ def build(idx, wave, workdir, threads=None, profile="mixed"):
                       f"poke {base} {off + 8} {DATA_BYTES // 16}", f"poke {base} {off + 12} 0x1004dfac"]
             info["data"].append(data_id)
             data_id += 1
-        elif cls == "img1":
-            # every image gets its own seeded normal-float texels so that a wrong coordinate or a mixed-up image shows in the result
+        elif cls in ("img1", "img5"):
+            # every image gets its own seeded normal-float texels so that a wrong coordinate or a mixed-up image shows in the result;
+            # img5 (a 2D array) has ARRAY_LAYERS slices
+            layers = ARRAY_LAYERS if cls == "img5" else 1
             ip = os.path.join(workdir, f"img{image_id}.bin")
             irnd = random.Random(1000 + image_id)
-            open(ip, "wb").write(b"".join(struct.pack('<f', 0.25 + irnd.random() * 3.75) for _ in range(IMG * IMG * 4)))
-            lines += [f"image {image_id} {IMG} {IMG} init {ip}", f"timg {base} {off} {image_id}"]
+            open(ip, "wb").write(b"".join(struct.pack('<f', 0.25 + irnd.random() * 3.75) for _ in range(IMG * IMG * 4 * layers)))
+            lines += [f"image {image_id} {IMG} {IMG}" + (f" layers {layers}" if layers > 1 else "") + f" init {ip}", f"timg {base} {off} {image_id}"]
             info["images"].append(image_id)
             image_id += 1
         elif cls.startswith("img"):

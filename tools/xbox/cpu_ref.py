@@ -65,6 +65,16 @@ def s32(x):
     return x - (1 << 32) if x & 0x80000000 else x
 
 
+def _fract(a):
+    x = f32(a)
+    if math.isnan(x):
+        return a | 0x400000
+    if math.isinf(x):
+        return 0x7fc00000
+    r = b32(x - math.floor(x))
+    return 0x3f7fffff if f32(r) >= 1.0 else r
+
+
 def isnan(b):
     return (b & 0x7f800000) == 0x7f800000 and (b & 0x7fffff) != 0
 
@@ -145,6 +155,8 @@ class Wave:
             return 0
         if code == 128:
             return 0
+        if code in (240, 241, 242, 243, 244, 245, 246, 247):
+            return b32({240: 0.5, 241: -0.5, 242: 1.0, 243: -1.0, 244: 2.0, 245: -2.0, 246: 4.0, 247: -4.0}[code])
         if 129 <= code <= 192:
             v = code - 128
         elif 193 <= code <= 208:
@@ -258,6 +270,13 @@ class Wave:
         mask = (1 << 64) - 1 if wide else M32
         if n in ("s_mov_b32", "s_mov_b64"):
             self.swrite(sdst, a, wide)
+        elif n in ("s_wqm_b32", "s_wqm_b64"):
+            r = 0
+            for q in range(0, 64 if wide else 32, 4):
+                if (a >> q) & 0xf:
+                    r |= 0xf << q
+            self.swrite(sdst, r, wide)
+            self.scc = int(r != 0)
         elif n in ("s_not_b32", "s_not_b64"):
             r = ~a & mask
             self.swrite(sdst, r, wide)
@@ -404,7 +423,7 @@ class Wave:
             absm, clamp = (w >> 8) & 7, (w >> 15) & 1
             src = [w1 & 0x1ff, (w1 >> 9) & 0x1ff, (w1 >> 18) & 0x1ff]
             omod, neg = (w1 >> 27) & 3, (w1 >> 29) & 7
-            if omod:
+            if omod and "_f32" not in n:
                 raise Unsupported("omod on " + n)
             if (w >> 11) & 0xf:
                 raise Unsupported("op_sel on " + n)
@@ -441,6 +460,8 @@ class Wave:
             if isinstance(r, tuple):   # (value, carry)
                 r, carry = r
                 res_mask |= carry << lane
+            if omod:
+                r = b32(f32(r) * {1: 2.0, 2: 4.0, 3: 0.5}[omod])
             if clamp and ("_f32" in n):
                 x = f32(r)
                 r = b32(min(max(x, 0.0), 1.0)) if not math.isnan(x) else 0
@@ -462,6 +483,17 @@ class Wave:
             self.s[dst], self.s[dst + 1] = res_mask & M32, (res_mask >> 32) & M32
 
     def cmp(self, n, a, b):
+        if "_class_f32" in n:
+            x = a
+            e, m = (x >> 23) & 0xff, x & 0x7fffff
+            neg = x >> 31
+            if e == 255:
+                bit = (0 if not m & 0x400000 else 1) if m else (2 if neg else 9)
+            elif e == 0:
+                bit = (5 if neg else 6) if m == 0 else (4 if neg else 7)
+            else:
+                bit = 3 if neg else 8
+            return (b >> bit) & 1
         parts = n.replace("v_cmpx_", "").replace("v_cmp_", "").split("_")
         rel, ty = parts[0], parts[1]
         if rel not in CMP:
@@ -501,6 +533,8 @@ class Wave:
             "v_mul_legacy_f32": lambda: 0 if (f32(A) == 0 or f32(B) == 0) else b32(f32(A) * f32(B)),
             "v_min_f32": lambda: b32(min(f32(A), f32(B))),
             "v_max_f32": lambda: b32(max(f32(A), f32(B))),
+            "v_mad_f32": lambda: b32(f32(b32(f32(A) * f32(B))) + f32(C)),
+            "v_mac_f32": lambda: b32(f32(b32(f32(A) * f32(B))) + f32(self.v[vdst][lane])),
             "v_fma_f32": lambda: b32(math.fma(f32(A), f32(B), f32(C))),
             "v_fmac_f32": lambda: b32(math.fma(f32(A), f32(B), f32(self.v[vdst][lane]))),
             "v_madak_f32": lambda: b32(f32(b32(f32(A) * f32(B))) + f32(self.lit(inst))),
@@ -512,6 +546,10 @@ class Wave:
             "v_med3_f32": lambda: b32(sorted((f32(A), f32(B), f32(C)))[1]),
             "v_ceil_f32": lambda: b32(float(math.ceil(f32(A)))) if math.isfinite(f32(A)) else A,
             "v_floor_f32": lambda: b32(float(math.floor(f32(A)))) if math.isfinite(f32(A)) else A,
+            "v_trunc_f32": lambda: b32(float(math.trunc(f32(A)))) if math.isfinite(f32(A)) else A,
+            "v_rndne_f32": lambda: b32(float(round(f32(A)))) if math.isfinite(f32(A)) else A,   # Python round() is round-half-even
+            "v_fract_f32": lambda: _fract(A),
+            "v_cvt_f32_f16": lambda: b32(f16(A)),
             "v_cvt_f32_u32": lambda: b32(float(A)),
             "v_cvt_f32_i32": lambda: b32(float(s32(A))),
             "v_cvt_f32_ubyte0": lambda: b32(float(A & 0xff)),
@@ -649,12 +687,16 @@ class Wave:
         vaddr, vdata, srsrc = w1 & 0xff, (w1 >> 8) & 0xff, ((w1 >> 16) & 0x1f) * 4
         if (w1 >> 30) & 1 or (w1 >> 31) & 1:
             raise Unsupported("a16/d16 image access")
-        if dim != 1:
+        if dim not in (1, 5):
             raise Unsupported("image dim %d" % dim)
-        kinds = {0x00: ("load", 2), 0x08: ("store", 2), 0x27: ("sample", 2), 0x24: ("sample", 3)}
+        nco = 2 + (dim == 5)       # coordinates: x, y and, for a 2D array, the slice
+        # op -> (kind, address registers, index of the first coordinate). The harness image has one mip level and a nearest/clamp sampler,
+        # so implicit LODs, biases and explicit gradients cannot change which texel is read: sample, _lz, _l, _b and _d all read level 0.
+        kinds = {0x00: ("load", nco, 0), 0x08: ("store", nco, 0), 0x20: ("sample", nco, 0), 0x27: ("sample", nco, 0), 0x24: ("sample", nco + 1, 0),
+                 0x25: ("sample", nco + 1, 1), 0x22: ("sample", nco + 4, 4)}
         if op not in kinds:
             raise Unsupported("MIMG opcode 0x%x" % op)
-        kind, naddr = kinds[op]
+        kind, naddr, c0 = kinds[op]
         regs = [vaddr + i for i in range(naddr)]
         if nsa:
             regs = [vaddr]
@@ -669,7 +711,9 @@ class Wave:
         img = self.images.get(img_id) if base >= 0x7000000000 and (base - 0x7000000000) % 0x1000000 == 0 else None
         if img is None:
             raise Unsupported("image descriptor does not name a known image")
-        wd, ht = img["w"], img["h"]
+        wd, ht, layers = img["w"], img["h"], img.get("layers", 1)
+        if (dim == 5) != (layers > 1):
+            raise Unsupported("image dim does not match the image")
         comps = [c for c in range(4) if (dmask >> c) & 1]
         ex = self.exec()
         for lane in range(WAVE):
@@ -677,16 +721,22 @@ class Wave:
                 continue
             a = [self.v[r][lane] for r in regs]
             if kind == "sample":
-                u, v = f32(a[0]), f32(a[1])
+                u, v = f32(a[c0]), f32(a[c0 + 1])
                 if not (math.isfinite(u) and math.isfinite(v)):
                     raise Unsupported("non-finite sample coordinate")
                 x = min(max(math.floor(f32(b32(u * wd))), 0), wd - 1)
                 y = min(max(math.floor(f32(b32(v * ht))), 0), ht - 1)
+                z = 0
+                if dim == 5:
+                    sl = f32(a[c0 + 2])
+                    if not math.isfinite(sl):
+                        raise Unsupported("non-finite array slice")
+                    z = min(max(round(sl), 0), layers - 1)
             else:
-                x, y = s32(a[0]), s32(a[1])
-                if not (0 <= x < wd and 0 <= y < ht):
+                x, y, z = s32(a[0]), s32(a[1]), (s32(a[2]) if dim == 5 else 0)
+                if not (0 <= x < wd and 0 <= y < ht and 0 <= z < layers):
                     raise Unsupported("image access out of bounds")
-            texel = (y * wd + x) * 4
+            texel = ((z * ht + y) * wd + x) * 4
             if kind == "store":
                 vals = [self.v[vdata + k][lane] for k in range(len(comps))]
                 for c, val in zip(comps, vals):
@@ -706,6 +756,17 @@ class Wave:
         w1 = inst.words[1]
         addr_r, d0, d1, vdst = w1 & 0xff, (w1 >> 8) & 0xff, (w1 >> 16) & 0xff, (w1 >> 24) & 0xff
         ex = self.exec()
+        if n == "ds_swizzle_b32":
+            src = list(self.v[addr_r])
+            for lane in range(WAVE):
+                if not (ex >> lane) & 1:
+                    continue
+                if off16 & 0x8000:      # quad permute: two bits per lane of the quad
+                    sl = (lane & ~3) | ((off16 >> (2 * (lane & 3))) & 3)
+                else:                    # bit masks inside each group of 32 lanes
+                    sl = (lane & ~31) | ((((lane & 31) & (off16 & 31)) | ((off16 >> 5) & 31)) ^ ((off16 >> 10) & 31))
+                self.v[vdst][lane] = src[sl] if (ex >> sl) & 1 else 0
+            return
         for lane in range(WAVE):
             if not (ex >> lane) & 1:
                 continue

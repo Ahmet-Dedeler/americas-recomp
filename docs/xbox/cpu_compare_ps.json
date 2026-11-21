@@ -1,0 +1,3849 @@
+[
+{
+"idx": "14823",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "18342",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15258",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "14805",
+"outcome": "SKIP",
+"detail": "MIMG opcode 0x47"
+},
+{
+"idx": "16640",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x4b0"
+},
+{
+"idx": "19247",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16774",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "15589",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "20639",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20118",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "14633",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 56
+},
+{
+"idx": "17651",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "20789",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "19511",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "12981",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "14843",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "21427",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20170",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 8
+},
+{
+"idx": "21301",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20418",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17313",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "19648",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15202",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "14435",
+"outcome": "SKIP",
+"detail": "MIMG opcode 0x47"
+},
+{
+"idx": "19364",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17010",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "20981",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 116
+},
+{
+"idx": "16376",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "21707",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "14985",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "21456",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "13329",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "18063",
+"outcome": "SKIP",
+"detail": "image class img2a"
+},
+{
+"idx": "16806",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "18453",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "13120",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "12665",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15400",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "12303",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "13022",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "13755",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "18554",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "20625",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "11039",
+"outcome": "SKIP",
+"detail": "s_getpc_b64"
+},
+{
+"idx": "13436",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "15235",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "15952",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x430"
+},
+{
+"idx": "18326",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "14661",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 67
+},
+{
+"idx": "16674",
+"outcome": "MATCH",
+"exported_channels": 216,
+"steps": 110
+},
+{
+"idx": "13737",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "21093",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "12574",
+"outcome": "SKIP",
+"detail": "image class img3"
+},
+{
+"idx": "12938",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xf7e97a80"
+},
+{
+"idx": "13787",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "19422",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 67
+},
+{
+"idx": "12919",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "19726",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "21031",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "18905",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "14468",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x4b0"
+},
+{
+"idx": "19999",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "12654",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "19095",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x430"
+},
+{
+"idx": "20859",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "19702",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "12080",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 8
+},
+{
+"idx": "12179",
+"outcome": "SKIP",
+"detail": "MIMG opcode 0x47"
+},
+{
+"idx": "20386",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x430"
+},
+{
+"idx": "14850",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "19243",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15850",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "18827",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "12651",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "20553",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "20003",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "20610",
+"outcome": "SKIP",
+"detail": "non-finite sample coordinate"
+},
+{
+"idx": "18151",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 8
+},
+{
+"idx": "12720",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15811",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "19776",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "13810",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "16788",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "12832",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "13789",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "19545",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "16089",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "17041",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15705",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "18329",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "21414",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20180",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20129",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "13481",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "14604",
+"outcome": "SKIP",
+"detail": "MIMG opcode 0x47"
+},
+{
+"idx": "12084",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17399",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "18748",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "11866",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "14756",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "21526",
+"outcome": "MATCH",
+"exported_channels": 0,
+"steps": 36
+},
+{
+"idx": "17102",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "19150",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "19329",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15558",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "11713",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "19607",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20846",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "15801",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "14846",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "17894",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "12051",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "11194",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "11528",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 8
+},
+{
+"idx": "15508",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "13669",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "16381",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xfe670cc0"
+},
+{
+"idx": "18769",
+"outcome": "SKIP",
+"detail": "image class img2a"
+},
+{
+"idx": "20478",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "21701",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 67
+},
+{
+"idx": "12528",
+"outcome": "SKIP",
+"detail": "image class img3"
+},
+{
+"idx": "12424",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 67
+},
+{
+"idx": "19093",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "19951",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20952",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "13639",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xf7e97a80"
+},
+{
+"idx": "12728",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "19036",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x1dc19600"
+},
+{
+"idx": "14999",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "15159",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17735",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16996",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16860",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "15759",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 37
+},
+{
+"idx": "16293",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x108eb1bc0"
+},
+{
+"idx": "20136",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "21631",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "15934",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x4b0"
+},
+{
+"idx": "12057",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "20046",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "16986",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "11223",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "21626",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "14481",
+"outcome": "SKIP",
+"detail": "image class img2a"
+},
+{
+"idx": "16328",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "13263",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "21820",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "20780",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "14119",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xf7e97a80"
+},
+{
+"idx": "12596",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "19107",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x1dc19600"
+},
+{
+"idx": "16268",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x102dbea5c"
+},
+{
+"idx": "11493",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "14766",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "15445",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "13565",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "12535",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "20504",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "17038",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16183",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "20472",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "14826",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "19908",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "18696",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "11606",
+"outcome": "MATCH",
+"exported_channels": 120,
+"steps": 110
+},
+{
+"idx": "21275",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 8
+},
+{
+"idx": "18482",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "21003",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x100dbea64"
+},
+{
+"idx": "13277",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "14903",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20616",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "14630",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x430"
+},
+{
+"idx": "20642",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "17543",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "21464",
+"outcome": "SKIP",
+"detail": "image class img2a"
+},
+{
+"idx": "20968",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "12081",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15569",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "15473",
+"outcome": "MATCH",
+"exported_channels": 192,
+"steps": 111
+},
+{
+"idx": "17525",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "11329",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "17684",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "17053",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16397",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x101dbea5c"
+},
+{
+"idx": "20134",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "12894",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "13450",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "12713",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "14762",
+"outcome": "SKIP",
+"detail": "MIMG opcode 0x47"
+},
+{
+"idx": "14861",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "20497",
+"outcome": "SKIP",
+"detail": "image class img2a"
+},
+{
+"idx": "12347",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xf7e97a80"
+},
+{
+"idx": "18022",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "18638",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "21386",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "16470",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x101dbea5c"
+},
+{
+"idx": "11242",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "15194",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xfddbea5c"
+},
+{
+"idx": "21342",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "21024",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "12786",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "17594",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "11419",
+"outcome": "SKIP",
+"detail": "image class img3"
+},
+{
+"idx": "16538",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xfddbea5c"
+},
+{
+"idx": "14447",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xfddbea5c"
+},
+{
+"idx": "11208",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "18032",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "13808",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "15972",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "14055",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17469",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "15419",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16925",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16980",
+"outcome": "SKIP",
+"detail": "image class img2a"
+},
+{
+"idx": "14423",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16140",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "18971",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "14398",
+"outcome": "SKIP",
+"detail": "MIMG opcode 0x47"
+},
+{
+"idx": "17257",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "18309",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "18400",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 8
+},
+{
+"idx": "20934",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "17130",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16849",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "18349",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "12491",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "19969",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17849",
+"outcome": "SKIP",
+"detail": "image class img2a"
+},
+{
+"idx": "17177",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "18775",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "16306",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "13470",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "17560",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "16488",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 8
+},
+{
+"idx": "19832",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "12354",
+"outcome": "SKIP",
+"detail": "v_writelane_b32"
+},
+{
+"idx": "17639",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "16908",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 8
+},
+{
+"idx": "13126",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "17825",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "18444",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "16090",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "17652",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15038",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "13558",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "13243",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "15504",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "16155",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "11130",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "14210",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "15615",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17202",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "13747",
+"outcome": "SKIP",
+"detail": "s_mulk_i32"
+},
+{
+"idx": "20247",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "11644",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "20308",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 67
+},
+{
+"idx": "16345",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x108eb1bc0"
+},
+{
+"idx": "16373",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "19078",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "16727",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "20431",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 8
+},
+{
+"idx": "17378",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "14312",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "12312",
+"outcome": "SKIP",
+"detail": "s_mulk_i32"
+},
+{
+"idx": "20742",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "13546",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xf7e97a80"
+},
+{
+"idx": "17345",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20178",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17635",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "20686",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "17498",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20921",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "17354",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17791",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "20044",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "19223",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "20574",
+"outcome": "SKIP",
+"detail": "image class img2a"
+},
+{
+"idx": "11390",
+"outcome": "SKIP",
+"detail": "v_mad_legacy_f32"
+},
+{
+"idx": "19763",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "12710",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "14247",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "13815",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "17802",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "13198",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "20578",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "18674",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "11717",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x430"
+},
+{
+"idx": "11839",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "16570",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "20796",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "11255",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16475",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "15796",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "18077",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "20098",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "16869",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "18636",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15770",
+"outcome": "MATCH",
+"exported_channels": 320,
+"steps": 12
+},
+{
+"idx": "18998",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "15141",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "12808",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "15301",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 8
+},
+{
+"idx": "13973",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "16884",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "11618",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "14092",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "19691",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "12227",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "20775",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "13367",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "14875",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "11782",
+"outcome": "SKIP",
+"detail": "image class img3"
+},
+{
+"idx": "12130",
+"outcome": "SKIP",
+"detail": "image class img2a"
+},
+{
+"idx": "13280",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "19820",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16795",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "20623",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "13254",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xfddbea6c"
+},
+{
+"idx": "18667",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "19647",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16524",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "19156",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "11173",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "13291",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17657",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "12119",
+"outcome": "SKIP",
+"detail": "image class img2a"
+},
+{
+"idx": "14144",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "13295",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "11197",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "15362",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "11653",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "20929",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "20447",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "21826",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "11069",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 82
+},
+{
+"idx": "21619",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10dff4800"
+},
+{
+"idx": "13308",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "18663",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "17467",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "12766",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xf7e97a80"
+},
+{
+"idx": "16865",
+"outcome": "SKIP",
+"detail": "image class img2a"
+},
+{
+"idx": "16305",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "21045",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xfedbea5c"
+},
+{
+"idx": "12955",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "18838",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "20165",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "14537",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "13158",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "16540",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "21233",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "12310",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "11168",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "18024",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "17710",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "13621",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "17061",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "18611",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20906",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "14560",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "21124",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "18003",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "19580",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "21903",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "12662",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "12645",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15458",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "16237",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x103dbea5c"
+},
+{
+"idx": "17758",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "20026",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xffdbea5c"
+},
+{
+"idx": "19548",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x4b0"
+},
+{
+"idx": "14076",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "16204",
+"outcome": "SKIP",
+"detail": "image class img2a"
+},
+{
+"idx": "13785",
+"outcome": "SKIP",
+"detail": "s_mulk_i32"
+},
+{
+"idx": "17260",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "13060",
+"outcome": "SKIP",
+"detail": "s_mulk_i32"
+},
+{
+"idx": "19589",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "11979",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "17380",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15834",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "21466",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "18371",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "21744",
+"outcome": "SKIP",
+"detail": "image class img2a"
+},
+{
+"idx": "19195",
+"outcome": "SKIP",
+"detail": "format VOP2+SDWA/DPP (v_lshlrev_b32)"
+},
+{
+"idx": "20741",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "13395",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "12778",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "13034",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 67
+},
+{
+"idx": "19062",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x430"
+},
+{
+"idx": "14074",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xf7e97a80"
+},
+{
+"idx": "15650",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "17149",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15346",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xffdbea5c"
+},
+{
+"idx": "19779",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20455",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "14932",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "11688",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17304",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "11904",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 67
+},
+{
+"idx": "14511",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 8
+},
+{
+"idx": "21885",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "13663",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "14927",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "19695",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20958",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "11928",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "17392",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15764",
+"outcome": "SKIP",
+"detail": "non-finite sample coordinate"
+},
+{
+"idx": "16480",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x430"
+},
+{
+"idx": "16624",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 67
+},
+{
+"idx": "20479",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "11769",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "19982",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "18510",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "19388",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20745",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "16454",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xfedbea5c"
+},
+{
+"idx": "21395",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xffdbea5c"
+},
+{
+"idx": "20591",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 71
+},
+{
+"idx": "13932",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "20425",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17748",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "18042",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20680",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "12228",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "15860",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x430"
+},
+{
+"idx": "15681",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "11603",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xfcdbea5c"
+},
+{
+"idx": "11083",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 2368
+},
+{
+"idx": "11262",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "16200",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 67
+},
+{
+"idx": "14657",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20438",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "13905",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xf7e97a80"
+},
+{
+"idx": "12783",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "12089",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "21419",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "19551",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "17976",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "14013",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "21423",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "12099",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "19024",
+"outcome": "SKIP",
+"detail": "image class img2a"
+},
+{
+"idx": "15139",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 67
+},
+{
+"idx": "17813",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "14155",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "18488",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15887",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "15188",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "21695",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "19782",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16212",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xfedbea5c"
+},
+{
+"idx": "11724",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "21537",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 11
+},
+{
+"idx": "12006",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "14450",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 67
+},
+{
+"idx": "18653",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "19489",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "14352",
+"outcome": "SKIP",
+"detail": "image class img3"
+},
+{
+"idx": "17373",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15016",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "13093",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "16913",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xfcdbea5c"
+},
+{
+"idx": "11851",
+"outcome": "MATCH",
+"exported_channels": 216,
+"steps": 111
+},
+{
+"idx": "11978",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "11905",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "12963",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "19163",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "12700",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x100dbea6c"
+},
+{
+"idx": "18474",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "12066",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "12787",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "17713",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "19370",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "18441",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "14888",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16896",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 67
+},
+{
+"idx": "17830",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xffdbea5c"
+},
+{
+"idx": "18594",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "21338",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "13852",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xf7e97a80"
+},
+{
+"idx": "19069",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x1dc19600"
+},
+{
+"idx": "17918",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "17873",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "20779",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "21415",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "21266",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x4b0"
+},
+{
+"idx": "13829",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "16023",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 8
+},
+{
+"idx": "17090",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "11081",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 113
+},
+{
+"idx": "15042",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "12923",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "11483",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16176",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 8
+},
+{
+"idx": "15992",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "17607",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20255",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "13454",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "21847",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "11441",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 35
+},
+{
+"idx": "12385",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "15225",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xfddbea5c"
+},
+{
+"idx": "17738",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "20980",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 85
+},
+{
+"idx": "17165",
+"outcome": "SKIP",
+"detail": "image class img2a"
+},
+{
+"idx": "11863",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 67
+},
+{
+"idx": "13777",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "20813",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "12305",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "12757",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "13924",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "17336",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15448",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15032",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "19138",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "15763",
+"outcome": "SKIP",
+"detail": "non-finite sample coordinate"
+},
+{
+"idx": "11774",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "19279",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "19661",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15463",
+"outcome": "MATCH",
+"exported_channels": 192,
+"steps": 111
+},
+{
+"idx": "16666",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "13188",
+"outcome": "SKIP",
+"detail": "image class img3"
+},
+{
+"idx": "20537",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "17964",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "18035",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "15711",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xfcdbea5c"
+},
+{
+"idx": "15884",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "13192",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "11209",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "21635",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 8
+},
+{
+"idx": "17935",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "15814",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "13088",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "12614",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "17287",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "16902",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "21546",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "15487",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "12175",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "14746",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "13809",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "19859",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "13624",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "16912",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "20872",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "20299",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "16906",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17517",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "18739",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "11525",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "20147",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "17299",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 67
+},
+{
+"idx": "15731",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15357",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "19222",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17806",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "16579",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xfedbea5c"
+},
+{
+"idx": "14424",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17805",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "13538",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17225",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16193",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "13286",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "18231",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "15310",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "21861",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "11786",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "21877",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "12918",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "15130",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "21428",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "14591",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "12357",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "15573",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "18484",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15010",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20187",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x430"
+},
+{
+"idx": "20570",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "12320",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "17687",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "11055",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 85
+},
+{
+"idx": "12851",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10c1acdc0"
+},
+{
+"idx": "18205",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "21846",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "12338",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xf7e97a80"
+},
+{
+"idx": "18442",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "15395",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "20982",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 86
+},
+{
+"idx": "14642",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "12531",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "20372",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20656",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x107eb1bc0"
+},
+{
+"idx": "13181",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "15176",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "14215",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "13331",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "11195",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "13992",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 67
+},
+{
+"idx": "16762",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "21209",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "12646",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15818",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 8
+},
+{
+"idx": "13505",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xf7e97a80"
+},
+{
+"idx": "20415",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "13130",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "20089",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "21634",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 8
+},
+{
+"idx": "19942",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "17363",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "11214",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "21322",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 67
+},
+{
+"idx": "14458",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 8
+},
+{
+"idx": "18258",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "12373",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "16690",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20035",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17656",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17965",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "11552",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 41
+},
+{
+"idx": "20054",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "16824",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x430"
+},
+{
+"idx": "18813",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 8
+},
+{
+"idx": "16909",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "18591",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20549",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "21608",
+"outcome": "SKIP",
+"detail": "non-finite sample coordinate"
+},
+{
+"idx": "15659",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "18890",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "13680",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "11835",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "15172",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "14820",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "18655",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "17896",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "18373",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "18361",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "19710",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "11915",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "18795",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "11898",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 8
+},
+{
+"idx": "19581",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17952",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "13218",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10eff4800"
+},
+{
+"idx": "21573",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 19
+},
+{
+"idx": "12505",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 67
+},
+{
+"idx": "20159",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "19395",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "13500",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xf7e97a80"
+},
+{
+"idx": "15336",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17296",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "12660",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "18661",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "17031",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "18613",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 28
+},
+{
+"idx": "21027",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x430"
+},
+{
+"idx": "13211",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "16303",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "19663",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15398",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 67
+},
+{
+"idx": "11319",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xf7e97a80"
+},
+{
+"idx": "20440",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "18506",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "13335",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xb3b392b4"
+},
+{
+"idx": "15918",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xffdbea5c"
+},
+{
+"idx": "13402",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "14219",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xe570cb40"
+},
+{
+"idx": "18545",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17234",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "17203",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "14163",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "13774",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "20191",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "14195",
+"outcome": "SKIP",
+"detail": "s_setreg_imm32_b32"
+},
+{
+"idx": "12336",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xf7e97a80"
+},
+{
+"idx": "19579",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "19445",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "14645",
+"outcome": "MATCH",
+"exported_channels": 128,
+"steps": 8
+},
+{
+"idx": "12999",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "15588",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "17243",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17857",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "21523",
+"outcome": "MATCH",
+"exported_channels": 0,
+"steps": 36
+},
+{
+"idx": "12960",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "21813",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "12083",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "18479",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "21283",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "13814",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "18573",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17027",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17615",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "18870",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "14849",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "14443",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x10fff4800"
+},
+{
+"idx": "17382",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "13017",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "11681",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "19185",
+"outcome": "SKIP",
+"detail": "format VOP2+SDWA/DPP (v_lshlrev_b32)"
+},
+{
+"idx": "14905",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16332",
+"outcome": "SKIP",
+"detail": "image class img2a"
+},
+{
+"idx": "11604",
+"outcome": "SKIP",
+"detail": "image class img2a"
+},
+{
+"idx": "15482",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "20820",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "18344",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17468",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "20722",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x13b26760"
+},
+{
+"idx": "21302",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "14586",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "13604",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "16430",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x101dbea5c"
+},
+{
+"idx": "21777",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "12206",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xf7e97a80"
+},
+{
+"idx": "21692",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "17183",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16905",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "21857",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "20969",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "21882",
+"outcome": "SKIP",
+"detail": "image access out of bounds"
+},
+{
+"idx": "15162",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "14429",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+},
+{
+"idx": "17311",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17393",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "19650",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "19220",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "17604",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "13875",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "18630",
+"outcome": "SKIP",
+"detail": "image class img2"
+},
+{
+"idx": "17960",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "20378",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "15126",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "19165",
+"outcome": "SKIP",
+"detail": "image class img0"
+},
+{
+"idx": "12606",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "16380",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0xfe670cc0"
+},
+{
+"idx": "18219",
+"outcome": "SKIP",
+"detail": "16-bit interpolants"
+},
+{
+"idx": "21134",
+"outcome": "SKIP",
+"detail": "read of unmapped address 0x520"
+},
+{
+"idx": "11784",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 38
+},
+{
+"idx": "21569",
+"outcome": "MATCH",
+"exported_channels": 256,
+"steps": 32
+},
+{
+"idx": "15843",
+"outcome": "MATCH",
+"exported_channels": 64,
+"steps": 49
+}
+]

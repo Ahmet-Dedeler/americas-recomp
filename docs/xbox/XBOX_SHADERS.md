@@ -268,3 +268,22 @@ Getting there found no recompiler bug, but it found several tooling facts worth 
 Finding (fixed): a shader that stores to a texel and loads it back (read-modify-write, e.g. 23448) got stale data. The tracker keeps a read and a write of one descriptor as two resources, so the load was emitted as `OpImageFetch` on the sampled binding while the store went through the storage binding; the two are not coherent. `EmitReadOp` in `SpirvImageEmitter.cpp` now reads through the storage binding when a plain written storage resource of the same source exists (`XBOX_NO_STORAGE_RMW_READ=1` restores the old behaviour). `exec_tests.py::test_image_load_after_store_same_texel` fails without the fix and passes with it.
 
 Reference fixes found on the way: VOP2 madmk/madak/fmamk/fmaak literals, and image texels kept as raw bits (a float round trip quieted signalling NaNs).
+
+
+### Executing pixel shaders (first run of a graphics stage)
+
+Until now the PS/VS/mesh results were `spirv-val` only. `exec.exe` now has `stage ps`: it recompiles the pixel shader with the same descriptor model as the compute runs, draws one triangle covering an 8x8 target with a host-written vertex shader, and reads back the eight RGBA32F colour attachments (and an optional D32 depth attachment). `tools/xbox/cpu_compare_ps.py` runs the same shader through `cpu_ref.py` and compares every written export channel, the depth export and the output buffers bit for bit. Results: `docs/xbox/cpu_compare_ps.json`.
+
+Setup, shared by both sides (nothing comes from the game): the vertex shader writes a constant vector per interpolant at every vertex, so interpolation is the identity; export format follows the code (compressed exports mean FP16_ABGR, plain ones 32_ABGR); the input VGPR set is the smallest of {persp-center, + pos x/y, + pos z/w} for which the CPU result does not change when the unknown VGPRs are filled with different junk; the lane to pixel layout on the CPU keeps quads together; `VK_KHR_fragment_shader_barycentric` is enabled on the host (the hardware has it). 2D and 2D-array RGBA32F images with a nearest/clamp sampler.
+
+Result for all 738 pixel shaders: **157 give bit-identical results, none differ, 581 are skipped**. Skip reasons: 16-bit interpolants (201), image classes the harness cannot build (1D, 3D, cube: 190), reads through pointers the harness cannot invent (119), out-of-range image access (28), `s_setreg` mode changes (24), gather4 (6), a few single instructions the reference lacks (about 15).
+
+What a MATCH covers and what it does not: arithmetic, exports, kills, depth export, buffer and image loads, quad swizzles, one input vector. The median matching shader is 38 instructions long and only 12 of them sample a texture. It does not cover real interpolation (every attribute is constant), derivatives with varying inputs, blending, 16-bit attributes, or any real game data.
+
+Three harness defaults found while doing this (not recompiler bugs, but they made the earlier `spirv-val`-only numbers say nothing about run time behaviour):
+
+* `driver.cpp` set the export mapping to `i` for target `i`; the recompiler's mapping is a swizzle (0xe4 = identity), and `0` made every colour channel a copy of x.
+* The depth export is dropped unless `depthExportEnable` is set. Without it the recompiler emits no `gl_FragDepth` at all, so a depth-only shader renders nothing.
+* Per-vertex inputs (`v_interp_mov` P0/P10/P20) need the barycentric extension or the geometry-shader emulation; without either the pixel stage's input does not match a plain vertex shader's output.
+
+Reference fixes found on the way: `ds_swizzle_b32`, `s_wqm`, `v_fract/trunc/rndne_f32`, `v_cvt_f32_f16`, `v_mad/mac_f32`, `v_cmp_class_f32`, output modifiers, float inline constants as SGPR sources, `image_sample` and `_b`/`_d` variants, 2D-array images, the MRTZ export, and EXP semantics (in a compressed export `en` bits 1:0 and 3:2 enable the two pairs, not one pair per bit).
