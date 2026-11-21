@@ -116,3 +116,13 @@ No dispatch was run: it needs real textures, a command list and the package's sh
 
 `xbox_device_proxy.h` is the reusable part: an object whose vtable forwards every slot to the PC object by generated thunks (with per-slot hit
 counters, `PrintHits`) and lets selected slots be replaced. It is the starting point for the "D3D12.X runtime" row.
+
+## Compared with the AnyXboxX stand-ins (read only; that repository has no licence, nothing was copied)
+- `XMemVirtualQuery`: AnyXboxX assumes a 3-argument `VirtualQuery(address, info, size)`. The call sites in XboxBvhBuilder pass (process, address, out) with a zeroed 64-byte
+  struct, which is what `xmem.cpp` here implements; the first call there would be wrong with the other signature.
+- `XMemGetWorkingSetStatistics`: they return FALSE (no data). The FidelityFX upscaler reads a size at +8 of the struct and maps a zero return to "no data"; ours returns plausible values (untested whether the upscaler prefers them).
+- `XMemAlloc`: they align to 64 bytes or a page and track blocks so that allocation hooks (`XMemSetAllocationHooks`) can coexist; ours uses `VirtualAlloc` (64 KiB granularity, simplest, wasteful for many small blocks). Hooks are not imported by the package's DLLs, so not needed yet.
+- `d3d12_xs`: they forward four root-signature functions unchanged. Unchanged forwarding fails for Xbox root signatures (the PC serializer rejects the high flag byte; see above), so ours clears it on a copy.
+  Added here: `D3D12SerializeRootSignature` (v1.0 layout, flags at +32; a descriptor with flags 0x3000001 serializes through the shim and fails with E_INVALIDARG on the PC runtime) and `D3D12CreateVersionedRootSignatureDeserializer`.
+- They have no D3D12.X device layer (listed as to do), no shader recompiler, and no BVH or upscaler tests; they have a much larger `xgameruntime` (152 of 396 APIs) and a kernel redirect (`kernelx.dll`).
+

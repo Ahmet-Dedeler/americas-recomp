@@ -64,4 +64,24 @@ __declspec(dllexport) HRESULT WINAPI D3D12CreateRootSignatureDeserializer(const 
     auto f = reinterpret_cast<Fn>(Pc("D3D12CreateRootSignatureDeserializer"));
     return f ? f(data, size, iid, out) : E_NOTIMPL;
 }
+// Not imported by the package's DLLs, but the same family a game links against: forwarded on the same terms.
+__declspec(dllexport) HRESULT WINAPI D3D12CreateVersionedRootSignatureDeserializer(const void* data, SIZE_T size, const GUID& iid, void** out) {
+    using Fn = HRESULT(WINAPI*)(const void*, SIZE_T, const GUID&, void**);
+    auto f = reinterpret_cast<Fn>(Pc("D3D12CreateVersionedRootSignatureDeserializer"));
+    return f ? f(data, size, iid, out) : E_NOTIMPL;
+}
+// Version 1.0 layout (D3D12_ROOT_SIGNATURE_DESC): NumParameters @0, pParameters @8, NumStaticSamplers @16, pStaticSamplers @24, Flags @32.
+// The Xbox-only high flag byte is cleared on a copy, as in the versioned call above (same guess about what the bits mean).
+__declspec(dllexport) HRESULT WINAPI D3D12SerializeRootSignature(const void* desc, int version, void** blob, void** error) {
+    using Fn = HRESULT(WINAPI*)(const void*, int, void**, void**);
+    auto f = reinterpret_cast<Fn>(Pc("D3D12SerializeRootSignature"));
+    unsigned char copy[40];
+    const void* use = desc;
+    if (desc && !GetEnvironmentVariableA("XS_KEEP_XBOX_FLAGS", nullptr, 0)) {
+        memcpy(copy, desc, sizeof(copy));
+        *(unsigned*)(copy + 32) &= 0x00ffffffu;
+        use = copy;
+    }
+    return f ? f(use, version, blob, error) : E_NOTIMPL;
+}
 }
