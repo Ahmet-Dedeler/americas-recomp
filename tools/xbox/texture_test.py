@@ -86,7 +86,7 @@ def main():
         (work / "texture.bin").write_bytes(b"".join(struct.pack("<4f", *c) for c in texels))
         (work / "scenario.txt").write_text(
             f"stage ps\nwave 32\ntarget {SIZE} {SIZE}\ninputaddr 0x2\ninterp 1 0\n"
-            f"image 1 {WIDTH} {HEIGHT} init texture.bin\nregion 0 256\ntimg 0 0 1\nuser 4 0\n"
+            f"image 1 {WIDTH} {HEIGHT} init texture.bin\nregion 0 256\ntimg 0 0 1\npoke 0 32 0x92\nuser 4 0\n"
             "vs uv.spv\ncode sample.bin\nexport 0 9 0xe4\nout out\n", encoding="ascii")
         subprocess.run([runner, "scenario.txt"], cwd=work, check=True, timeout=90)
         verify((work / "out" / "target0.bin").read_bytes())
