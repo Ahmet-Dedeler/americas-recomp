@@ -23,4 +23,12 @@ What the package's DLLs need from the platform, and stand-ins for the Xbox-only 
 3. Replace stubs with real implementations as behaviour becomes known (`xmem.cpp`, `d3d12_xs.cpp` are the pattern).
 Static imports only: calls made through GetProcAddress, COM or vtables do not show up in step 1.
 
+## Shader and BVH side, once the game runs
+* Capture: put `xbox_device_proxy.h` in front of the device the game creates; `Slot62` (pipeline creation) in `bvh_test.cpp` shows how to dump every compute shader
+  (`BVH_DUMP_DIR`). Slots seen so far are 1, 14, 15, 16, 18, 19, 27, 38, 62, 76; per-slot hit counters (`PrintHits`) show which others the game uses.
+* Lower and sign: `dxc -dumpbin` -> `xbox_dxil_lower.py in.ll out.ll` -> `dxasm in.ll out.dxil` (replaces `@xbox.*` intrinsics; handles min/max f16 and med3 so far;
+  it reports the intrinsics it could not replace). `dxil_sm66_wave.py` pins the wave size when a shader depends on 64 lanes.
+* Try: `bvh_test.exe` with `BVH_REPLACE_DIR=<dir of repl_NN.dxil>` for pipeline creation; `dispatch_test.exe shader.dxil [groups] [seed]` for a dispatch on GPU and WARP.
+* Not done: the nine wave/lane shaders (ReadLane, LaneSwizzle, Ballot64, MBCNT64 ...), the 31 shaders using raw 64-bit addresses, and a CPU reference to check lowered output.
+
 No game files are part of this repository: the DLLs, the videos and the decoded frames stay local.
