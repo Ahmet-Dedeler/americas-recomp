@@ -118,7 +118,15 @@ extern "C" HRESULT InitializeApiImpl(uint64_t a, uint64_t b) { Log("InitializeAp
 extern "C" HRESULT InitializeApiImplEx(uint64_t a, uint64_t b, uint64_t f) { Log("InitializeApiImplEx %llx %llx flags=%llx", a, b, f); return S_OK; }
 extern "C" HRESULT InitializeApiImplEx2(uint64_t a, uint64_t b, uint64_t f, void* o) { Log("InitializeApiImplEx2 %llx %llx flags=%llx options=%p", a, b, f, o); return S_OK; }
 extern "C" void UninitializeApiImpl() { Log("UninitializeApiImpl"); }
-extern "C" void XErrorReport(HRESULT hr, const char* m) { Log("XErrorReport %08lx %s", (unsigned long)hr, m ? m : ""); }
+#ifdef XGR_WITH_RUNTIME
+namespace gtx::xgr::system { void report_error(HRESULT hr, const char* message); }
+#endif
+extern "C" void XErrorReport(HRESULT hr, const char* m) {
+  Log("XErrorReport %08lx %s", (unsigned long)hr, m ? m : "");
+#ifdef XGR_WITH_RUNTIME
+  gtx::xgr::system::report_error(hr, m);
+#endif
+}
 ''')
     open(os.path.join(out, "xgr_stub.cpp"), "w").write("\n".join(L).replace("#include <utility>", "#include <utility>\n#include <cstdarg>\n#include <intrin.h>"))
     open(os.path.join(out, "xgameruntime.def"), "w").write("LIBRARY xgameruntime\nEXPORTS\n    QueryApiImpl\n    InitializeApiImpl\n    InitializeApiImplEx\n    InitializeApiImplEx2\n    UninitializeApiImpl\n    XErrorReport\n")

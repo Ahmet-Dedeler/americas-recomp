@@ -170,6 +170,14 @@ static void CheckLauncher() {
 struct HdrInfo { float minLuminance, maxLuminance, maxFullFrameLuminance; };
 typedef bool (*ErrorCallbackFn)(HRESULT, const char*, void*);
 static bool CALLBACK DeclineErrorHandling(HRESULT, const char*, void*) { return false; }
+struct ReportedError { int calls = 0; HRESULT hr = S_OK; std::string message; bool handled = false; };
+static bool CALLBACK RecordError(HRESULT hr, const char* message, void* context) {
+  auto* seen = static_cast<ReportedError*>(context);
+  seen->calls++;
+  seen->hr = hr;
+  seen->message = message ? message : "<null>";
+  return seen->handled;
+}
 
 static void CheckErrorAndDisplay() {
   Api errors = Get(kError);
@@ -180,6 +188,30 @@ static void CheckErrorAndDisplay() {
   setOptions(errors.self, 1, 0);
   setOptions(errors.self, 3, 4);
   Check(true, "XErrorSetCallback and XErrorSetOptions accept, replace and clear settings");
+
+  auto report = reinterpret_cast<void (*)(HRESULT, const char*)>(GetProcAddress(GetModuleHandleA("xgameruntime.dll"), "XErrorReport"));
+  Check(report != nullptr, "XErrorReport is exported");
+  if (report) {
+    ReportedError seen;
+    setOptions(errors.self, 1, 1);
+    setCallback(errors.self, &RecordError, &seen);
+    report(E_ACCESSDENIED, "first");
+    Check(seen.calls == 1 && seen.hr == E_ACCESSDENIED && seen.message == "first", "XErrorReport passes the HRESULT, message and context to the callback");
+    seen.handled = true;
+    report(E_FAIL, nullptr);
+    Check(seen.calls == 2 && seen.hr == E_FAIL && seen.message.empty(), "XErrorReport gives the callback an empty message for null and continues when it returns true");
+    ReportedError other;
+    setCallback(errors.self, &RecordError, &other);
+    report(E_ABORT, "second");
+    Check(seen.calls == 2 && other.calls == 1 && other.message == "second", "XErrorReport calls only the most recently set callback");
+    setCallback(errors.self, nullptr, nullptr);
+    report(E_FAIL, "third");
+    Check(other.calls == 1, "XErrorReport calls nothing after the callback is cleared");
+    setOptions(errors.self, 2, 4);
+    report(E_FAIL, "fourth");
+    Check(true, "XErrorReport returns to the caller when the options ask for a break or a fast fail");
+    setOptions(errors.self, 1, 0);
+  }
 
   Api display = Get(kDisplay);
   auto tryHdr = display.At<uint32_t (*)(void*, uint32_t, HdrInfo*)>(4, "XDisplayTryEnableHdrMode");

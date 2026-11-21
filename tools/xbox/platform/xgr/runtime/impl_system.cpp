@@ -5,6 +5,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <memory>
 #include <mutex>
@@ -116,6 +117,9 @@ HdrModeResult XDisplayTryEnableHdrMode_impl(void*, uint32_t preference, HdrModeI
 }
 
 using ErrorCallback = bool(CALLBACK*)(HRESULT hr, const char* message, void* context);
+
+constexpr uint32_t kErrorOutputDebugString = 1;
+constexpr uint32_t kErrorDebugBreak = 2;
 
 struct ErrorSettings {
   ErrorCallback callback = nullptr;
@@ -496,6 +500,22 @@ const Override kOverrides[] = {
 };
 
 }  // namespace
+
+void report_error(HRESULT hr, const char* message) {
+  ErrorSettings settings;
+  {
+    std::lock_guard<std::mutex> lock(g_error_lock);
+    settings = g_error_settings;
+  }
+  const char* text = message ? message : "";
+  if (settings.callback && !settings.callback(hr, text, settings.context)) return;
+  uint32_t options = IsDebuggerPresent() ? settings.optionsDebuggerPresent : settings.optionsDebuggerNotPresent;
+  if (options & (kErrorOutputDebugString | kErrorDebugBreak)) {
+    char line[512];
+    std::snprintf(line, sizeof(line), "XErrorReport %08lx thread %lu: %s\n", static_cast<unsigned long>(hr), GetCurrentThreadId(), text);
+    OutputDebugStringA(line);
+  }
+}
 
 const Override* overrides(size_t* count) {
   *count = sizeof(kOverrides) / sizeof(kOverrides[0]);
