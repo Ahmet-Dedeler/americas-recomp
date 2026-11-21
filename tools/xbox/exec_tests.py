@@ -196,13 +196,32 @@ def test_lds_reverse_across_waves(wave=32):
     want = tuple(5000 + (g * threads + (threads - 1 - t)) for g in range(groups) for t in range(threads))
     assert got == want, [(i, got[i], want[i]) for i in range(n) if got[i] != want[i]][:6]
 
+def test_readfirstlane_wave64_upper_half():
+    """Wave64: exec narrowed to lanes above 40, so the first active lane is in the upper 32. v_readfirstlane must return lane 41's value
+    to every lane once exec is restored, also where the host runs the wave as 32-wide subgroups with two guest lanes per invocation."""
+    p = rdna_asm.Program()
+    p.smem('s_load_dwordx4', 8, 4, 0)
+    p.sopp('s_waitcnt', 0)
+    p.vop2('v_lshlrev_b32', 1, 2, 'v0')
+    p.vop2('v_add_nc_u32', 2, 1000, 'v0')
+    p.sop1('s_mov_b64', 12, rdna_asm.EXEC_LO)
+    p.vopc('v_cmpx_lt_u32', 40, 'v0')
+    p.vop1('v_readfirstlane_b32', 0, 'v2')
+    p.sop1('s_mov_b64', rdna_asm.EXEC_LO, 's12')
+    p.vop1('v_mov_b32', 3, 's0')
+    p.mubuf('buffer_store_dword', 3, 1, 8, 128, 0)
+    p.sopp('s_endpgm')
+    r = run(p.bytes(), {0: (256, None), 1: (256, None)}, vsharp(0, 0, 1, 256), wave=64)
+    got = struct.unpack('<64I', r[1][:256])
+    assert got == (1041,) * 64, [(i, got[i]) for i in range(64) if got[i] != 1041][:6]
+
 def test_multiwave_wave64():
     test_multiwave_multigroup_global_id(64)
 
 def test_lds_reverse_wave64():
     test_lds_reverse_across_waves(64)
 
-TESTS = [test_image_load_after_store_same_texel, test_multiwave_wave64, test_lds_reverse_wave64, test_multiwave_multigroup_global_id, test_lds_reverse_across_waves, test_store_lane_ids, test_readfirstlane_after_narrowed_write, test_waterfall_loop, test_image_store_phi_split]
+TESTS = [test_image_load_after_store_same_texel, test_readfirstlane_wave64_upper_half, test_multiwave_wave64, test_lds_reverse_wave64, test_multiwave_multigroup_global_id, test_lds_reverse_across_waves, test_store_lane_ids, test_readfirstlane_after_narrowed_write, test_waterfall_loop, test_image_store_phi_split]
 
 if __name__ == "__main__":
     bad = 0

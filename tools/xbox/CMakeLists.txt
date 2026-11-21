@@ -49,6 +49,6 @@ add_executable(exec exec.cpp
     "${XBOX_AGC}/RuntimeSwitches.cpp"
     "${XBOX_AGC}/TextureFormat.cpp"
     "${XBOX_AGC}/TextureTiling.cpp"
-    "${XBOX_ROOT}/core/libs/prx/libc/src/RunReport.cpp")
+    stub_run_report.cpp)
 target_include_directories(exec PRIVATE "${XBOX_ROOT}/3rdparty/Vulkan-Headers/include" "${XBOX_ROOT}/core")
 target_link_libraries(exec PRIVATE xbox_recompiler ${CMAKE_DL_LIBS})

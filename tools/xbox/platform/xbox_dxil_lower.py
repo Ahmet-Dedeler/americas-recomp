@@ -85,6 +85,15 @@ DECLS = {
 }
 
 
+def insert_decls(text, decls):
+    block = "\n".join(decls) + "\n\n"
+    for prefix in ("declare ", "define "):
+        m = re.search(r"^" + prefix, text, re.M)
+        if m:
+            return text[:m.start()] + block + text[m.start():]
+    return text.rstrip("\n") + "\n\n" + block
+
+
 def lower(text):
     n_lowered = 0
     pairs = {}            # SSA name of a pair value -> (scalar0, scalar1)
@@ -291,7 +300,7 @@ def lower(text):
             res = re.sub(r"(; Function Attrs:[^\n]*\n)?declare [^\n]*@" + re.escape(nm) + r"\([^\n]*\n\n?", "", res)
     add = [DECLS[k] for k in sorted(used) if not re.search(r"^declare [^\n]*" + re.escape(k), res, re.M)]
     if add:
-        res = res.replace("\ndeclare ", "\n" + "\n".join(add) + "\n\ndeclare ", 1)
+        res = insert_decls(res, add)
     if "%dx.types.fouri32" in res and "%dx.types.fouri32 = type" not in res:
         res = res.replace("%dx.types.Handle = type { i8* }\n", "%dx.types.Handle = type { i8* }\n%dx.types.fouri32 = type { i32, i32, i32, i32 }\n", 1)
     res = renumber(res)

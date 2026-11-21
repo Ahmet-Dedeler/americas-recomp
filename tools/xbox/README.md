@@ -9,6 +9,11 @@ Experimental tooling for running Xbox Series shader code through the shader reco
    guest addresses as `lowguest` does. Without `rdna2.py`, `rdna_asm.py` takes its opcode
    tables from LLVM (`rdna2_llvm.py`, needs `llvm-mc` with the AMDGPU target), so `exec_tests.py` and `exec_bvh_tests.py` run with no
    game files: `XBOX_EXEC=build-xbox/exec python3 tools/xbox/exec_tests.py`. `VK_DRIVER_FILES=<icd.json>` picks the GPU.
+   The same commands build on macOS against MoltenVK (Homebrew `molten-vk`, `vulkan-loader`); `exec` enables portability enumeration
+   and `VK_KHR_portability_subset` when they are offered. A device that cannot pin the compute subgroup size (MoltenVK) gets SPIR-V 1.5
+   without a required size, so the subgroup size is the device's fixed `subgroupSize`; wave64 then runs as two 32-wide halves as on
+   other 32-wide devices. MoltenVK reports `fragmentShaderBarycentric` but MSL has no `PerVertexKHR`: run pixel tests with
+   `XBOX_NO_FRAGMENT_BARY=1`.
 2. `extract_shaders.py` writes prologue-stripped, trimmed code blobs `<idx>.bin` (it depends on the RPF9
    extraction pipeline and `rdna2.py` decoder kept next to the dumped shaders; adjust its paths).
 3. `driver.exe <code.bin> <wave 32|64> <out.spv> [user_data_dwords]` recompiles one compute shader with stubbed
@@ -21,13 +26,15 @@ Experimental tooling for running Xbox Series shader code through the shader reco
    `exec_tests.py`, `exec_bvh_tests.py` and `image_tests.py` hold the tests. Set `XBOX_EXEC` to the `exec.exe` path. Supported: guest
    buffers, shader data, flattened SRT, identity BDA page table and fault reporting, single-level linear 1D, 2D, 2D array and 3D images in
    any format the AGC driver maps and the device can sample, T#s encoded with the AGC driver's `EncodeTextureResource`, samplers built
-   from the guest S# with its `DecodeSamplerResource`. Pixel shaders (`stage ps`, see the pixel smoke test): one triangle over a single
-   RGBA32F target. Scenario lines for images: `image <id> <w> <h> [format <IMG_FORMAT>] [dim 1d|2d|3d] [depth <d>] [layers <n>]
+   from the guest S# with its `DecodeSamplerResource`. Pixel shaders (`stage ps`, see the pixel smoke, interpolation and per-vertex
+   tests): one triangle over up to eight RGBA32F targets; per-vertex inputs need `VK_KHR_fragment_shader_barycentric`. Scenario lines for images: `image <id> <w> <h> [format <IMG_FORMAT>] [dim 1d|2d|3d] [depth <d>] [layers <n>]
    [clear r g b a] [init <file>]` (default format 77, 32_32_32_32_FLOAT; init files hold raw texels in the image format, row-major, slice
    after slice; clear values are integers for UINT/SINT formats; read back as `out/image<id>.bin` in the image format) and
-   `timg <region> <offset> <image>`, which writes the image's linear T#. `exec` compiles six AGC driver and libc sources for this
+   `timg <region> <offset> <image>`, which writes the image's linear T#. `exec` compiles five AGC driver sources and a no-op run-report stand-in (`stub_run_report.cpp`) for this
    (`CMakeLists.txt`, `build_msvc.py --with-exec`). Not yet: block-compressed and cube images, mip levels, image tables, texel buffers,
    other graphics stages.
+   Compute shaders get the device's subgroup size for their wave size; a wave64 shader on a device whose largest compute subgroup is 32
+   (NVIDIA, Intel) is recompiled for 32-wide subgroups, two guest lanes per invocation. `XBOX_HOST_SUBGROUP=<n>` forces the host size.
 
 ## Pixel smoke test
 
@@ -60,6 +67,38 @@ the corresponding W, then normalizes their sum to one. Covered pixels must match
 within 0.00001 per channel. Outside pixels must exactly retain the clear value.
 The triangle edges avoid pixel centers, so the reference needs no edge tie-break.
 
+## Per-vertex input test
+
+With a built execution harness and the Vulkan SDK's `glslangValidator` on PATH:
+
+```powershell
+python tools/xbox/per_vertex_test.py --exec "build-xbox/exec.exe"
+```
+
+The fragment program reads the P0, P10 and P20 interpolation parameters of one
+attribute with `VINTRP MOV` and writes them to three RGBA32F targets. The vertex
+shader assigns red, green and blue to the three vertices. P10 and P20 are the
+vertex-1 and vertex-2 plane coefficients (P1 - P0 and P2 - P0), not the raw
+vertex colours. Every pixel must read P0 = (1, 0, 0, 1), P10 = (-1, 1, 0, 0) and
+P20 = (-1, 0, 1, 0). The test needs `VK_KHR_fragment_shader_barycentric`; without
+a geometry shader the host path is not a valid reference for per-vertex inputs.
+
+## Quad swizzle test
+
+With a built execution harness and the Vulkan SDK's `glslangValidator` on PATH:
+
+```powershell
+python tools/xbox/quad_test.py --exec "build-xbox/exec.exe"
+```
+
+The first fragment program exchanges each pixel with its horizontal and vertical
+neighbour inside the 2x2 quad with `ds_swizzle_b32`, subtracts, and exports the
+values and differences. The second narrows EXEC to one lane per quad, expands it
+with `s_wqm_b32`, and exports a constant; a second run activates two quads only,
+so the other quads must stay clear. Both run with `XBOX_NO_FRAGMENT_BARY=1`, the
+host perspective path; the quad operations do not need the barycentric
+extension.
+
 ## Windows compute smoke test
 
 From the repository root in PowerShell, with Python 3, the x64 MSVC C++ toolchain,
@@ -76,6 +115,19 @@ installation. For a custom build directory, pass `--exec "path to exec.exe"` to
 the smoke test. It generates a standalone RDNA2 compute program, dispatches one
 32-lane workgroup, and checks all 1024 output bytes. A successful run prints
 `PASS`. This test requires neither a shader corpus nor an external decoder.
+
+### Test v_mad_legacy_f32 clamp
+
+With the execution harness built, run:
+
+```powershell
+python tools/xbox/mad_legacy_clamp_test.py --exec "build-xbox/exec.exe"
+```
+
+One 32-lane workgroup computes `2.0 * 4.0 + 4.0`, `-2.0 * 4.0 + 4.0` and
+`0.5 * 0.5 + 0.0` with `v_mad_legacy_f32` and the VOP3 clamp bit. The clamped
+results must be 1.0, 0.0 and 0.25 in every lane. Clearing the clamp bit produces
+12.0, -4.0 and 0.25, so the test fails when clamp is ignored.
 
 ### Test texture sampling
 
