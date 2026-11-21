@@ -9,10 +9,14 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <vector>
+#include "dxil_hash.h"
 using Microsoft::WRL::ComPtr;
 
 int main(int argc, char** argv) {
-    if (argc < 3) { printf("usage: dxasm in.ll out.dxil\n"); return 2; }
+    bool hashOnly = argc > 1 && std::string(argv[1]) == "--hash-only";
+    if (hashOnly) { argv++; argc--; }
+    if (argc < 3) { printf("usage: dxasm [--hash-only] in.ll out.dxil\n"); return 2; }
     std::ifstream f(argv[1], std::ios::binary);
     std::stringstream ss; ss << f.rdbuf();
     std::string text = ss.str();
@@ -32,6 +36,14 @@ int main(int argc, char** argv) {
         ComPtr<IDxcBlobEncoding> err, err8; r->GetErrorBuffer(&err);
         if (err) { lib->GetBlobAsUtf8(err.Get(), &err8); if (err8) printf("assemble failed: %.*s\n", (int)err8->GetBufferSize(), (const char*)err8->GetBufferPointer()); }
         return 1;
+    }
+    if (hashOnly) {
+        std::vector<uint8_t> c((const uint8_t*)blob->GetBufferPointer(), (const uint8_t*)blob->GetBufferPointer() + blob->GetBufferSize());
+        DxilHashContainer(c.data(), (uint32_t)c.size());
+        std::ofstream o(argv[2], std::ios::binary);
+        o.write((const char*)c.data(), c.size());
+        printf("wrote %s (%zu bytes, hashed, not validated)\n", argv[2], c.size());
+        return 0;
     }
     ComPtr<IDxcOperationResult> vr;
     v->Validate(blob.Get(), DxcValidatorFlags_InPlaceEdit, &vr);       // signs the container in place
