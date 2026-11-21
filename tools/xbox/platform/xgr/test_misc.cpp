@@ -83,6 +83,8 @@ static Api Get(const char* iface, const GUID& iid) {
 }
 
 static const GUID kThreading = {0x073b7dcb, 0x1fcf, 0x4030, {0x94, 0xbe, 0xe3, 0xc9, 0xeb, 0x62, 0x34, 0x28}};
+static const GUID kGameEvent = {0xbbfbdcc7, 0xbfe7, 0x409b, {0xa5, 0xca, 0xed, 0xf0, 0x54, 0x96, 0x0b, 0x4d}};
+static const GUID kUser = {0x01acd177, 0x91f9, 0x4763, {0xa3, 0x8e, 0xcc, 0xbb, 0x55, 0xce, 0x32, 0xe0}};
 static const GUID kSystem3 = {0x67ce4bfc, 0xb1d1, 0x4ac7, {0xbc, 0x3a, 0xcb, 0x92, 0x19, 0xa9, 0x7a, 0x85}};
 static const GUID kActivation = {0x2e4f76fe, 0x0fc7, 0x461e, {0xab, 0x4d, 0xa4, 0x49, 0x94, 0x34, 0xc3, 0xcf}};
 static const GUID kInvite2 = {0x014d1cc3, 0xbcfe, 0x41ff, {0xb2, 0xf0, 0xe1, 0xef, 0x07, 0x15, 0x58, 0x28}};
@@ -267,6 +269,29 @@ static void CheckThreadPool() {
   g_tq.Close(q);
 }
 
+static void CheckGameEvent() {
+  Api user = Get("IXUserImpl", kUser);
+  AsyncBlock add{};
+  user.At<HRESULT (*)(void*, uint32_t, AsyncBlock*)>(7, "XUserAddAsync")(user.self, 1, &add);
+  g_tq.WaitAsync(&add);
+  void* handle = nullptr;
+  HRESULT hr = user.At<HRESULT (*)(void*, AsyncBlock*, void**)>(8, "XUserAddResult")(user.self, &add, &handle);
+  Check(hr == S_OK && handle, "XUserAddAsync gives the local user");
+
+  Api events = Get("IXGameEventImpl", kGameEvent);
+  auto write = events.At<HRESULT (*)(void*, void*, const char*, const char*, const char*, const char*, const char*)>(3, "XGameEventWrite");
+  const char* scid = "00000000-0000-0000-0000-000000000000";
+  const char* session = "{11111111-2222-3333-4444-555555555555}";
+  Check(write(events.self, handle, scid, session, "TestEvent", "{\"mode\":1}", "{\"score\":2}") == S_OK,
+        "XGameEventWrite accepts an event (dropped: no telemetry service offline)");
+  Check(write(events.self, handle, scid, session, "TestEvent", nullptr, nullptr) == S_OK, "XGameEventWrite accepts missing optional dimensions and measurements");
+  Check(write(events.self, nullptr, scid, session, "TestEvent", nullptr, nullptr) == E_INVALIDARG, "XGameEventWrite rejects a null user");
+  Check(write(events.self, handle, nullptr, session, "TestEvent", nullptr, nullptr) == E_INVALIDARG, "XGameEventWrite rejects a null service config id");
+  Check(write(events.self, handle, scid, nullptr, "TestEvent", nullptr, nullptr) == E_INVALIDARG, "XGameEventWrite rejects a null play session id");
+  Check(write(events.self, handle, scid, session, nullptr, nullptr, nullptr) == E_INVALIDARG, "XGameEventWrite rejects a null event name");
+  user.At<void (*)(void*, void*)>(4, "XUserCloseHandle")(user.self, handle);
+}
+
 static void CheckStillFailing() {
   Api system3 = Get("IXSystemImpl3", kSystem3);
   Check(system3.At<HRESULT (*)(void*, void*, void*)>(6, "XSystemHandleTrack")(system3.self, nullptr, nullptr) == E_NOTIMPL, "XSystemHandleTrack stays failing");
@@ -298,6 +323,7 @@ int main() {
   CheckTermination();
   CheckComposite();
   CheckThreadPool();
+  CheckGameEvent();
   CheckStillFailing();
   std::printf("%s: %d failure(s)\n", g_failures ? "FAILED" : "ALL PASSED", g_failures);
   return g_failures ? 1 : 0;

@@ -19,6 +19,7 @@ namespace gtx::xgr::storage { const Override* overrides(size_t* count); }
 namespace gtx::xgr::package { const Override* overrides(size_t* count); }
 namespace gtx::xgr::save { const Override* overrides(size_t* count); }
 namespace gtx::xgr::system { const Override* overrides(size_t* count); }
+namespace gtx::xgr::misc { const Override* overrides(size_t* count); }
 
 #include <iterator>
 #include <vector>
@@ -148,6 +149,8 @@ const Override* overrides(size_t* count) {
     v.insert(v.end(), sv, sv + n);
     const Override* sy = system::overrides(&n);
     v.insert(v.end(), sy, sy + n);
+    const Override* mi = misc::overrides(&n);
+    v.insert(v.end(), mi, mi + n);
     return v;
   }();
   *count = all.size();
