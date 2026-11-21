@@ -2,6 +2,22 @@
 
 Experimental tooling for running Xbox Series shader code through the shader recompiler. See `docs/xbox/XBOX_SHADERS.md`.
 
+### Test vertex color interpolation
+
+With a built execution harness and the Vulkan SDK's `glslangValidator` on PATH:
+
+```powershell
+python tools/xbox/interpolation_test.py --exec "build-xbox/exec.exe"
+```
+
+A GLSL vertex shader assigns red, green and blue to a triangle. Its vertices
+have clip-space W values of 1, 2 and 4. The RDNA2 fragment program interpolates
+each channel using VINTRP P1/P2 and exports RGBA32F. At every pixel center, the
+CPU derives screen-space weights from the projected triangle, divides each by
+the corresponding W, then normalizes their sum to one. Covered pixels must match
+within 0.00001 per channel. Outside pixels must exactly retain the clear value.
+The triangle edges avoid pixel centers, so the reference needs no edge tie-break.
+
 1. `build_msvc.py` builds the recompiler and the tools below with MSVC (run it from PowerShell/cmd).
 2. `extract_shaders.py` writes prologue-stripped, trimmed code blobs `<idx>.bin` (it depends on the RPF9
    extraction pipeline and `rdna2.py` decoder kept next to the dumped shaders; adjust its paths).
