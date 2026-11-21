@@ -10,8 +10,23 @@ _SUFFIX = re.compile(r"_e(32|64)$")
 
 def _decode(blob):
     text = " ".join("0x%02x" % b for b in blob)
-    p = subprocess.run([MC, "--disassemble", "--show-encoding", "-triple=amdgcn--amdpal", "-mcpu=" + CPU],
-                       input=text, capture_output=True, text=True)
+    try:
+        p = subprocess.run([MC, "--disassemble", "--show-encoding", "-triple=amdgcn--amdpal", "-mcpu=" + CPU],
+                           input=text, capture_output=True, text=True)
+    except OSError as e:
+        raise RuntimeError(
+            f"cannot run {MC}: {e}. Set XBOX_LLVM_MC to an llvm-mc with the AMDGPU target."
+        ) from e
+    if p.returncode:
+        raise RuntimeError(
+            f"{MC} exited {p.returncode} for {CPU}. Set XBOX_LLVM_MC to an llvm-mc with the AMDGPU target. "
+            f"stderr: {p.stderr.strip()}"
+        )
+    if not p.stdout.strip():
+        raise RuntimeError(
+            f"{MC} disassembled nothing for {CPU}. Does it include the AMDGPU target? "
+            f"Set XBOX_LLVM_MC. stderr: {p.stderr.strip()}"
+        )
     out = []
     for line in p.stdout.splitlines():
         m = _LINE.match(line)
