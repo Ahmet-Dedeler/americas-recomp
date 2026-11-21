@@ -346,3 +346,13 @@ The harness passed 16 user words and `bindings.py` tracked only s0-s15, so every
 - Result: mesh 8,035 -> 8,904 of 9,282. 969 shaders went from THROW to VALID; 100 went from VALID to THROW (runtime-indexed descriptor
   table, see the README); 0 of the 350 remaining THROWs pass under fake-memory variants 0, 2 or 3.
 - Canary: three `ms-hiuser` shaders; with the old 16-word driver all three fail and the suite exits 1.
+
+## Corpus run time
+A cold mesh run (9,282 shaders, 14 workers) takes about 10 minutes and is bound by total CPU time, not by scheduling: about 8,200
+worker-seconds, of which the ~30 shaders that hit the 120 s limit are 44%; the median shader takes 0.16 s (driver start + spirv-val).
+Running the slowest first did not help (588 s against 520 s).
+`run_full.py` therefore caches results under a hash of every input (the result-deciding functions of the script, driver and spirv-val
+builds, shader code, bindings, stage, f16 opt-in, XBOX_* switches); a re-run only recompiles shaders whose inputs changed. Warm mesh
+re-run: 5 s, identical outcomes. A cached TIMEOUT is re-run only when `--limit` is raised. Timeouts within a few seconds of the limit
+can flip between runs under different CPU load (28 vs 30 in two cold runs).
+The remaining lever for cold runs is the recompiler itself: the slow shaders spend their time in the structurizer (recomputeAnalyses).

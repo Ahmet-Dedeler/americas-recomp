@@ -1,12 +1,14 @@
 """Run every shader of the full corpus (manifest_full.csv, bins_full/, binds_full/) through the recompiler and spirv-val.
 
-usage (from the build dir):  python -I run_full.py <out.json> [--skip results_a.json ...] [--workers N] [--limit SEC] [--only STAGE] [--idx-file F] [--no-canary]
+usage (from the build dir):  python -I run_full.py <out.json> [--skip results_a.json ...] [--workers N] [--limit SEC] [--only STAGE] [--idx-file F] [--no-canary] [--no-cache]
 
 Before running it checks that every .bind was written by the current bindings.py (harness_guard.py) and that the canary shaders
 still give their recorded outcomes (canary.py); either failing stops the run.
+Results are cached by a hash of every input (run_full_cache.json in the build dir), and jobs run slowest-first using the run times
+recorded in run_full_costs.json, so long compiles overlap with the short ones.
 
 Same drivers and defaults as run_corpus_bind.py (compute, driver_heap.exe, variants 0/2/3 until one validates) and
-run_graphics_final.py (PS/VS/MS, driver_fb.exe, PS both strict and with XBOX_ALLOW_UNMEASURED_F16_INTERP, barycentric extension
+run_graphics_final.py (PS/VS/MS, driver_gfx2.exe (XBOX_DRIVER_GFX overrides), PS both strict and with XBOX_ALLOW_UNMEASURED_F16_INTERP, barycentric extension
 retry). Shaders listed in the --skip files (earlier results, by idx) are not run again. Results are written every 500 shaders, so a
 killed run can be resumed by passing its own output as --skip. Stage '?' in the manifest is mesh (type 6/7), GS has no driver mode and
 is recorded as SKIP."""
@@ -93,7 +95,53 @@ def graphics(idx, st, relaxed):
     return s, d
 
 
+_HASH = {}
+
+
+def _file_hash(path):
+    """sha256 of a file, memoised (driver executables, spirv-val, this script)"""
+    if path not in _HASH:
+        import hashlib
+        _HASH[path] = hashlib.sha256(open(path, "rb").read()).hexdigest()[:16]
+    return _HASH[path]
+
+
+_LOGIC = None
+
+
+def _logic_hash():
+    """hash of the functions that decide a result (editing main(), messages or the cache code does not invalidate the cache)"""
+    global _LOGIC
+    if _LOGIC is None:
+        import hashlib, inspect
+        _LOGIC = hashlib.sha256("".join(inspect.getsource(f) for f in (attrs, classify, compute, graphics, _one)).encode()).hexdigest()[:16]
+    return _LOGIC
+
+
+def cache_key(r, relaxed):
+    """Everything that can change a result: the result logic in this script, the driver and spirv-val builds, the shader code, its
+    bindings, the stage, the f16 opt-in and any XBOX_* switch in the environment. Same key = same inputs, so the stored result is reused.
+    The time limit is not in the key: a cached TIMEOUT is re-run when the limit is now higher (cache_usable)."""
+    import hashlib
+    idx, stage = r["idx"], r["stage"]
+    h = hashlib.sha256()
+    drv = BUILD + "driver_heap.exe" if stage == "CS" else DRIVER_GFX
+    for part in (_logic_hash(), _file_hash(drv), _file_hash(VAL), stage, str(relaxed),
+                 repr(sorted((k, v) for k, v in os.environ.items() if k.startswith("XBOX_") and k != "XBOX_DRIVER_GFX"))):
+        h.update(part.encode() + b"\0")
+    h.update(open(M + f"bins_full/{idx}.bin", "rb").read())
+    h.update(b"\0" + open(BINDS + f"{idx}.bind", "rb").read())
+    return h.hexdigest()
+
+
 def one(job):
+    t = time.time()
+    res = _one(job)
+    res["secs"] = round(time.time() - t, 2)
+    return res
+
+
+def _one(job):
     r, relaxed = job
     idx, stage = r["idx"], r["stage"]
     res = dict(idx=idx, stage=stage, run=r["run"], relaxed=relaxed)
@@ -130,14 +178,42 @@ def main():
     IDX = set(open(args[args.index("--idx-file") + 1]).read().split()) if "--idx-file" in args else None
     rows = [r for r in csv.DictReader(open(M + "manifest_full.csv")) if (ONLY is None or r["stage"] == ONLY) and (IDX is None or r["idx"] in IDX)]
     jobs = [(r, x) for r in rows for x in ((False, True) if r["stage"] == "PS" else (False,)) if (r["idx"], x) not in skip]
-    print(len(jobs), "jobs", flush=True)
-    out, t0 = [], time.time()
+    # result cache (build dir): a job whose inputs hash the same as in an earlier run reuses that result
+    use_cache = "--no-cache" not in args
+    cache_path, cost_path = BUILD + "run_full_cache.json", BUILD + "run_full_costs.json"
+    cache = json.load(open(cache_path)) if use_cache and os.path.exists(cache_path) else {}
+    costs = json.load(open(cost_path)) if os.path.exists(cost_path) else {}
+    out, todo, keys = [], [], {}
+    for job in jobs:
+        k = cache_key(*job) if use_cache else None
+        if k and k in cache and (cache[k]["status"] != "TIMEOUT" or cache[k].get("limit", 0) >= LIMIT):   # re-run timeouts at a higher limit
+            out.append(dict(cache[k], idx=job[0]["idx"], stage=job[0]["stage"], run=job[0]["run"], relaxed=job[1], cached=True))
+        else:
+            keys[id(job)] = k
+            todo.append(job)
+    # slowest first (known run times, else code size). This does not shorten a big run, which is bound by total CPU time (in a full mesh
+    # run 30 timeouts were 44% of it); it keeps a few long jobs from trailing at the end of a small one.
+    size = lambda r: os.path.getsize(M + f"bins_full/{r['idx']}.bin")
+    todo.sort(key=lambda j: (-costs.get(f"{j[0]['idx']}|{int(j[1])}", -1), -size(j[0])))
+    print(len(jobs), "jobs,", len(jobs) - len(todo), "from the cache,", len(todo), "to run", flush=True)
+    t0 = time.time()
     with cf.ThreadPoolExecutor(WORKERS) as ex:
-        for n, res in enumerate(ex.map(one, jobs)):
+        futs = {ex.submit(one, j): j for j in todo}
+        for n, f in enumerate(cf.as_completed(futs)):
+            j = futs[f]
+            res = f.result()
             out.append(res)
+            costs[f"{j[0]['idx']}|{int(j[1])}"] = res["secs"]
+            k = keys.get(id(j))
+            if k and res["status"] not in ("HARNESS", "CRASH"):
+                cache[k] = dict({x: res[x] for x in ("status", "detail", "variant", "secs") if x in res}, limit=LIMIT)
             if (n + 1) % 500 == 0:
                 json.dump(out, open(OUT, "w"))
-                print(n + 1, "done,", int(time.time() - t0), "s", flush=True)
+                print(n + 1, "of", len(todo), "run,", int(time.time() - t0), "s", flush=True)
+    json.dump(costs, open(cost_path, "w"))
+    if use_cache:
+        json.dump(cache, open(cache_path, "w"))
+    print("run time", int(time.time() - t0), "s", flush=True)
     json.dump(out, open(OUT, "w"))
     for st in sorted({e["stage"] for e in out}):
         for x in (False, True):
