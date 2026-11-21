@@ -29,6 +29,11 @@ target_include_directories(xbox_recompiler PUBLIC
     "${XBOX_REC}"
     ${XBOX_REC_INC1} ${XBOX_REC_INC2})
 target_compile_options(xbox_recompiler PUBLIC -w)
+if(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
+    target_include_directories(xbox_recompiler PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/msvc")
+    target_compile_definitions(xbox_recompiler PUBLIC NOMINMAX)
+    target_compile_options(xbox_recompiler PUBLIC /EHsc)
+endif()
 find_package(Threads REQUIRED)
 target_link_libraries(xbox_recompiler PUBLIC Threads::Threads)
 
@@ -37,7 +42,13 @@ target_link_libraries(driver PRIVATE xbox_recompiler)
 add_executable(stages stages.cpp)
 target_link_libraries(stages PRIVATE xbox_recompiler)
 
-find_library(XBOX_VULKAN_LIB NAMES vulkan vulkan-1 REQUIRED)
-add_executable(exec exec.cpp)
-target_include_directories(exec PRIVATE "${XBOX_ROOT}/3rdparty/Vulkan-Headers/include")
-target_link_libraries(exec PRIVATE xbox_recompiler "${XBOX_VULKAN_LIB}")
+set(XBOX_AGC "${XBOX_ROOT}/core/libs/prx/libSceAgcDriver/Graphics/src")
+add_executable(exec exec.cpp
+    "${XBOX_AGC}/GuestSamplerResource.cpp"
+    "${XBOX_AGC}/GuestTextureResource.cpp"
+    "${XBOX_AGC}/RuntimeSwitches.cpp"
+    "${XBOX_AGC}/TextureFormat.cpp"
+    "${XBOX_AGC}/TextureTiling.cpp"
+    stub_run_report.cpp)
+target_include_directories(exec PRIVATE "${XBOX_ROOT}/3rdparty/Vulkan-Headers/include" "${XBOX_ROOT}/core")
+target_link_libraries(exec PRIVATE xbox_recompiler ${CMAKE_DL_LIBS})
