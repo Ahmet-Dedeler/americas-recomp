@@ -399,6 +399,7 @@
       "instruction": "v_add_f16",
       "description": "Positive and negative half-precision ties with rounding toward positive infinity.",
       "body": "v_add_f16 v10, v4, v5",
+      "body_gfx11": "v_add_f16 v10.l, v4.l, v5.l",
       "output_registers": 1,
       "wave_size": 32,
       "floating_point_modes": {
@@ -438,6 +439,7 @@
       "instruction": "v_add_f16",
       "description": "Positive and negative half-precision ties with rounding toward negative infinity.",
       "body": "v_add_f16 v10, v4, v5",
+      "body_gfx11": "v_add_f16 v10.l, v4.l, v5.l",
       "output_registers": 1,
       "wave_size": 32,
       "floating_point_modes": {
@@ -477,6 +479,7 @@
       "instruction": "v_add_f16",
       "description": "Positive and negative half-precision ties with rounding toward zero.",
       "body": "v_add_f16 v10, v4, v5",
+      "body_gfx11": "v_add_f16 v10.l, v4.l, v5.l",
       "output_registers": 1,
       "wave_size": 32,
       "floating_point_modes": {
@@ -516,6 +519,7 @@
       "instruction": "v_add_f16",
       "description": "Half-precision subnormal additions with input and output denormals flushed.",
       "body": "v_add_f16 v10, v4, v5",
+      "body_gfx11": "v_add_f16 v10.l, v4.l, v5.l",
       "output_registers": 1,
       "wave_size": 32,
       "floating_point_modes": {
@@ -564,6 +568,7 @@
       "instruction": "v_add_f16",
       "description": "Half-precision subnormal additions with denormal inputs preserved and results flushed.",
       "body": "v_add_f16 v10, v4, v5",
+      "body_gfx11": "v_add_f16 v10.l, v4.l, v5.l",
       "output_registers": 1,
       "wave_size": 32,
       "floating_point_modes": {
@@ -612,6 +617,7 @@
       "instruction": "v_add_f16",
       "description": "Half-precision subnormal additions with inputs flushed and denormal results preserved.",
       "body": "v_add_f16 v10, v4, v5",
+      "body_gfx11": "v_add_f16 v10.l, v4.l, v5.l",
       "output_registers": 1,
       "wave_size": 32,
       "floating_point_modes": {
@@ -660,6 +666,7 @@
       "instruction": "v_add_f16",
       "description": "Half-precision additions at the finite overflow boundary with FP16_OVFL enabled.",
       "body": "v_add_f16 v10, v4, v5",
+      "body_gfx11": "v_add_f16 v10.l, v4.l, v5.l",
       "output_registers": 1,
       "wave_size": 32,
       "floating_point_modes": {
@@ -825,6 +832,7 @@
       "instruction": "v_add_f16",
       "description": "Half-precision additions at the finite overflow boundary with FP16_OVFL disabled.",
       "body": "v_add_f16 v10, v4, v5",
+      "body_gfx11": "v_add_f16 v10.l, v4.l, v5.l",
       "output_registers": 1,
       "wave_size": 32,
       "floating_point_modes": {
@@ -918,6 +926,7 @@
     },
     {
       "id": "ds-write-src2-b64-unaligned-positive",
+      "only_on": ["gfx1013"],
       "instruction": "ds_write_src2_b64",
       "description": "Aligned and four-byte-misaligned addresses with a positive qword displacement on gfx1013.",
       "body": "v_lshlrev_b32 v8, 5, v0\nv_and_b32 v20, 1, v0\nv_lshlrev_b32 v20, 2, v20\nv_or_b32 v20, v8, v20\nds_write_b64 v8, v[4:5]\nds_write_b64 v8, v[6:7] offset:8\nds_write_b64 v8, v[18:19] offset:16\ns_waitcnt lgkmcnt(0)\nds_write_src2_b64 v20 offset:2\ns_waitcnt lgkmcnt(0)\nds_read_b128 v[10:13], v8\ns_waitcnt lgkmcnt(0)",
@@ -944,6 +953,7 @@
     },
     {
       "id": "ds-write-src2-b64-unaligned-negative",
+      "only_on": ["gfx1013"],
       "instruction": "ds_write_src2_b64",
       "description": "Aligned and four-byte-misaligned addresses with a negative qword displacement on gfx1013.",
       "body": "v_lshlrev_b32 v8, 5, v0\nv_and_b32 v20, 1, v0\nv_lshlrev_b32 v20, 2, v20\nv_or_b32 v20, 8, v20\nv_or_b32 v20, v8, v20\nds_write_b64 v8, v[6:7]\nds_write_b64 v8, v[4:5] offset:8\nds_write_b64 v8, v[18:19] offset:16\ns_waitcnt lgkmcnt(0)\nds_write_src2_b64 v20 offset:32766\ns_waitcnt lgkmcnt(0)\nds_read_b128 v[10:13], v8\ns_waitcnt lgkmcnt(0)",
@@ -970,6 +980,7 @@
     },
     {
       "id": "ds-add-src2-u64-unaligned-positive",
+      "only_on": ["gfx1013"],
       "instruction": "ds_add_src2_u64",
       "description": "Aligned and four-byte-misaligned 64-bit atomic add addresses on gfx1013.",
       "body": "v_lshlrev_b32 v8, 5, v0\nv_and_b32 v20, 1, v0\nv_lshlrev_b32 v20, 2, v20\nv_or_b32 v20, v8, v20\nds_write_b64 v8, v[4:5]\nds_write_b64 v8, v[6:7] offset:8\nds_write_b64 v8, v[18:19] offset:16\ns_waitcnt lgkmcnt(0)\nds_add_src2_u64 v20 offset:2\ns_waitcnt lgkmcnt(0)\nds_read_b128 v[10:13], v8\ns_waitcnt lgkmcnt(0)",
