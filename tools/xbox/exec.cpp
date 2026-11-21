@@ -333,7 +333,11 @@ int main(int argc, char** argv) {
         if (!pixel) request.context.compute = ShaderComputeStageInfo{{threads[0], threads[1], threads[2]}, ldsDwords, {true, true, true}, false, 1u};
         request.target.vulkanVersion = 0x00403000u;
         request.target.spirvVersion = 0x00010600u;
-        request.target.subgroupSize = wave;
+        const bool computeSizes = (dev.subgroup.requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT) != 0;
+        const auto fits = [&](std::uint32_t size) { return computeSizes && size >= dev.subgroup.minSubgroupSize && size <= dev.subgroup.maxSubgroupSize; };
+        std::uint32_t hostSubgroup = fits(wave) || pixel ? wave : wave == 64u && fits(32u) ? 32u : wave;
+        if (const char* forced = std::getenv("XBOX_HOST_SUBGROUP")) hostSubgroup = static_cast<std::uint32_t>(Num(forced));
+        request.target.subgroupSize = hostSubgroup;
         request.target.bdaAbiVersion = 1;
         std::vector<std::uint32_t> capsLocal = caps;
         std::vector<std::string_view> extLocal(ext.begin(), ext.end());

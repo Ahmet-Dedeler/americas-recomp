@@ -19,6 +19,8 @@ Experimental tooling for running Xbox Series shader code through the shader reco
    `exec_tests.py` and `exec_bvh_tests.py` hold the tests. Set `XBOX_EXEC` to the `exec.exe` path. Supported: guest buffers, shader data,
    flattened SRT, identity BDA page table and fault reporting, 2D RGBA32F images, samplers. Pixel shaders (`stage ps`, see the pixel smoke test): one triangle over
    a single RGBA32F target. Not yet: other image formats/dimensions, image tables, texel buffers, other graphics stages.
+   Compute shaders get the device's subgroup size for their wave size; a wave64 shader on a device whose largest compute subgroup is 32
+   (NVIDIA, Intel) is recompiled for 32-wide subgroups, two guest lanes per invocation. `XBOX_HOST_SUBGROUP=<n>` forces the host size.
 
 ## Pixel smoke test
 
