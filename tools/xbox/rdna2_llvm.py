@@ -45,6 +45,7 @@ VOP1 = _table(128, lambda op: [0x7E000000 | (op << 9) | V0])
 VOP2 = _table(64, lambda op: [(op << 25) | V0])
 VOPC = _table(256, lambda op: [0x7C000000 | (op << 17) | V0])
 MUBUF = _table(128, lambda op: [0xE0000000 | (op << 18), 0])
+MTBUF = _table(16, lambda op: [0xE8000000 | (1 << 19) | ((op & 7) << 16), ((op >> 3) & 1) << 21])
 DS = _table(256, lambda op: [0xD8000000 | (op << 18), 0])
 MIMG = {**_table(256, lambda op: [0xF0000000 | ((op & 0x7f) << 18) | ((op >> 7) & 1) | (1 << 15) | (1 << 12) | (0xf << 8), 4]),
         **_table(256, lambda op: [0xF0000000 | ((op & 0x7f) << 18) | ((op >> 7) & 1) | (1 << 3) | (0xf << 8), 0])}

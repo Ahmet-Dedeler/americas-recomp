@@ -455,7 +455,7 @@ std::uint32_t formatted(SpirvValueEmitContext& context, const IrValue& instructi
     auto inBounds = ConstantBool(state, true);
     for (std::uint32_t output = 0; output < components; ++output) {
         selectors[output] = memory.typed ? ConstantU32(state, output < info.componentCount ? 4u + output : 0u) : field(state, resource.word3, output * 3u, 3u);
-        selected[output] = Binary(state, spv::OpUMod, u32, Binary(state, spv::OpISub, u32, selectors[output], ConstantU32(state, 4u)), ConstantU32(state, info.componentCount));
+        selected[output] = Binary(state, spv::OpISub, u32, selectors[output], ConstantU32(state, 4u));
     }
     std::array<std::uint32_t, 4> required{};
     for (std::uint32_t component = 0; component < info.componentCount; ++component) {
@@ -506,6 +506,7 @@ std::uint32_t formatted(SpirvValueEmitContext& context, const IrValue& instructi
     for (std::uint32_t output = 0; output < components; ++output) {
         auto value = values[0];
         for (std::uint32_t component = 1; component < info.componentCount; ++component) value = Select(state, u32, equal(state, selected[output], ConstantU32(state, component)), values[component], value);
+        value = Select(state, u32, Binary(state, spv::OpULessThan, TypeBool(state), selected[output], ConstantU32(state, info.componentCount)), value, Select(state, u32, equal(state, selected[output], ConstantU32(state, 3u)), one, ConstantU32(state, 0u)));
         value = Select(state, u32, equal(state, selectors[output], ConstantU32(state, 1u)), one, value);
         outputs[output] = Select(state, u32, equal(state, selectors[output], ConstantU32(state, 0u)), ConstantU32(state, 0u), value);
     }
@@ -691,7 +692,7 @@ std::uint32_t genericFormattedLoad(SpirvValueEmitContext& context, const IrValue
     std::array<std::uint32_t, 4> selected{};
     for (std::uint32_t output = 0; output < components; ++output) {
         selectors[output] = field(state, resource.word3, output * 3u, 3u);
-        selected[output] = Binary(state, spv::OpUMod, u32, Binary(state, spv::OpISub, u32, selectors[output], constant(4u)), componentCount);
+        selected[output] = Binary(state, spv::OpISub, u32, selectors[output], constant(4u));
     }
     std::array<std::uint32_t, 4> required{};
     std::array<RuntimeAddress, 4> addresses{};
@@ -756,6 +757,7 @@ std::uint32_t genericFormattedLoad(SpirvValueEmitContext& context, const IrValue
     for (std::uint32_t output = 0; output < components; ++output) {
         auto value = values[0];
         for (std::uint32_t component = 1; component < 4u; ++component) value = Select(state, u32, equal(state, selected[output], constant(component)), values[component], value);
+        value = Select(state, u32, Binary(state, spv::OpULessThan, boolean, selected[output], componentCount), value, Select(state, u32, equal(state, selected[output], constant(3u)), one, constant(0u)));
         value = Select(state, u32, equal(state, selectors[output], constant(1u)), one, value);
         outputs[output] = Select(state, u32, equal(state, selectors[output], constant(0u)), constant(0u), value);
     }

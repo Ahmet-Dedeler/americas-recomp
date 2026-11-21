@@ -16,6 +16,7 @@ def _inv(t):
 
 SOPP, SMEM, VOP2, VOP1, MUBUF = (_inv(rdna2.SOPP), _inv(rdna2.SMEM), _inv(rdna2.VOP2), _inv(rdna2.VOP1), _inv(rdna2.MUBUF))
 SOP1, VOPC, SOP2, SOPC, MIMG = _inv(rdna2.SOP1), _inv(rdna2.VOPC), _inv(rdna2.SOP2), _inv(rdna2.SOPC), _inv(rdna2.MIMG)
+MTBUF = _inv(getattr(rdna2, "MTBUF", {}))
 # rdna2.py's VOPC table is unreliable for the non-cmpx compares; RDNA2 u32 compares are 0xC0 + {f,lt,eq,le,gt,ne,ge,t}, cmpx adds 0x10.
 for _i, _c in enumerate(['f', 'lt', 'eq', 'le', 'gt', 'lg', 'ge', 'tru']):
     VOPC['v_cmp_%s_u32' % _c] = 0xC0 + _i
@@ -103,6 +104,10 @@ class Program:
     def mubuf(self, name, vdata, vaddr, srsrc, soffset=128, offset=0, offen=True, idxen=False):
         self.words.append(0xE0000000 | (MUBUF[name] << 18) | (int(idxen) << 13) | (int(offen) << 12) | offset)
         self.words.append((soffset << 24) | ((srsrc // 4) << 16) | (vdata << 8) | vaddr)
+    def mtbuf(self, name, vdata, vaddr, srsrc, fmt, soffset=128, offset=0, offen=False, idxen=True):
+        op = MTBUF[name]
+        self.words.append(0xE8000000 | ((fmt & 0x7f) << 19) | ((op & 7) << 16) | (int(idxen) << 13) | (int(offen) << 12) | offset)
+        self.words.append((soffset << 24) | (((op >> 3) & 1) << 21) | ((srsrc // 4) << 16) | (vdata << 8) | vaddr)
     def bytes(self):
         return struct.pack('<%dI' % len(self.words), *self.words)
     def disasm(self):
