@@ -532,6 +532,7 @@ int main(int argc, char** argv) {
         const bool computeSizes = (dev.subgroup.requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT) != 0;
         const auto fits = [&](std::uint32_t size) { return computeSizes ? size >= dev.subgroup.minSubgroupSize && size <= dev.subgroup.maxSubgroupSize : size == dev.nativeSubgroupSize; };
         std::uint32_t hostSubgroup = fits(wave) || graphics ? wave : wave == 64u && fits(32u) ? 32u : wave;
+        if (graphics && wave == 32u && dev.nativeSubgroupSize > 32u) hostSubgroup = dev.nativeSubgroupSize;   // graphics stages cannot be pinned: a wider driver subgroup runs a wave32 program as split halves
         if (const char* forced = std::getenv("XBOX_HOST_SUBGROUP")) hostSubgroup = static_cast<std::uint32_t>(Num(forced));
         request.target.subgroupSize = hostSubgroup;
         const bool nativeSubgroup = !graphics && !computeSizes && hostSubgroup == dev.nativeSubgroupSize;
