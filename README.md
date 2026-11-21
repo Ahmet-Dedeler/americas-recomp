@@ -2,13 +2,15 @@
 
 An experiment: can the RDNA2 shaders from an Xbox Series game go through [AnyPS5](https://github.com/boykopovar/AnyPS5)'s shader recompiler (the Series X GPU shares the PS5's RDNA2 ISA)? This is a local fork on branch `xbox-series`. The shaders come from the author's own console dump.
 
-**Nothing has been executed.** "Valid" below means the recompiler produced SPIR-V that passes `spirv-val` (Vulkan SDK 1.4.363.1, `--target-env vulkan1.3`). It does not mean the output is correct.
+"Valid" below means the recompiler produced SPIR-V that passes `spirv-val` (Vulkan SDK 1.4.363.1, `--target-env vulkan1.3`). It does not mean the output is correct. Separately, a subset of shaders has been **executed** on a GPU and compared bit for bit with an independent CPU interpreter: 242 compute shaders (up to 1500 bytes) and 157 of the 738 pixel shaders match; the pixel run found none that differ, the compute run found a recompiler bug (fixed) and 6 mismatches still unexplained (3 are flaky workgroup-memory reads). The pixel check uses one constant input vector, so it says little about interpolation. Details and limits: `docs/xbox/XBOX_SHADERS.md`.
 
 ## Progress
 
 ![Xbox shader progress map: one cell per shader](docs/xbox/progress.svg)
 
 <sub>Regenerate with `python tools/xbox/make_progress_svg.py` (reads `docs/xbox/results.json`).</sub>
+
+The last row is the platform surface of the 16 DLLs shipped with the package (static imports only, see `docs/xbox/PLATFORM_SURFACE.md`): 605 of 611 imported functions resolve on a PC as they are; the 6 that do not belong to two Xbox-only libraries (`xmem.dll`, `d3d12_xs.dll`). Stand-ins for both are in `tools/xbox/platform/`; all six DLLs that import something load on a PC with them, and the game's Bink decoder decodes a real video through the `xmem.dll` stand-in. The game executable's own imports are not included (it is not part of this work).
 
 Corpus: 24,804 shaders from an RPF9 archive (2,647 compute, 738 pixel, 114 vertex, 8 geometry, 640 mesh).
 

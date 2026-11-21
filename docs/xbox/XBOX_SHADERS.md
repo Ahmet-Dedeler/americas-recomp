@@ -287,3 +287,6 @@ Three harness defaults found while doing this (not recompiler bugs, but they mad
 * Per-vertex inputs (`v_interp_mov` P0/P10/P20) need the barycentric extension or the geometry-shader emulation; without either the pixel stage's input does not match a plain vertex shader's output.
 
 Reference fixes found on the way: `ds_swizzle_b32`, `s_wqm`, `v_fract/trunc/rndne_f32`, `v_cvt_f32_f16`, `v_mad/mac_f32`, `v_cmp_class_f32`, output modifiers, float inline constants as SGPR sources, `image_sample` and `_b`/`_d` variants, 2D-array images, the MRTZ export, and EXP semantics (in a compressed export `en` bits 1:0 and 3:2 enable the two pairs, not one pair per bit).
+
+
+Update after the pixel work: with the extra reference instructions (`s_wqm`, `v_fract`, 2D-array images, `v_mad/mac`, ...) the compute comparison over shaders up to 1500 bytes now gives 242 matches, 6 mismatches and 2 harness failures. The 3 flaky LDS shaders are still there; 23306, 23324 and 23441 are new, because they could not be run before. They have not been investigated (23324 differs by about 14 ulp in one float, which could be an approximate transcendental), so they may be reference or recompiler bugs.
