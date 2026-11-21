@@ -552,7 +552,7 @@ int main(int argc, char** argv) {
                         if (r->guest != base) throw std::runtime_error("V# base is not a region start (unaligned element offsets are not implemented)");
                         info.buffer = r->buffer;
                     }
-                } else if (b.role == DescriptorRole::ShaderData || b.role == DescriptorRole::FlattenedSrt) {
+                } else if (b.role == DescriptorRole::ShaderData || b.role == DescriptorRole::FlattenedSrt || b.role == DescriptorRole::ImageTableMap) {
                     extra.emplace_back();
                     MakeBuffer(dev, extra.back(), std::max<std::size_t>(b.guestDescriptor.size() * 4, 16), 0);
                     std::memcpy(extra.back().mapped, b.guestDescriptor.data(), b.guestDescriptor.size() * 4);

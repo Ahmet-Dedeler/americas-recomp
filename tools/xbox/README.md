@@ -30,8 +30,8 @@ Experimental tooling for running Xbox Series shader code through the shader reco
    tests): one triangle over up to eight RGBA32F targets; per-vertex inputs need `VK_KHR_fragment_shader_barycentric`. Scenario lines for images: `image <id> <w> <h> [format <IMG_FORMAT>] [dim 1d|2d|3d] [depth <d>] [layers <n>]
    [clear r g b a] [init <file>]` (default format 77, 32_32_32_32_FLOAT; init files hold raw texels in the image format, row-major, slice
    after slice; clear values are integers for UINT/SINT formats; read back as `out/image<id>.bin` in the image format) and
-   `timg <region> <offset> <image>`, which writes the image's linear T#. `exec` compiles five AGC driver sources and a no-op run-report stand-in (`stub_run_report.cpp`) for this
-   (`CMakeLists.txt`, `build_msvc.py --with-exec`). Not yet: block-compressed and cube images, mip levels, image tables, texel buffers,
+   `timg <region> <offset> <image>`, which writes the image's linear T#. Image tables (a T# loaded with a run-time index) bind like the other images. `exec` compiles five AGC driver sources and a no-op run-report stand-in (`stub_run_report.cpp`) for this
+   (`CMakeLists.txt`, `build_msvc.py --with-exec`). Not yet: block-compressed and cube images, mip levels, texel buffers,
    other graphics stages.
    Compute shaders get the device's subgroup size for their wave size; a wave64 shader on a device whose largest compute subgroup is 32
    (NVIDIA, Intel) is recompiled for 32-wide subgroups, two guest lanes per invocation. `XBOX_HOST_SUBGROUP=<n>` forces the host size.
