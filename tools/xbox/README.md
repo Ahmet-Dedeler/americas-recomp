@@ -143,6 +143,19 @@ One 32-lane workgroup supplies a 64-bit lane-select value that reverses each
 with `op_sel[3]` set, which Xbox shaders use; the result must match the run
 without it. Every lane exports four dwords and all 128 values are checked.
 
+### Test s_quadmask
+
+With the execution harness built, run:
+
+```powershell
+python tools/xbox/quadmask_test.py --exec "build-xbox/exec.exe"
+```
+
+One 32-lane workgroup reduces four 32-bit masks and two 64-bit masks to one bit
+per group of four input bits. The cases cover all ones, one bit per quad, zero,
+a high bit, and a 64-bit mask whose set bits are only in the high word. Every
+lane must store the expected eight words.
+
 ### Test texture sampling
 
 With the Vulkan execution harness built and the SDK's `glslangValidator` on PATH,
