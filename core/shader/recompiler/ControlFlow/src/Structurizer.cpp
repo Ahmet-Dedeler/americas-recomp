@@ -50,6 +50,7 @@ struct Scope {
 // with the original 400%. XBOX_SPLIT_PCT overrides the fast budget (400 = original behaviour).
 namespace StructBudget {
 inline thread_local std::uint32_t percent = 400u;
+inline thread_local bool skippedRelaxedReturnJoin = false;
 inline std::uint32_t fastPercent() {
     static const std::uint32_t value = [] {
         const char* text = std::getenv("XBOX_SPLIT_PCT");
@@ -137,7 +138,7 @@ bool assignTreeDominators(std::vector<BasicBlock>& blocks, const std::vector<std
         order.push_back(node);
         stack.pop_back();
     }
-    if (order.size() != count + 1u) {
+    if (order.size() != count + 1u && (parent == nullptr || order.size() <= 1u)) {
         return false;
     }
     std::vector<std::uint32_t> immediate(count + 1u, InvalidControlFlowId);
@@ -168,10 +169,25 @@ bool assignTreeDominators(std::vector<BasicBlock>& blocks, const std::vector<std
     for (auto position = order.size() - 1u; position-- > 0u;) {
         const auto node = order[position];
         auto& set = blocks[node].*sets;
-        if (immediate[node] == virtualRoot) set.clear();
-        else set = blocks[immediate[node]].*sets;
-        set.insert(std::upper_bound(set.begin(), set.end(), node), node);
+        if (immediate[node] == virtualRoot) {
+            set.assign(1u, node);
+        } else {
+            const auto& parentSet = blocks[immediate[node]].*sets;
+            const auto split = static_cast<std::size_t>(std::upper_bound(parentSet.begin(), parentSet.end(), node) - parentSet.begin());
+            set.resize(parentSet.size() + 1u);
+            std::copy_n(parentSet.begin(), split, set.begin());
+            set[split] = node;
+            std::copy(parentSet.begin() + static_cast<std::ptrdiff_t>(split), parentSet.end(), set.begin() + static_cast<std::ptrdiff_t>(split) + 1);
+        }
         if (parent != nullptr) blocks[node].*parent = immediate[node] == virtualRoot ? node : immediate[node];
+    }
+    if (order.size() != count + 1u) {
+        const auto all = allBlockIds(count);
+        for (std::uint32_t id = 0; id < count; ++id) {
+            if (postOrder[id] != InvalidControlFlowId) continue;
+            blocks[id].*sets = all;
+            if (parent != nullptr) blocks[id].*parent = InvalidControlFlowId;
+        }
     }
     return true;
 }
@@ -1132,15 +1148,20 @@ bool splitOneReturnJoin(ControlFlowGraph& graph, bool relaxReturnJoins) {
             continue;
         }
         const auto returns = [&](std::uint32_t target) { return graph.Dominates(block.id, target) && hasLinearPathToTerminal(graph, target); };
-        const auto joinsEnclosing = [&](std::uint32_t target) {
+        const auto joinsEnclosing = [&](std::uint32_t target, bool relax) {
             const auto& predecessors = graph.FindBlock(target).predecessors;
-            return !graph.Dominates(block.id, target) && (relaxReturnJoins || std::all_of(predecessors.begin(), predecessors.end(), [&](std::uint32_t predecessor) {
+            return !graph.Dominates(block.id, target) && (relax || std::all_of(predecessors.begin(), predecessors.end(), [&](std::uint32_t predecessor) {
                 return graph.Dominates(block.id, predecessor) || graph.Dominates(predecessor, block.id);
             }));
         };
         const auto trueTarget = block.terminator.trueBlock;
         const auto falseTarget = block.terminator.falseBlock;
-        const auto join = returns(trueTarget) && joinsEnclosing(falseTarget) ? falseTarget : returns(falseTarget) && joinsEnclosing(trueTarget) ? trueTarget : InvalidControlFlowId;
+        const bool trueReturns = returns(trueTarget);
+        const bool falseReturns = returns(falseTarget);
+        const auto join = trueReturns && joinsEnclosing(falseTarget, relaxReturnJoins) ? falseTarget : falseReturns && joinsEnclosing(trueTarget, relaxReturnJoins) ? trueTarget : InvalidControlFlowId;
+        if (join == InvalidControlFlowId && !relaxReturnJoins && ((trueReturns && joinsEnclosing(falseTarget, true)) || (falseReturns && joinsEnclosing(trueTarget, true)))) {
+            StructBudget::skippedRelaxedReturnJoin = true;
+        }
         if (join != InvalidControlFlowId && splitSharedMergeBlock(graph, join, dominatedBlocks(graph, block.id, join))) {
             return true;
         }
@@ -2277,11 +2298,15 @@ void Structurizer::structurizeCascade(ControlFlowGraph& graph) const {
         return;
     }
     try {
+        StructBudget::skippedRelaxedReturnJoin = false;
         structurizeAttempts(graph, false);
     } catch (const std::runtime_error&) {
         const auto error = std::current_exception();
-        graph = original;
         try {
+            if (!StructBudget::skippedRelaxedReturnJoin) {
+                std::rethrow_exception(error);
+            }
+            graph = original;
             structurizeAttempts(graph, true);
         } catch (const std::runtime_error&) {
             if (!flagsSupported) {
@@ -2417,6 +2442,11 @@ void Structurizer::structurize(ControlFlowGraph& graph, bool privatizeReturns, b
     const auto startBlocks = graph.blocks.size();
     recomputeAnalyses(graph);
     verifyReducibility(graph);
+    for (const auto& loop : graph.naturalLoops) {
+        if (loop.exitBlocks.empty()) {
+            throw std::runtime_error("loop at block " + std::to_string(loop.headerBlock) + " has no structured merge/continue");
+        }
+    }
     if (privatizeReturns) {
         privatizeSharedReturns(graph);
     }

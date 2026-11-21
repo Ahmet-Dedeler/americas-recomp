@@ -25,6 +25,7 @@ Status of the `xbox-series` branch. Everything here comes from one title's `shad
 | `RdnaVectorOpDecoder.cpp` | opcode/modifier numbers in two error messages | diagnostics |
 | `RoundingMode.cpp` | ignore `s_setreg*` writes to hwreg 20/21 (`FLAT_SCRATCH_LO/HI`) | Xbox shaders zero these at entry. Ignored, so a shader that really uses scratch via flat_scratch would be wrong. |
 | `Recompiler.hpp`, `SpirvModuleEmitter.cpp`, `SpirvFlowEmitter.cpp`, `ShaderInputInfoBuilder.cpp`, ... | legacy (non-NGG) merged ES-GS geometry stage: `GeometryConfiguration`, `ExecutionModelGeometry`, `s_sendmsg` `MSG_GS` `EMIT`/`CUT` and `MSG_GS_DONE` | The title ships 195 such shaders. Each invocation runs single-lane with LDS as `Function` storage (Vulkan has no `Workgroup` storage in geometry shaders). The ESGS/GSVS ring layout and the system SGPR/VGPR assignments are inferred from the shaders, not checked on hardware or against ACO. **Unverified; validity-only (`spirv-val`), never executed.** |
+| `Structurizer.cpp` | keep tree post-dominators when some blocks cannot reach the exit; fail early on natural loops with no exit; retry with relaxed return joins only when the first attempt skipped one | 23206/23207 no longer time out; structured CFG is bit-identical on the 903 compute and geometry shaders that finished before |
 | `Structurizer.cpp` | fast shared-merge split budget (default 60% of blocks, min 64 splits, `XBOX_SPLIT_PCT`), full 400% cascade as fallback; `XBOX_STRUCT_PROF=1` prints timing and attempts | see below |
 | `Recompiler.cpp`, `SrtDescriptorEvaluation.cpp`, `SpirvSpecialization.cpp` | MSVC build fixes (`static constexpr`, no `__builtin_prefetch`, narrowing cast) | upstream builds with MinGW GCC only |
 
@@ -35,7 +36,7 @@ Everything is marked `XBOX-FORK` where it is a behaviour change.
 - 182 produce SPIR-V accepted by `spirv-val` (Vulkan 1.3); 0 invalid. (165 on the first pass + 17 of the 24 slow
   ray-tracing shaders once the structurizer fix below let them finish.)
 - ~100 fail on image/sampler descriptor resolution: caused by the stub memory, not (known) ISA gaps.
-- 2 ray-tracing shaders (23206, 23207; 3.7k blocks) still exceed a 15 minute limit in the structurizer.
+- The 2 ray-tracing shaders that exceeded a 15 minute limit in the structurizer (23206, 23207; 3.7k blocks before structurizing, 27.5k after) now structurize in under a second. When some blocks could not reach the exit, the tree post-dominator pass gave up and the slow fallback ran; it now keeps the tree for the reachable blocks and gives the others the full set. The structurizer also stops early on natural loops with no exit, and only retries with relaxed return joins when the first attempt actually skipped one.
 - The valid ray-tracing modules are very large (0.6-1.9M SPIR-V words each).
 
 ## Not done / caveats
