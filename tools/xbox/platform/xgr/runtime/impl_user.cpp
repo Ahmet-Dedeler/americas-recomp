@@ -178,6 +178,8 @@ const Override kOverrides[] = {
 
 }  // namespace
 
+uint64_t id_of(void* h) { return h ? from(h)->id : 0; }
+
 const Override* overrides(size_t* count) {
   *count = sizeof(kOverrides) / sizeof(kOverrides[0]);
   return kOverrides;
