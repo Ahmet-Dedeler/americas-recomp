@@ -80,6 +80,21 @@ template <size_t N> uintptr_t Stub(void* self, uintptr_t a, uintptr_t b, uintptr
 template <size_t... N> constexpr std::array<StubFn, sizeof...(N)> Make(std::index_sequence<N...>) { return {&Stub<N>...}; }
 static constexpr auto kStubs = Make(std::make_index_sequence<sizeof(kSlots) / sizeof(kSlots[0])>{});
 
+// XGR_WITH_RUNTIME: real implementations (runtime/ directory) replace the logging stub of every slot whose method name they provide.
+#ifdef XGR_WITH_RUNTIME
+namespace gtx::xgr { struct Override { const char* api; void* fn; }; const Override* overrides(size_t* count); }
+static void* Override(int gs) {
+  static std::once_flag once; static void* table[sizeof(kSlots) / sizeof(kSlots[0])];
+  std::call_once(once, [] {
+    size_t n = 0; const gtx::xgr::Override* ov = gtx::xgr::overrides(&n);
+    for (size_t k = 0; k < sizeof(kSlots) / sizeof(kSlots[0]); k++)
+      for (size_t j = 0; j < n; j++) if (!strcmp(kSlots[k].name, ov[j].api)) { table[k] = ov[j].fn; break; }
+  });
+  return table[gs] ? table[gs] : (void*)kStubs[gs];
+}
+#else
+static void* Override(int gs) { return (void*)kStubs[gs]; }
+#endif
 struct Obj { void** vtbl; };
 static Obj g_obj[sizeof(kIfaces) / sizeof(kIfaces[0])];
 static void* g_vt[sizeof(kSlots) / sizeof(kSlots[0])];
@@ -89,7 +104,7 @@ extern "C" HRESULT QueryApiImpl(const GUID& provider, const GUID& iid, void** ou
   *out = nullptr;
   for (size_t i = 0; i < sizeof(kIfaces) / sizeof(kIfaces[0]); i++)
     if (IsEqualGUID(kIfaces[i].iid, iid)) {
-      for (int s = 0; s < kIfaces[i].count; s++) g_vt[kIfaces[i].first + s] = (void*)kStubs[kIfaces[i].first + s];
+      for (int s = 0; s < kIfaces[i].count; s++) g_vt[kIfaces[i].first + s] = Override(kIfaces[i].first + s);
       g_obj[i].vtbl = &g_vt[kIfaces[i].first];
       *out = &g_obj[i];
       Log("QueryApiImpl %s", kIfaces[i].name);
