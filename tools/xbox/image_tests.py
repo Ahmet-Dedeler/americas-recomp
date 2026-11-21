@@ -1,4 +1,4 @@
-"""Image execution tests: formats other than RGBA32F, 1D, 3D and cube images, mip levels, and samplers built from the guest S#."""
+"""Image execution tests: formats other than RGBA32F, 1D, 3D and cube images, mip levels, block-compressed images, and samplers built from the guest S#."""
 import os, struct, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import rdna_asm
@@ -272,7 +272,74 @@ def test_sample_explicit_lod_point_mip():
     assert got == want, [(lane, got[lane], want[lane]) for lane in range(32) if got[lane] != want[lane]][:8]
 
 
-TESTS = [test_resinfo_reports_the_image_extent, test_store_rgba8_unorm, test_store_r32_uint, test_load_3d_r32_uint, test_load_1d_r32_uint, test_sampler_from_guest_ssharp, test_load_cube_array_r32_uint, test_store_cube_array_r32_uint, test_sample_cube_face_coordinates, test_sample_cube_array_layer, test_load_mip_r32_uint, test_sample_explicit_lod_point_mip]
+BC_COLORS = [((31, 0, 0), (0, 0, 31)), ((0, 63, 0), (31, 63, 31)), ((16, 32, 8), (2, 4, 6)), ((31, 63, 31), (0, 0, 0))]
+BC_ALPHAS = [(255, 0), (200, 100), (17, 3), (128, 64)]
+
+
+def _rgb565(c):
+    return c[0] << 11 | c[1] << 5 | c[2]
+
+
+def _bc_index(x, y):
+    return (x + y) & 1
+
+
+def _bc1_block(c0, c1):
+    indices = sum(_bc_index(i & 3, i >> 2) << (2 * i) for i in range(16))
+    return struct.pack('<HHI', _rgb565(c0), _rgb565(c1), indices)
+
+
+def _bc3_alpha_block(a0, a1):
+    indices = sum(_bc_index(i & 3, i >> 2) << (3 * i) for i in range(16))
+    return bytes([a0, a1]) + indices.to_bytes(6, 'little')
+
+
+def _bc_expected(bc3):
+    want = []
+    for lane in range(64):
+        x, y = lane & 7, lane >> 3
+        block = (y >> 2) * 2 + (x >> 2)
+        c = BC_COLORS[block][_bc_index(x & 3, y & 3)]
+        a = BC_ALPHAS[block][_bc_index(x & 3, y & 3)] / 255 if bc3 else 1.0
+        want.append((c[0] / 31, c[1] / 63, c[2] / 31, a))
+    return want
+
+
+def _load_bc(fmt, data):
+    p = rdna_asm.Program()
+    p.smem('s_load_dwordx8', 8, 4, 0)
+    _out_vsharp(p, 16, 32)
+    p.sopp('s_waitcnt', 0)
+    p.vop2('v_and_b32', 1, 7, 'v0')
+    p.vop2('v_lshrrev_b32', 2, 3, 'v0')
+    p.mimg('image_load', 4, 1, 8, dmask=0xf)
+    p.sopp('s_waitcnt', 0)
+    p.vop2('v_lshlrev_b32', 8, 4, 'v0')
+    p.mubuf('buffer_store_dwordx4', 4, 8, 16, 128, 0)
+    p.sopp('s_endpgm')
+    init = os.path.join(T.tempfile.mkdtemp(prefix="img_"), "init.bin")
+    open(init, 'wb').write(data)
+    r = T.run(p.bytes(), {0: (256, None), 2: (1024, None)}, T.vsharp(0, 32, 2, 1024), wave=64, extra=[f"image 1 8 8 format {fmt} init {init}", "timg 0 0 1"])
+    assert open(os.path.join(r['out'], "image1.bin"), 'rb').read() == data
+    return [struct.unpack_from('<4f', r[2], 16 * lane) for lane in range(64)]
+
+
+def _check_bc(got, want):
+    bad = [(lane, got[lane], want[lane]) for lane in range(64) if any(abs(g - w) > 1.0 / 255 for g, w in zip(got[lane], want[lane]))]
+    assert not bad, bad[:4]
+
+
+def test_load_bc1_unorm():
+    data = b"".join(_bc1_block(*BC_COLORS[block]) for block in range(4))
+    _check_bc(_load_bc(169, data), _bc_expected(False))
+
+
+def test_load_bc3_unorm():
+    data = b"".join(_bc3_alpha_block(*BC_ALPHAS[block]) + _bc1_block(*BC_COLORS[block]) for block in range(4))
+    _check_bc(_load_bc(173, data), _bc_expected(True))
+
+
+TESTS = [test_resinfo_reports_the_image_extent, test_store_rgba8_unorm, test_store_r32_uint, test_load_3d_r32_uint, test_load_1d_r32_uint, test_sampler_from_guest_ssharp, test_load_cube_array_r32_uint, test_store_cube_array_r32_uint, test_sample_cube_face_coordinates, test_sample_cube_array_layer, test_load_mip_r32_uint, test_sample_explicit_lod_point_mip, test_load_bc1_unorm, test_load_bc3_unorm]
 
 if __name__ == "__main__":
     bad = 0
