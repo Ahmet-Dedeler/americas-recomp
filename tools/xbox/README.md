@@ -20,6 +20,8 @@ Experimental tooling for running Xbox Series shader code through the shader reco
    `XBOX_NO_FRAGMENT_BARY=1`.
 2. `extract_shaders.py` writes prologue-stripped, trimmed code blobs `<idx>.bin` (it depends on the RPF9
    extraction pipeline and `rdna2.py` decoder kept next to the dumped shaders; adjust its paths).
+   `carve_shaders.py` does the same from the archive alone: `python3 tools/xbox/carve_shaders.py <game>/shaders.rpf
+   --out <dir>` writes `<dir>/bins/<idx>.bin` and `<dir>/manifest.csv`, with no table of contents and no decoder.
 3. `driver.exe <code.bin> <wave 32|64> <out.spv> [user_data_dwords]` recompiles one compute shader with stubbed
    bindings (user-data pointer pairs backed by fake buffer-descriptor memory).
 4. `run_batch.py` runs the driver over a directory of blobs and validates with `spirv-val`.
