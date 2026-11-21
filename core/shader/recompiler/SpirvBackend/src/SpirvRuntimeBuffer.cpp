@@ -506,7 +506,7 @@ std::uint32_t formatted(SpirvValueEmitContext& context, const IrValue& instructi
     for (std::uint32_t output = 0; output < components; ++output) {
         auto value = values[0];
         for (std::uint32_t component = 1; component < info.componentCount; ++component) value = Select(state, u32, equal(state, selected[output], ConstantU32(state, component)), values[component], value);
-        value = Select(state, u32, Binary(state, spv::OpULessThan, TypeBool(state), selected[output], ConstantU32(state, info.componentCount)), value, Select(state, u32, equal(state, selected[output], ConstantU32(state, 3u)), one, ConstantU32(state, 0u)));
+        value = Select(state, u32, Binary(state, spv::OpULessThan, TypeBool(state), selected[output], ConstantU32(state, info.componentCount)), value, Select(state, u32, both(state, addresses[0].inBounds, equal(state, selected[output], ConstantU32(state, 3u))), one, ConstantU32(state, 0u)));
         value = Select(state, u32, equal(state, selectors[output], ConstantU32(state, 1u)), one, value);
         outputs[output] = Select(state, u32, equal(state, selectors[output], ConstantU32(state, 0u)), ConstantU32(state, 0u), value);
     }
@@ -757,7 +757,7 @@ std::uint32_t genericFormattedLoad(SpirvValueEmitContext& context, const IrValue
     for (std::uint32_t output = 0; output < components; ++output) {
         auto value = values[0];
         for (std::uint32_t component = 1; component < 4u; ++component) value = Select(state, u32, equal(state, selected[output], constant(component)), values[component], value);
-        value = Select(state, u32, Binary(state, spv::OpULessThan, boolean, selected[output], componentCount), value, Select(state, u32, equal(state, selected[output], constant(3u)), one, constant(0u)));
+        value = Select(state, u32, Binary(state, spv::OpULessThan, boolean, selected[output], componentCount), value, Select(state, u32, both(state, addresses[0].inBounds, equal(state, selected[output], constant(3u))), one, constant(0u)));
         value = Select(state, u32, equal(state, selectors[output], constant(1u)), one, value);
         outputs[output] = Select(state, u32, equal(state, selectors[output], constant(0u)), constant(0u), value);
     }

@@ -230,7 +230,7 @@ def fsharp(srt_region, off, target, stride, records, fmt, dst_sel=IDENTITY):
     return [f"ptrlo {srt_region} {off} {target}", f"ptrhi {srt_region} {off + 4} {target} {stride << 16}",
             f"poke {srt_region} {off + 8} {records}", f"poke {srt_region} {off + 12} {dst_sel | fmt << 12}"]
 
-def _format_load(data, fmt, stride, dst_sel=IDENTITY, tformat=None, components=4):
+def _format_load(data, fmt, stride, dst_sel=IDENTITY, tformat=None, components=4, records=32):
     p = rdna_asm.Program()
     p.smem('s_load_dwordx4', 8, 4, 0)
     p.smem('s_load_dwordx4', 12, 4, 16)
@@ -244,7 +244,7 @@ def _format_load(data, fmt, stride, dst_sel=IDENTITY, tformat=None, components=4
     p.vop2('v_lshlrev_b32', 1, 4, 'v0')
     p.mubuf('buffer_store_dword' + ('x%d' % components if components > 1 else ''), 2, 1, 12)
     p.sopp('s_endpgm')
-    lines = fsharp(0, 0, 1, stride, 32, fmt, dst_sel) + vsharp(0, 16, 2, 512)
+    lines = fsharp(0, 0, 1, stride, records, fmt, dst_sel) + vsharp(0, 16, 2, 512)
     r = run(p.bytes(), {0: (256, None), 1: (len(data), data), 2: (512, None)}, lines)
     return [struct.unpack_from('<%dI' % components, r[2], 16 * lane) for lane in range(32)]
 
@@ -338,18 +338,31 @@ def test_load_format_runtime_descriptor_missing_components():
     p.vop2('v_lshlrev_b32', 1, 4, 'v0')
     p.mubuf('buffer_store_dwordx4', 2, 1, 12)
     p.sopp('s_endpgm')
-    lines = fsharp(3, 0, 1, 4, 32, FMT_16_16_FLOAT) + vsharp(0, 16, 2, 512) + vsharp(0, 32, 3, 64)
+    lines = fsharp(3, 0, 1, 4, 20, FMT_16_16_FLOAT) + vsharp(0, 16, 2, 512) + vsharp(0, 32, 3, 64)
     r = run(p.bytes(), {0: (256, None), 1: (len(data), data), 2: (512, None), 3: (64, None)}, lines)
     for lane in range(32):
         x, y = struct.unpack_from('<2e', data, 4 * lane)
-        want = (struct.unpack('<I', struct.pack('<f', x))[0], struct.unpack('<I', struct.pack('<f', y))[0], 0, 0x3f800000)
+        want = (struct.unpack('<I', struct.pack('<f', x))[0], struct.unpack('<I', struct.pack('<f', y))[0], 0, 0x3f800000) if lane < 20 else (0, 0, 0, 0)
         got = struct.unpack_from('<4I', r[2], 16 * lane)
         assert got == want, ("lane", lane, [hex(g) for g in got], [hex(w) for w in want])
+
+def test_load_format_out_of_range_missing_components():
+    data = b"".join(struct.pack('<2e', 1.0 + lane, -2.0) for lane in range(32))
+    one = 0x3f800000
+    for dst_sel, oob in ((IDENTITY, (0, 0, 0, 0)), (SEL_X | SEL_1 << 3 | SEL_0 << 6 | SEL_W << 9, (0, one, 0, 0))):
+        got = _format_load(data, FMT_16_16_FLOAT, 4, dst_sel, records=20)
+        for lane in range(32):
+            x = struct.unpack('<I', struct.pack('<f', 1.0 + lane))[0]
+            y = struct.unpack('<I', struct.pack('<f', -2.0))[0]
+            inside = (x, y, 0, one) if dst_sel == IDENTITY else (x, one, 0, one)
+            want = inside if lane < 20 else oob
+            assert got[lane] == want, ("dst_sel", hex(dst_sel), "lane", lane, [hex(g) for g in got[lane]], [hex(w) for w in want])
 
 TESTS = [test_image_load_after_store_same_texel, test_readfirstlane_wave64_upper_half, test_multiwave_wave64, test_lds_reverse_wave64, test_multiwave_multigroup_global_id, test_lds_reverse_across_waves, test_store_lane_ids, test_readfirstlane_after_narrowed_write, test_waterfall_loop, test_image_store_phi_split,
          test_load_format_unorm8, test_load_format_snorm16_clamps_min, test_load_format_dst_sel, test_load_format_missing_components_default,
          test_tbuffer_load_instruction_format, test_tbuffer_load_missing_components_default, test_store_format_unorm8,
-         test_load_format_runtime_descriptor_missing_components]
+         test_load_format_runtime_descriptor_missing_components,
+         test_load_format_out_of_range_missing_components]
 
 if __name__ == "__main__":
     bad = 0
