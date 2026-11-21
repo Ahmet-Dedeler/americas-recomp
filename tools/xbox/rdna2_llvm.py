@@ -22,7 +22,7 @@ def _decode(blob):
             f"{MC} exited {p.returncode} for {CPU}. Set XBOX_LLVM_MC to an llvm-mc with the AMDGPU target. "
             f"stderr: {p.stderr.strip()}"
         )
-    if not p.stdout.strip():
+    if not p.stdout.strip() and "invalid instruction encoding" not in p.stderr:
         raise RuntimeError(
             f"{MC} disassembled nothing for {CPU}. Does it include the AMDGPU target? "
             f"Set XBOX_LLVM_MC. stderr: {p.stderr.strip()}"
