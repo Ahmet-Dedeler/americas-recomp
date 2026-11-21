@@ -21,7 +21,10 @@ int main(int argc, char** argv) {
     // argv[5]: fake buffer contents. 0 = unbacked, 1 = zeros, 2 = tiled 2D image T# records, 3 = tiled buffer V# records (default 1)
     const int variant = argc > 5 ? std::atoi(argv[5]) : 1;
     RecompileRequest request{};
-    const std::size_t nud = 16;
+    // User data words = SGPRs s0.. (userDataBaseRegister 0). Mesh (merged NGG) shaders: s0-s7 are system/hidden words and user data runs
+    // from s8 up to s39 (32 user SGPRs), so 40 words; compute and the other stages keep 16 (for compute, workgroup ids follow the user data).
+    const std::string stageArg = argc > 6 ? argv[6] : "cs";
+    const std::size_t nud = stageArg == "ms" ? 40 : 16;
     std::vector<std::uint32_t> userData(nud);
     struct Node { std::uint32_t id = 0; std::int64_t parent = -1; std::uint32_t off = 0; std::vector<std::uint32_t> mem = std::vector<std::uint32_t>(0x10000); std::uint32_t base = 0; };
     std::map<std::uint32_t, Node> nodes;
@@ -83,7 +86,7 @@ int main(int argc, char** argv) {
             }
         }
     } else {
-        for (std::size_t k = 0; k + 1 < nud; k += 2) { userData[k] = 0x10000000u + 0x100000u * static_cast<std::uint32_t>(k / 2); }
+        for (std::size_t k = 0; k + 1 < 16; k += 2) { userData[k] = 0x10000000u + 0x100000u * static_cast<std::uint32_t>(k / 2); }
     }
     std::vector<MemoryRegion> regions;
     for (auto& [id, n] : nodes) regions.push_back({n.base, std::as_bytes(std::span<const std::uint32_t>(n.mem))});

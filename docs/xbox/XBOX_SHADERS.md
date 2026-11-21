@@ -302,7 +302,7 @@ Update after the pixel work: with the extra reference instructions (`s_wqm`, `v_
 | Pixel, with the host barycentric extension | 12,098 | 7,271 |
 | Pixel, extension and f16 approximation | 12,098 | 11,993 |
 | Vertex | 2,233 | 1,371 |
-| Mesh | 9,282 | 8,035 |
+| Mesh | 9,282 | 8,904 |
 
 The pixel, vertex and mesh runs use the same single-guess harness defaults as the sample (float mode, export mapping, mesh configuration); only the compute numbers include the fake-memory variants. Nothing from these runs was executed.
 
@@ -334,3 +334,15 @@ Three harness bugs moved the published numbers after long runs (an 8-bit image f
   which silently ran the compute harness when forgotten.
 Not covered: a wrong harness default that makes *everything* pass or fail the same way is caught only if it changes a canary; when a
 reviewed run changes outcomes on purpose, re-pick with `canary.py --select`.
+
+## Mesh user data above s15 (fourth harness gap)
+996 mesh shaders failed with "EvaluateDescriptorSources ... LoadAddressU32(GetAddressResource(Void(0)...))": a descriptor read through a null
+pointer. Mesh shaders are merged NGG programs: s0-s7 hold system values (the shader reads the wave index from s3 bits 24-27) and user data
+runs from s8 up to s39. The AgcDriver does the same (merged programs get 8 hidden words in front of the user data, `firstUserSgpr` 0).
+The harness passed 16 user words and `bindings.py` tracked only s0-s15, so every table reached from s16 or above was null.
+- `driver.cpp`: 40 user words for mesh (16 for the other stages, unchanged). Built as `driver_gfx2.exe`; an unmodified rebuild matched
+  `driver_fb.exe` on 500 mesh shaders and the canaries, and `driver_gfx2.exe` matches it on 1,100 PS/VS jobs.
+- `bindings.py`: tracks s0-s39 for mesh (stage from the manifest). Regenerated: only the mesh bindings changed.
+- Result: mesh 8,035 -> 8,904 of 9,282. 969 shaders went from THROW to VALID; 100 went from VALID to THROW (runtime-indexed descriptor
+  table, see the README); 0 of the 350 remaining THROWs pass under fake-memory variants 0, 2 or 3.
+- Canary: three `ms-hiuser` shaders; with the old 16-word driver all three fail and the suite exits 1.

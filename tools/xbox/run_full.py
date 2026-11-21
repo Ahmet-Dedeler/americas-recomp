@@ -18,6 +18,7 @@ import rdna2
 M = r"E:/Programming/rpf9shaders/out_disasm/anyps5/"
 VAL = r"C:/VulkanSDK/1.4.363.1/Bin/spirv-val.exe"
 BUILD = r"E:/Programming/anyps5_src/build/"
+DRIVER_GFX = os.environ.get("XBOX_DRIVER_GFX", BUILD + "driver_gfx2.exe")    # PS/VS/MS driver; override to test a new build
 LIMIT = 120                      # seconds per driver run
 BINDS = M + "binds_full/"        # canary.py --binds-dir points this elsewhere for its self-test
 GFX = {"PS": "ps", "VS": "vs", "?": "ms"}
@@ -76,7 +77,7 @@ def graphics(idx, st, relaxed):
         e = dict(env)
         if bary:
             e["XBOX_FRAGMENT_BARY"] = "1"
-        cmd = [BUILD + "driver_fb.exe", M + f"bins_full/{idx}.bin", "32", spv, BINDS + f"{idx}.bind", "1", st]
+        cmd = [DRIVER_GFX, M + f"bins_full/{idx}.bin", "32", spv, BINDS + f"{idx}.bind", "1", st]
         if st == "ps":
             n, mask = attrs(idx)
             cmd += ["2", str(n), "%x" % mask]

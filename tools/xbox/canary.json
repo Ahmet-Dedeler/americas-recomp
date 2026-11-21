@@ -197,5 +197,26 @@
   "kind": "cmp-ps",
   "idx": "18151",
   "expect": "MATCH"
+ },
+ {
+  "kind": "ms-hiuser",
+  "idx": "10318",
+  "stage": "?",
+  "relaxed": false,
+  "expect": "VALID"
+ },
+ {
+  "kind": "ms-hiuser",
+  "idx": "10216",
+  "stage": "?",
+  "relaxed": false,
+  "expect": "VALID"
+ },
+ {
+  "kind": "ms-hiuser",
+  "idx": "10204",
+  "stage": "?",
+  "relaxed": false,
+  "expect": "VALID"
  }
 ]

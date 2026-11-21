@@ -19,7 +19,7 @@ Corpus: `shaders.rpf` holds 26,503 shaders: 24,804 in the main entry run plus 1,
 | Compute | 2,689 | **2,601 (96.7%)** | union of four fake-memory variants, longer limit for the slow ones; 0 invalid |
 | Pixel | 12,098 | **7,037 (58.2%, strict)** | 7,271 if the host has `VK_KHR_fragment_shader_barycentric`; 11,993 (99.1%) with that and the f16 approximation (below) |
 | Vertex | 2,233 | 1,371 (61.4%) | the rest mostly need the real vertex fetch shader |
-| Mesh | 9,282 | 8,035 (86.6%) | mesh configuration is a guess |
+| Mesh | 9,282 | 8,904 (95.9%) | mesh configuration is a guess |
 | Geometry | 195 | not run | no driver mode for geometry shaders |
 
 All SPIR-V that was produced validates (0 invalid). "Valid" is `spirv-val` only; the execution checks cover a small subset (docs/xbox/XBOX_SHADERS.md). Pixel shaders use harness defaults for everything the executable will decide (formats, blend, depth, export mapping).
@@ -40,7 +40,7 @@ Float mode, export mapping, mesh configuration and descriptor contents are harne
 ### Why the full corpus fails (counts are shaders)
 - **Pixel, strict:** most failures read a 16-bit interpolant, which is refused unless the f16 approximation is on (Xbox sets round-toward-zero and the recompiler has no measured model for it). With every opt-in 105 still fail: descriptor and sampler chains, 15 over the barycentric location limit, 14 sampling with clamps the emitter rejects. (952 more failed on atomic image formats in the first full run; that was the harness again: the new shaders' bindings had been made with an old copy of `bindings.py` that does not mark atomic images. Regenerated, 949 of them pass.)
 - **Vertex (862):** 562 computed `s_swappc` targets and 223 fetch-shader calls with no parsed plan: vertex input layout comes from the pipeline state, so these wait for the executable.
-- **Mesh (1,247):** 996 descriptor sources read through a null pointer (likely a harness gap, user data is not real), plus sampler and image chains.
+- **Mesh (378):** 214 sampler and 25 image descriptor chains, 100 runtime-indexed descriptor tables (below), 28 timeouts, 11 others. The former 996 null-pointer failures were a harness gap: mesh shaders keep user data up to s39, the harness passed 16 words and the bindings analysis tracked s0-s15. Fixed in both; 969 of them now pass. 100 shaders that passed before now fail: they index a descriptor table at run time, and with a real pointer the index lands on an image record the harness made up (with the null pointer the recompiler never saw a descriptor). They fail under every fake-memory variant, so they count as failures.
 - **Compute (88):** see below.
 
 The next list describes the first 4,147-shader sample and is kept for the details.

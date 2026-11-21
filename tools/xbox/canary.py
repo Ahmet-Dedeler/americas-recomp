@@ -7,6 +7,7 @@ a minute instead:
     cs-atomic / ps-atomic   shaders with atomic image ops (need the atomic marking in the bindings and the driver's 32-bit formats)
     ps-bary                 valid only through the host barycentric extension path
     ps-f16                  16-bit interpolants: must THROW strict and be VALID with the opt-in (the default-off policy)
+    ms-hiuser               mesh shaders whose user data reaches past s15 (merged NGG stages: user SGPRs s8-s39); with 16 words they THROW
     cs / ps / vs / ms / tail plain valid shaders of each stage, and from the second entry run
   compare canaries (GPU run vs CPU reference, same code path as cpu_compare*.py)
     cmp-cs / cmp-cs-img / cmp-ps   byte-exact MATCHes, including image ones and ones that change memory

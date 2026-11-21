@@ -24,10 +24,16 @@ SMEM_LOAD = {'s_load_dword': 1, 's_load_dwordx2': 2, 's_load_dwordx4': 4, 's_loa
 SMEM_BUF = {'s_buffer_load_dword': 1, 's_buffer_load_dwordx2': 2, 's_buffer_load_dwordx4': 4, 's_buffer_load_dwordx8': 8, 's_buffer_load_dwordx16': 16}
 
 
-def analyse(path):
+def user_sgprs(stage):
+    """How many SGPRs (from s0) can hold user data. Mesh shaders (manifest stage '?', merged NGG): s0-s7 are system/hidden words and
+    user data runs to s39, so 40. Everything else: 16 (the harness driver passes 16 words for those stages)."""
+    return 40 if stage == '?' else 16
+
+
+def analyse(path, nuser=16):
     data = open(path, 'rb').read()
     ins, _ = rdna2.sweep(data, 0, len(data))
-    tag = {r: ('user', r) for r in range(0, 16)}
+    tag = {r: ('user', r) for r in range(0, nuser)}
     nodes = {}          # key -> id
     node_lines = []
     loads = []          # dict(node, off, d, n)
@@ -141,22 +147,29 @@ def analyse(path):
 
 
 def _write(job):
-    src, dst, f = job
-    lines, st, nl, nn = analyse(os.path.join(src, f))
+    src, dst, f, nuser = job
+    lines, st, nl, nn = analyse(os.path.join(src, f), nuser)
     open(os.path.join(dst, f[:-4] + '.bind'), 'w').write('\n'.join(lines) + '\n')
     return st, nl
 
 
 if __name__ == '__main__':
-    # usage: bindings.py <bins dir> <binds dir>   (all .bin files, in worker processes)
+    # usage: bindings.py <bins dir> <binds dir>   (all .bin files, in worker processes; stage from the manifest beside the bins dir)
     import concurrent.futures as cf
     src, dst = sys.argv[1], sys.argv[2]
     os.makedirs(dst, exist_ok=True)
     total = collections.Counter()
     nloads = 0
     names = [f for f in os.listdir(src) if f.endswith('.bin')]
+    # stages from the manifest next to the bins dir (manifest_full.csv or manifest_all.csv); unknown -> 16 user SGPRs
+    stage = {}
+    for m in ('manifest_full.csv', 'manifest_all.csv'):
+        p = os.path.join(os.path.dirname(os.path.abspath(src)), m)
+        if os.path.exists(p):
+            import csv
+            stage.update({r['idx']: r['stage'] for r in csv.DictReader(open(p)) if r['idx'] not in stage})
     with cf.ProcessPoolExecutor(max(1, (os.cpu_count() or 4) - 2)) as ex:
-        for st, nl in ex.map(_write, [(src, dst, f) for f in names], chunksize=64):
+        for st, nl in ex.map(_write, [(src, dst, f, user_sgprs(stage.get(f[:-4], ''))) for f in names], chunksize=64):
             total.update(st)
             nloads += nl
     print(len(names), 'shaders;', nloads, 'descriptor/pointer loads; classified descriptors:', dict(total), '; bindings.py', VERSION)
