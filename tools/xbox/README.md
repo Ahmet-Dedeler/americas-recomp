@@ -20,6 +20,8 @@ Experimental tooling for running Xbox Series shader code through the shader reco
    flattened SRT, identity BDA page table and fault reporting, 2D RGBA32F images, samplers. Pixel shaders (`stage ps`, see the pixel
    smoke, interpolation and per-vertex tests): one triangle over up to eight RGBA32F targets; per-vertex inputs need
    `VK_KHR_fragment_shader_barycentric`. Not yet: other image formats/dimensions, image tables, texel buffers, other graphics stages.
+   Compute shaders get the device's subgroup size for their wave size; a wave64 shader on a device whose largest compute subgroup is 32
+   (NVIDIA, Intel) is recompiled for 32-wide subgroups, two guest lanes per invocation. `XBOX_HOST_SUBGROUP=<n>` forces the host size.
 
 ## Pixel smoke test
 
@@ -84,3 +86,15 @@ installation. For a custom build directory, pass `--exec "path to exec.exe"` to
 the smoke test. It generates a standalone RDNA2 compute program, dispatches one
 32-lane workgroup, and checks all 1024 output bytes. A successful run prints
 `PASS`. This test requires neither a shader corpus nor an external decoder.
+
+### Test texture sampling
+
+With the Vulkan execution harness built and the SDK's `glslangValidator` on PATH,
+run `python tools/xbox/texture_test.py --exec "build-xbox/exec.exe"`.
+
+A GLSL vertex shader supplies UVs and unequal clip-space W. An RDNA2 fragment
+program interpolates U and V, samples a generated 4 by 3 RGBA32F texture at mip
+level zero, and exports the result. The CPU calculates perspective-correct UVs
+at each pixel center and independently selects the nearest texel with clamp-to-edge
+addressing. All 12 texels must appear, all 192 covered pixels must match exactly,
+and all 832 outside pixels must retain the clear value.
