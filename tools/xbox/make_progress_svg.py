@@ -89,11 +89,15 @@ def tile_svg(label, counts, x, y, w, h):
     seq = [GREEN] * ng + [AMBER] * na
     seq += [GREY] * (cells - len(seq))
     seq = seq[:cells]
-    p = ['<g>', f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" fill="{GREY}"/>']
+    p = ['<g>']
     paths = collections.defaultdict(list)       # one path per colour: every cell is a subpath
+    last = cells - (rows - 1) * cols            # cells in the final row; they are widened to fill it, so no background shows
     for i, c in enumerate(seq):
-        cx, cy = x + (i % cols) * cw, y + (i // cols) * ch
-        paths[c].append(f"M{cx:.1f} {cy:.1f}h{cw:.1f}v{ch:.1f}h-{cw:.1f}z")
+        r = i // cols
+        k = last if r == rows - 1 else cols
+        cwi = w / k
+        cx, cy = x + (i % cols) * cwi, y + r * ch
+        paths[c].append(f"M{cx:.1f} {cy:.1f}h{cwi:.1f}v{ch:.1f}h-{cwi:.1f}z")
     for c, d in paths.items():
         p.append(f'<path d="{"".join(d)}" fill="{c}" stroke="{LINE}" stroke-width="0.6"/>')
     p.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" fill="none" stroke="{LINE}" stroke-width="1.6"/>')
