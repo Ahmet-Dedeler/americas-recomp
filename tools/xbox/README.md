@@ -162,6 +162,22 @@ per group of four input bits. The cases cover all ones, one bit per quad, zero,
 a high bit, and a 64-bit mask whose set bits are only in the high word. Every
 lane must store the expected eight words.
 
+### Test geometry shader execution
+
+With the execution harness built and the SDK's `glslangValidator` on PATH, run:
+
+```powershell
+python tools/xbox/gs_test.py --exec "build-xbox/exec.exe"
+```
+
+A GLSL vertex shader draws one triangle. The RDNA2 geometry shader writes
+vertices to the GSVS LDS slots, emits them with `s_sendmsg`, and exports a
+position and one colour parameter. A GLSL fragment shader writes that colour to
+an 8x8 RGBA32F target. The first program emits a full-screen triangle, so every
+pixel must be red. The second emits a left-half quad, so only the left four
+columns must be red; the rest must keep the clear value. The scenarios use
+`stage gs`, `vs`, `fs`, and `geom 3 3 3 8 8 1 1` or `geom 3 3 4 8 8 1 1`.
+
 ### Test texture sampling
 
 With the Vulkan execution harness built and the SDK's `glslangValidator` on PATH,
