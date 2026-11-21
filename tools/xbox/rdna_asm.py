@@ -1,8 +1,15 @@
 """Tiny RDNA2 assembler for execution-harness test programs (inputs, not a general assembler).
-Opcode numbers come from the decoder tables in rdna2.py (out_disasm); every program is checked by decoding it back."""
-import struct, sys
-sys.path.insert(0, r"E:/Programming/rpf9shaders/out_disasm")
-import rdna2
+Opcode numbers come from the decoder tables in rdna2.py (out_disasm, set XBOX_RDNA2_DIR), or from LLVM (rdna2_llvm.py) when rdna2.py is not
+found or XBOX_RDNA2=llvm; every program is checked by decoding it back."""
+import os, struct, sys
+sys.path.insert(0, os.environ.get("XBOX_RDNA2_DIR", r"E:/Programming/rpf9shaders/out_disasm"))
+try:
+    if os.environ.get("XBOX_RDNA2") == "llvm":
+        raise ImportError
+    import rdna2
+except ImportError:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import rdna2_llvm as rdna2
 
 def _inv(t):
     return {v: k for k, v in t.items()}

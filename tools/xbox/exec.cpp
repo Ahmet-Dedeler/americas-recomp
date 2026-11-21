@@ -12,7 +12,8 @@
 //   user <sgpr> <targetId>              (user data pair: low, high dword of the region address)
 //   userval <sgpr> <u32>
 //   user32 <sgpr> <targetId>   (a single 32-bit pointer register: the guest address of the region)
-//   lowguest   (give every region a guest address below 4 GiB; the BDA page table maps guest to device addresses)
+//   lowguest   (give every region a guest address below 4 GiB; the BDA page table maps guest to device addresses; implied when a device
+//               address does not fit in 48 bits, as RADV hands out)
 //   stage ps   (a pixel shader instead of a compute shader: draws one triangle that covers the whole target; the vertex shader
 //               comes from `vs <spv>` and writes constant interpolants; colour outputs are read back as out/target<i>.bin, RGBA32F)
 //   export <target> <mode> <mapping>   (SPI_SHADER_COL_FORMAT-style output mode, default 4 = FP16_ABGR; mapping default 0xe4 = identity)
@@ -72,6 +73,7 @@ struct Device {
     VkQueue queue = VK_NULL_HANDLE;
     std::uint32_t family = 0;
     VkPhysicalDeviceMemoryProperties memory{};
+    VkPhysicalDeviceVulkan13Properties subgroup{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_PROPERTIES};
     PFN_vkGetBufferDeviceAddress getAddress = nullptr;
 };
 
@@ -122,6 +124,9 @@ Device CreateDevice(std::uint32_t wave, bool bary) {
     }
     if (d.physical == VK_NULL_HANDLE) throw std::runtime_error("no Vulkan device");
     vkGetPhysicalDeviceMemoryProperties(d.physical, &d.memory);
+    VkPhysicalDeviceProperties2 p2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, &d.subgroup};
+    vkGetPhysicalDeviceProperties2(d.physical, &p2);
+    d.subgroup.pNext = nullptr;
     std::uint32_t qc = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(d.physical, &qc, nullptr);
     std::vector<VkQueueFamilyProperties> qf(qc);
@@ -218,8 +223,9 @@ int main(int argc, char** argv) {
         }
         {
             std::uint64_t next = 0x10000000ull;
+            const bool remap = lowGuest || std::any_of(regions.begin(), regions.end(), [](const auto& e) { return (e.second.address >> 48) != 0; });
             for (auto& [rid, r] : regions) {
-                r.guest = lowGuest ? next : r.address;
+                r.guest = remap ? next : r.address;
                 next += 0x1000000ull;
             }
         }
@@ -466,6 +472,8 @@ int main(int argc, char** argv) {
         if (!pixel) {
         VkPipelineShaderStageRequiredSubgroupSizeCreateInfo sub{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO};
         sub.requiredSubgroupSize = result.hostSubgroupSize != 0 ? result.hostSubgroupSize : wave;
+        if (!(dev.subgroup.requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT) || sub.requiredSubgroupSize < dev.subgroup.minSubgroupSize || sub.requiredSubgroupSize > dev.subgroup.maxSubgroupSize)
+            throw std::runtime_error("the device cannot run compute with subgroup size " + std::to_string(sub.requiredSubgroupSize) + " (supported " + std::to_string(dev.subgroup.minSubgroupSize) + ".." + std::to_string(dev.subgroup.maxSubgroupSize) + ", compute " + ((dev.subgroup.requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT) ? "yes" : "no") + ")");
         VkComputePipelineCreateInfo cpi{VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
         cpi.stage = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, &sub, result.fullSubgroups ? VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT : 0u, VK_SHADER_STAGE_COMPUTE_BIT, module, "main", entries.empty() ? nullptr : &spec};
         cpi.layout = pipelineLayout;
