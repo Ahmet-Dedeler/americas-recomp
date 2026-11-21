@@ -8,7 +8,7 @@ Outputs driver.exe and stages.exe. Add --with-exec to build the Vulkan execution
 Needs: Visual Studio (any recent), and 3rdparty/SPIRV-Headers checked out
 (git submodule update --init 3rdparty/SPIRV-Headers).
 """
-import argparse, concurrent.futures as cf, glob, os, pathlib, re, shutil, subprocess, sys
+import argparse, concurrent.futures as cf, glob, json, os, pathlib, re, shutil, subprocess, sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 REC = ROOT / "core/shader/recompiler"
@@ -35,6 +35,17 @@ def includes():
 
 
 FLAGS = "/nologo /std:c++20 /EHsc /O1 /w /DNOMINMAX /DWIN32_LEAN_AND_MEAN /permissive-"
+
+
+def stale(obj, source, deps):
+    if not obj.exists() or not deps.exists():
+        return True
+    built = obj.stat().st_mtime
+    try:
+        inputs = [source] + [pathlib.Path(p) for p in json.loads(deps.read_text())["Data"]["Includes"]]
+    except (OSError, ValueError, KeyError, TypeError):
+        return True
+    return any(not p.exists() or p.stat().st_mtime > built for p in inputs)
 
 
 def main():
@@ -69,9 +80,10 @@ def main():
 
     def one(s):
         out = B / "obj" / (s.replace("/", "_") + ".obj")
-        if out.exists() and not a.force:
+        deps = out.with_suffix(".json")
+        if not a.force and not stale(out, REC / s, deps):
             return s, 0, ""
-        r = subprocess.run(f'"{cl}" {FLAGS} /bigobj /c {inc} /Fo"{out}" "{REC / s}"', env=env, capture_output=True, text=True)
+        r = subprocess.run(f'"{cl}" {FLAGS} /bigobj /c {inc} /sourceDependencies "{deps}" /Fo"{out}" "{REC / s}"', env=env, capture_output=True, text=True)
         return s, r.returncode, r.stdout + r.stderr
 
     with cf.ThreadPoolExecutor(a.jobs) as ex:
