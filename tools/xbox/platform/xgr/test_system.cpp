@@ -196,8 +196,8 @@ static void CheckErrorAndDisplay() {
 static void CheckFeatures() {
   Api feature = Get(kFeature);
   auto available = feature.At<BOOLEAN (*)(void*, uint32_t)>(3, "XGameRuntimeIsFeatureAvailable");
-  const uint32_t expectedOn[] = {2, 3, 4, 7, 11, 12, 15, 16, 17, 18, 19};
-  const uint32_t expectedOff[] = {0, 1, 5, 9, 13, 14, 20, 21, 22, 0xffffffffu};
+  const uint32_t expectedOn[] = {2, 3, 4, 7, 11, 12, 15, 16, 17, 18, 19, 21};
+  const uint32_t expectedOff[] = {0, 1, 5, 9, 13, 14, 20, 22, 0xffffffffu};
   bool on = true, off = true;
   for (uint32_t f : expectedOn) on = on && available(feature.self, f);
   for (uint32_t f : expectedOff) off = off && !available(feature.self, f);
