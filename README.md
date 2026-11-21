@@ -12,16 +12,17 @@ An experiment: can the RDNA2 shaders from an Xbox Series game go through [AnyPS5
 
 The last row is the platform surface of the 16 DLLs shipped with the package (static imports only, see `docs/xbox/PLATFORM_SURFACE.md`): 605 of 611 imported functions resolve on a PC as they are; the 6 that do not belong to two Xbox-only libraries (`xmem.dll`, `d3d12_xs.dll`). Stand-ins for both are in `tools/xbox/platform/`; all six DLLs that import something load on a PC with them, and the game's Bink decoder decodes a real video through the `xmem.dll` stand-in. The grey rows below it are work that has not started and cannot be measured yet (game executable imports, pipeline state and ABI decode, the d3d12_xs runtime, BVH traversal correctness, a first rendered frame, game services at run time); the green platform row only covers the DLLs' static imports, so it is not a completion figure.
 
-Corpus: `shaders.rpf` holds 26,503 shaders: 24,804 in the main entry run plus 1,699 in a second run further on that my first scan missed (found by comparing with the shader count of the Leonida project, https://github.com/ItsNotRexed/Leonida; the 1,699 all parse, and 1,693 of them hold an FSSM program). The results below cover only 4,147 of the 24,804: all 2,647 compute shaders and a sample of 1,500 others (738 pixel, 114 vertex, 8 geometry, 640 mesh). The other 20,657 and the 1,699 have not been run through the recompiler.
+Corpus: `shaders.rpf` holds 26,503 shaders: 24,804 in the main entry run plus 1,699 in a second run further on that my first scan missed (found by comparing with the shader count of the Leonida project, https://github.com/ItsNotRexed/Leonida). 26,497 of them were run through the recompiler (6 of the second run do not inflate). The first results covered a 4,147-shader sample; everything below is now the whole corpus.
 
 | Stage | Shaders | Valid SPIR-V | Notes |
 |---|---|---|---|
-| Compute | 2,647 | **2,559 (96.7%)** | union of four fake-memory variants, 78 of 81 former timeouts passed with a longer limit; 0 invalid |
-| Pixel | 738 | **395 (strict)** | 410 if the host has `VK_KHR_fragment_shader_barycentric`; 735 with that and the f16 approximation (below) |
-| Vertex | 114 | 92 | |
-| Mesh | 640 | 559 | mesh configuration is a guess |
+| Compute | 2,689 | **2,601 (96.7%)** | union of four fake-memory variants, longer limit for the slow ones; 0 invalid |
+| Pixel | 12,098 | **6,697 (55.4%, strict)** | 6,931 if the host has `VK_KHR_fragment_shader_barycentric`; 11,044 (91.3%) with that and the f16 approximation (below) |
+| Vertex | 2,233 | 1,371 (61.4%) | the rest mostly need the real vertex fetch shader |
+| Mesh | 9,282 | 8,035 (86.6%) | mesh configuration is a guess |
+| Geometry | 195 | not run | no driver mode for geometry shaders |
 
-All SPIR-V that was produced validates (0 invalid). Pixel, vertex and mesh are a first sample, not a finished pass.
+All SPIR-V that was produced validates (0 invalid). "Valid" is `spirv-val` only; the execution checks cover a small subset (docs/xbox/XBOX_SHADERS.md). Pixel shaders use harness defaults for everything the executable will decide (formats, blend, depth, export mapping).
 
 ### What changed in the recompiler
 - **Bindless waterfall loops:** `v_readfirstlane` + `v_cmpx` loops that load descriptors from a heap pointer are now resolved (phi-aware exec-mask check in `SrtInstructionPredicates.cpp`, table-column handling in `ResourceTracker.cpp`).
@@ -32,11 +33,19 @@ All SPIR-V that was produced validates (0 invalid). Pixel, vertex and mesh are a
 ### Assumptions (not verified on hardware)
 1. A lane-active select arm in waterfall loops is assumed active (`XBOX_NO_LANE_ASSUME` turns it off).
 2. Descriptor heap entries are assumed to be size-aligned (`XBOX_NO_OPAQUE_HEAP_INDEX` turns it off).
-3. Opt-in only: 16-bit interpolation ignores fp16 rounding bits (`XBOX_ALLOW_UNMEASURED_F16_INTERP`). Xbox pixel shaders set round-toward-zero, so results may differ in the last bit. It is off by default, which is why the strict 395 is the headline.
+3. Opt-in only: 16-bit interpolation ignores fp16 rounding bits (`XBOX_ALLOW_UNMEASURED_F16_INTERP`). Xbox pixel shaders set round-toward-zero, so results may differ in the last bit. It is off by default, which is why the strict figure is the headline.
 
 Float mode, export mapping, mesh configuration and descriptor contents are harness defaults, not read from the game.
 
-### Remaining failures
+### Why the full corpus fails (counts are shaders)
+- **Pixel, strict (5,167 fail):** 4,776 read a 16-bit interpolant, which is refused unless the f16 approximation is on (Xbox sets round-toward-zero and the recompiler has no measured model for it). With the approximation 1,054 still fail, mostly 952 atomic image descriptors with an unsupported format (not investigated: in the first sample this was a harness gap, so it may be again), plus descriptor and sampler chains.
+- **Vertex (862):** 562 computed `s_swappc` targets and 223 fetch-shader calls with no parsed plan: vertex input layout comes from the pipeline state, so these wait for the executable.
+- **Mesh (1,247):** 996 descriptor sources read through a null pointer (likely a harness gap, user data is not real), plus sampler and image chains.
+- **Compute (88):** see below.
+
+The next list describes the first 4,147-shader sample and is kept for the details.
+
+### Remaining failures (first sample)
 - Compute (88): about 82 descriptor chains (descriptors reached through a runtime index loaded from a buffer, or through address-loaded pointers), 3 timeouts, 2 64-bit image atomics under other memory variants, 1 phi-dominance case.
 - Pixel (3 with all opt-ins): descriptor and sampler chains.
 - Vertex (22): 12 computed `s_swappc` targets and 4 dynamic `s_setpc` that need the real vertex fetch shader / vertex input layout, 2 fetch calls with no fetch-shader plan, descriptor chains.

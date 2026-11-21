@@ -1,4 +1,4 @@
-"""Build docs/xbox/progress.svg (one cell per shader) from docs/xbox/results.json.
+"""Build docs/xbox/progress.svg (one cell per shader; one cell per k shaders when a section has more than 1,000) from docs/xbox/results.json.
 results.json: {"compute":{idx:"valid|fail"}, "pixel":{idx:"strict|relaxed|fail"}, "vertex":{...}, "mesh":{...}}"""
 import json, sys, html
 src = sys.argv[1] if len(sys.argv) > 1 else "docs/xbox/results.json"
@@ -21,8 +21,16 @@ for key, title in SECTIONS:
         label = f"{title}: {good} / {n} resolve on a PC as they are ({100*good/n:.1f}%), {rel} need a shim (written, load-tested)"
     else:
         label = f"{title}: {good} / {n} valid ({100*good/n:.1f}%)" + (f", +{rel} with an opt-in" if rel else "")
+    scale = -(-n // 1000)      # shaders per cell; every status keeps at least one cell
+    if scale > 1:
+        label += f" (1 cell = {scale} shaders)"
+        cnt = {}
+        for st in items:
+            cnt[st] = cnt.get(st, 0) + 1
+        items = [st for st in sorted(cnt, key=lambda k: ORDER[k]) for _ in range(max(1, round(cnt[st] / scale)))]
     parts.append(f'<text x="{PAD}" y="{y}" class="t">{html.escape(label)}</text>')
     y += 8
+    n = len(items)
     for i, s in enumerate(items):
         parts.append(f'<rect x="{PAD+(i%cols)*step}" y="{y+(i//cols)*step}" width="{CELL}" height="{CELL}" rx="1.5" fill="{COL[s]}"/>')
     y += ((n + cols - 1) // cols) * step + 26

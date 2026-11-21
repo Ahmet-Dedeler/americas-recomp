@@ -290,3 +290,18 @@ Reference fixes found on the way: `ds_swizzle_b32`, `s_wqm`, `v_fract/trunc/rndn
 
 
 Update after the pixel work: with the extra reference instructions (`s_wqm`, `v_fract`, 2D-array images, `v_mad/mac`, ...) the compute comparison over shaders up to 1500 bytes now gives 242 matches, 6 mismatches and 2 harness failures. The 3 flaky LDS shaders are still there; 23306, 23324 and 23441 are new, because they could not be run before. They have not been investigated (23324 differs by about 14 ulp in one float, which could be an approximate transcendental), so they may be reference or recompiler bugs.
+
+
+## Whole corpus (26,497 shaders)
+`tools/xbox/extract_full.py` (blobs and stage for the main run and the second run), `run_full.py` (recompile + `spirv-val`) and `make_full_results.py` (merge into `docs/xbox/results.json`). Stage is the shader kind in the first dword of the DXIL stub (stub files) or in the DXIL part of the container (second run); kind 6/7 is mesh. Counts: 12,098 PS, 2,233 VS, 2,689 CS, 9,282 mesh, 195 GS (not run); the two runs together are 26,503 shaders, 6 of the second run do not inflate.
+
+| Stage | Shaders | Valid |
+|---|---|---|
+| Compute | 2,689 | 2,601 |
+| Pixel strict | 12,098 | 6,697 |
+| Pixel, with the host barycentric extension | 12,098 | 6,931 |
+| Pixel, extension and f16 approximation | 12,098 | 11,044 |
+| Vertex | 2,233 | 1,371 |
+| Mesh | 9,282 | 8,035 |
+
+The pixel, vertex and mesh runs use the same single-guess harness defaults as the sample (float mode, export mapping, mesh configuration); only the compute numbers include the fake-memory variants. Nothing from these runs was executed.
