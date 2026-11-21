@@ -9,6 +9,11 @@ Experimental tooling for running Xbox Series shader code through the shader reco
    guest addresses as `lowguest` does. Without `rdna2.py`, `rdna_asm.py` takes its opcode
    tables from LLVM (`rdna2_llvm.py`, needs `llvm-mc` with the AMDGPU target), so `exec_tests.py` and `exec_bvh_tests.py` run with no
    game files: `XBOX_EXEC=build-xbox/exec python3 tools/xbox/exec_tests.py`. `VK_DRIVER_FILES=<icd.json>` picks the GPU.
+   The same commands build on macOS against MoltenVK (Homebrew `molten-vk`, `vulkan-loader`); `exec` enables portability enumeration
+   and `VK_KHR_portability_subset` when they are offered. A device that cannot pin the compute subgroup size (MoltenVK) gets SPIR-V 1.5
+   without a required size, so the subgroup size is the device's fixed `subgroupSize`; wave64 then runs as two 32-wide halves as on
+   other 32-wide devices. MoltenVK reports `fragmentShaderBarycentric` but MSL has no `PerVertexKHR`: run pixel tests with
+   `XBOX_NO_FRAGMENT_BARY=1`.
 2. `extract_shaders.py` writes prologue-stripped, trimmed code blobs `<idx>.bin` (it depends on the RPF9
    extraction pipeline and `rdna2.py` decoder kept next to the dumped shaders; adjust its paths).
 3. `driver.exe <code.bin> <wave 32|64> <out.spv> [user_data_dwords]` recompiles one compute shader with stubbed
@@ -78,6 +83,22 @@ vertex colours. Every pixel must read P0 = (1, 0, 0, 1), P10 = (-1, 1, 0, 0) and
 P20 = (-1, 0, 1, 0). The test needs `VK_KHR_fragment_shader_barycentric`; without
 a geometry shader the host path is not a valid reference for per-vertex inputs.
 
+## Quad swizzle test
+
+With a built execution harness and the Vulkan SDK's `glslangValidator` on PATH:
+
+```powershell
+python tools/xbox/quad_test.py --exec "build-xbox/exec.exe"
+```
+
+The first fragment program exchanges each pixel with its horizontal and vertical
+neighbour inside the 2x2 quad with `ds_swizzle_b32`, subtracts, and exports the
+values and differences. The second narrows EXEC to one lane per quad, expands it
+with `s_wqm_b32`, and exports a constant; a second run activates two quads only,
+so the other quads must stay clear. Both run with `XBOX_NO_FRAGMENT_BARY=1`, the
+host perspective path; the quad operations do not need the barycentric
+extension.
+
 ## Windows compute smoke test
 
 From the repository root in PowerShell, with Python 3, the x64 MSVC C++ toolchain,
@@ -94,6 +115,19 @@ installation. For a custom build directory, pass `--exec "path to exec.exe"` to
 the smoke test. It generates a standalone RDNA2 compute program, dispatches one
 32-lane workgroup, and checks all 1024 output bytes. A successful run prints
 `PASS`. This test requires neither a shader corpus nor an external decoder.
+
+### Test v_mad_legacy_f32 clamp
+
+With the execution harness built, run:
+
+```powershell
+python tools/xbox/mad_legacy_clamp_test.py --exec "build-xbox/exec.exe"
+```
+
+One 32-lane workgroup computes `2.0 * 4.0 + 4.0`, `-2.0 * 4.0 + 4.0` and
+`0.5 * 0.5 + 0.0` with `v_mad_legacy_f32` and the VOP3 clamp bit. The clamped
+results must be 1.0, 0.0 and 0.25 in every lane. Clearing the clamp bit produces
+12.0, -4.0 and 0.25, so the test fails when clamp is ignored.
 
 ### Test texture sampling
 

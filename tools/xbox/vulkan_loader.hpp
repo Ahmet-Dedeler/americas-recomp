@@ -14,7 +14,7 @@
 #endif
 
 #define XBOX_VK_GLOBAL_FUNCTIONS(X) \
-    X(vkCreateInstance)
+    X(vkCreateInstance) X(vkEnumerateInstanceExtensionProperties)
 
 #define XBOX_VK_INSTANCE_FUNCTIONS(X) \
     X(vkAllocateCommandBuffers) X(vkAllocateDescriptorSets) X(vkAllocateMemory) X(vkBeginCommandBuffer) X(vkBindBufferMemory) \

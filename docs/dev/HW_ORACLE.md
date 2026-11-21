@@ -196,6 +196,30 @@ here; a result that depends on these differences needs a run on RDNA2.
 `v_mul_legacy_f32`, `ds_wrxchg2_rtn_*` and `ds_wrxchg2st64_rtn_*` still assemble under these names and give the same
 results as their gfx11 names `v_mul_dx9_zero_f32`, `ds_storexchg_2addr_rtn_*` and `ds_storexchg_2addr_stride64_rtn_*`.
 
+## RDNA4 (gfx12) differences
+
+Measured on gfx1201 (Radeon RX 9070 XT, Linux 7.3.4, `hsa-rocr` 10.1, clang 23.1.5) against gfx1036 (Raphael, same
+machine and runtime). The PS5's gfx1013 is not measured here; a result that depends on these differences needs a run on
+RDNA2. The [RDNA3 differences](#rdna3-gfx11-differences) in instruction names and 16-bit operands apply too.
+
+clang rejects `.amdhsa_ieee_mode` and `.amdhsa_dx10_clamp` for gfx1170 and later (`directive unsupported on gfx1170+`),
+so the tool leaves both out of the kernel descriptor there and accepts only `ieee` 1 and `dx10_clamp` 1. The rows below
+use inputs `v4`, `v5` with qNaN `0x7fc00000`, sNaN `0x7fa00000` and `0x3f800000`.
+
+| Body | gfx1036, `ieee` 1, `dx10_clamp` 1 | gfx1036, `ieee` 0, `dx10_clamp` 0 | gfx1201 |
+| --- | --- | --- | --- |
+| `v_add_f32 v10, v4, v5`, sNaN + 1.0 | `7fe00000` | `7fa00000` | `7fe00000` |
+| `v_mul_f32 v10, v4, v5`, sNaN * 1.0 | `7fe00000` | `7fa00000` | `7fe00000` |
+| `v_sqrt_f32 v10, v4`, sNaN | `7fe00000` | `7fa00000` | `7fe00000` |
+| `v_add_f32_e64 v10, v4, v5 clamp`, qNaN + 1.0 | `00000000` | `7fc00000` | `00000000` |
+| `v_min_f32` (gfx1201: `v_min_num_f32`), sNaN and 1.0, either order | `7fe00000` | `3f800000` | `3f800000` |
+| `v_max_f32` (gfx1201: `v_max_num_f32`), sNaN and 1.0, either order | `7fe00000` | `3f800000` | `3f800000` |
+| `v_min_f32` (gfx1201: `v_min_num_f32`), sNaN and qNaN | `7fe00000` | `7fa00000` | `7fe00000` |
+
+`v_min_num_f32` and `v_max_num_f32` match neither gfx10 setting: a NaN beside a number gives the number, as with `ieee`
+0, and two NaNs give a quiet NaN, as with `ieee` 1. Other float modes, other instructions and the 16-bit and 64-bit
+forms are not measured on gfx12.
+
 ## Limits
 
 Only compute kernels. Pixel-shader ops that read their inputs from LDS also work: `v_interp_*` reads the attribute

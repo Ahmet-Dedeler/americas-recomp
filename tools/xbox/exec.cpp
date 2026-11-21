@@ -85,6 +85,7 @@ struct Device {
     bool samplerAnisotropy = false;
     float maxSamplerAnisotropy = 1.0f;
     VkPhysicalDeviceVulkan13Properties subgroup{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_PROPERTIES};
+    std::uint32_t nativeSubgroupSize = 0;
     PFN_vkGetBufferDeviceAddress getAddress = nullptr;
 };
 
@@ -124,6 +125,16 @@ Device CreateDevice(std::uint32_t wave, bool bary) {
     VkInstanceCreateInfo ici{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
     ici.pApplicationInfo = &app;
     LoadVulkanLoader();
+    std::uint32_t ic = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &ic, nullptr);
+    std::vector<VkExtensionProperties> ie(ic);
+    vkEnumerateInstanceExtensionProperties(nullptr, &ic, ie.data());
+    const char* portabilityEnum = VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
+    for (const auto& e : ie) if (std::strcmp(e.extensionName, portabilityEnum) == 0) {
+        ici.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+        ici.enabledExtensionCount = 1;
+        ici.ppEnabledExtensionNames = &portabilityEnum;
+    }
     VK(vkCreateInstance(&ici, nullptr, &d.instance));
     LoadVulkanInstance(d.instance);
     std::uint32_t count = 0;
@@ -138,8 +149,11 @@ Device CreateDevice(std::uint32_t wave, bool bary) {
     if (d.physical == VK_NULL_HANDLE) throw std::runtime_error("no Vulkan device");
     vkGetPhysicalDeviceMemoryProperties(d.physical, &d.memory);
     VkPhysicalDeviceProperties2 p2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, &d.subgroup};
+    VkPhysicalDeviceSubgroupProperties sp{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES};
+    d.subgroup.pNext = &sp;
     vkGetPhysicalDeviceProperties2(d.physical, &p2);
     d.subgroup.pNext = nullptr;
+    d.nativeSubgroupSize = sp.subgroupSize;
     std::uint32_t qc = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(d.physical, &qc, nullptr);
     std::vector<VkQueueFamilyProperties> qf(qc);
@@ -173,8 +187,15 @@ Device CreateDevice(std::uint32_t wave, bool bary) {
     qi.queueCount = 1;
     qi.pQueuePriorities = &priority;
     VkDeviceCreateInfo dci{VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, &f2};
-    const char* baryExt = VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME;
-    if (bary) { dci.enabledExtensionCount = 1; dci.ppEnabledExtensionNames = &baryExt; }
+    std::uint32_t dc = 0;
+    vkEnumerateDeviceExtensionProperties(d.physical, nullptr, &dc, nullptr);
+    std::vector<VkExtensionProperties> de(dc);
+    vkEnumerateDeviceExtensionProperties(d.physical, nullptr, &dc, de.data());
+    std::vector<const char*> exts;
+    if (bary) exts.push_back(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
+    for (const auto& e : de) if (std::strcmp(e.extensionName, "VK_KHR_portability_subset") == 0) exts.push_back("VK_KHR_portability_subset");
+    dci.enabledExtensionCount = static_cast<std::uint32_t>(exts.size());
+    dci.ppEnabledExtensionNames = exts.data();
     dci.queueCreateInfoCount = 1;
     dci.pQueueCreateInfos = &qi;
     VK(vkCreateDevice(d.physical, &dci, nullptr, &d.device));
@@ -431,12 +452,13 @@ int main(int argc, char** argv) {
         request.context.userData = userData;
         if (!pixel) request.context.compute = ShaderComputeStageInfo{{threads[0], threads[1], threads[2]}, ldsDwords, {true, true, true}, false, 1u};
         request.target.vulkanVersion = 0x00403000u;
-        request.target.spirvVersion = 0x00010600u;
         const bool computeSizes = (dev.subgroup.requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT) != 0;
-        const auto fits = [&](std::uint32_t size) { return computeSizes && size >= dev.subgroup.minSubgroupSize && size <= dev.subgroup.maxSubgroupSize; };
+        const auto fits = [&](std::uint32_t size) { return computeSizes ? size >= dev.subgroup.minSubgroupSize && size <= dev.subgroup.maxSubgroupSize : size == dev.nativeSubgroupSize; };
         std::uint32_t hostSubgroup = fits(wave) || pixel ? wave : wave == 64u && fits(32u) ? 32u : wave;
         if (const char* forced = std::getenv("XBOX_HOST_SUBGROUP")) hostSubgroup = static_cast<std::uint32_t>(Num(forced));
         request.target.subgroupSize = hostSubgroup;
+        const bool nativeSubgroup = !pixel && !computeSizes && hostSubgroup == dev.nativeSubgroupSize;
+        request.target.spirvVersion = nativeSubgroup ? 0x00010500u : 0x00010600u;
         request.target.bdaAbiVersion = 1;
         std::vector<std::uint32_t> capsLocal = caps;
         std::vector<std::string_view> extLocal(ext.begin(), ext.end());
@@ -589,10 +611,11 @@ int main(int argc, char** argv) {
         if (!pixel) {
         VkPipelineShaderStageRequiredSubgroupSizeCreateInfo sub{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO};
         sub.requiredSubgroupSize = result.hostSubgroupSize != 0 ? result.hostSubgroupSize : wave;
-        if (!(dev.subgroup.requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT) || sub.requiredSubgroupSize < dev.subgroup.minSubgroupSize || sub.requiredSubgroupSize > dev.subgroup.maxSubgroupSize)
+        const bool unpinned = nativeSubgroup && sub.requiredSubgroupSize == dev.nativeSubgroupSize;
+        if (!unpinned && (!(dev.subgroup.requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT) || sub.requiredSubgroupSize < dev.subgroup.minSubgroupSize || sub.requiredSubgroupSize > dev.subgroup.maxSubgroupSize))
             throw std::runtime_error("the device cannot run compute with subgroup size " + std::to_string(sub.requiredSubgroupSize) + " (supported " + std::to_string(dev.subgroup.minSubgroupSize) + ".." + std::to_string(dev.subgroup.maxSubgroupSize) + ", compute " + ((dev.subgroup.requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT) ? "yes" : "no") + ")");
         VkComputePipelineCreateInfo cpi{VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
-        cpi.stage = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, &sub, result.fullSubgroups ? VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT : 0u, VK_SHADER_STAGE_COMPUTE_BIT, module, "main", entries.empty() ? nullptr : &spec};
+        cpi.stage = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, unpinned ? nullptr : &sub, result.fullSubgroups ? VK_PIPELINE_SHADER_STAGE_CREATE_REQUIRE_FULL_SUBGROUPS_BIT : 0u, VK_SHADER_STAGE_COMPUTE_BIT, module, "main", entries.empty() ? nullptr : &spec};
         cpi.layout = pipelineLayout;
         VK(vkCreateComputePipelines(dev.device, VK_NULL_HANDLE, 1, &cpi, nullptr, &pipeline));
         } else {

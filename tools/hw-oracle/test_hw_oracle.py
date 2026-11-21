@@ -436,6 +436,29 @@ class FloatModeTests(unittest.TestCase):
         self.assertTrue(assemble.call_args.args[2])
         self.assertEqual(assemble.call_args.kwargs, MODES | {"lds": 4096})
 
+    def test_targets_without_ieee_and_dx10_clamp_bits_omit_their_directives(self):
+        modes = MODES | {"ieee": 1, "dx10_clamp": 1}
+        for name, kept in (("gfx1036", True), ("gfx1151", True), ("gfx1170", False), ("gfx1201", False)):
+            with self.subTest(target=name), tempfile.TemporaryDirectory() as tmp, \
+                    patch.object(hw_oracle, "target", return_value=name), \
+                    patch.object(hw_oracle, "runtime", return_value="hsa"), \
+                    patch.object(hw_oracle, "tool", side_effect=lambda tool: tool), \
+                    patch.object(hw_oracle.subprocess, "run"):
+                hw_oracle.assemble("s_nop 0", Path(tmp), False, **modes)
+                text = (Path(tmp) / "k.s").read_text(encoding="utf-8")
+                self.assertEqual(".amdhsa_ieee_mode 1" in text, kept)
+                self.assertEqual(".amdhsa_dx10_clamp 1" in text, kept)
+                self.assertIn(".amdhsa_float_round_mode_32 0", text)
+                self.assertIn(".end_amdhsa_kernel", text)
+
+    def test_targets_without_ieee_and_dx10_clamp_bits_reject_other_values(self):
+        for override in ({"ieee": 0, "dx10_clamp": 1}, {"ieee": 1, "dx10_clamp": 0}):
+            with self.subTest(override=override), tempfile.TemporaryDirectory() as tmp, \
+                    patch.object(hw_oracle, "target", return_value="gfx1201"), \
+                    patch.object(hw_oracle.subprocess, "run", side_effect=AssertionError("assembler called")):
+                with self.assertRaisesRegex(ValueError, "gfx1201 has no IEEE or DX10_CLAMP mode bit"):
+                    hw_oracle.assemble("s_nop 0", Path(tmp), False, **(MODES | override))
+
 
 class TargetOverrideTests(unittest.TestCase):
     def setUp(self):

@@ -17,7 +17,12 @@ HERE = pathlib.Path(__file__).resolve().parent
 
 def vc_env():
     vswhere = pathlib.Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Microsoft Visual Studio/Installer/vswhere.exe"
-    install = subprocess.check_output([str(vswhere), "-latest", "-products", "*", "-property", "installationPath"], text=True).strip()
+    install = subprocess.check_output([
+        str(vswhere), "-latest", "-products", "*", "-requires",
+        "Microsoft.VisualStudio.Component.VC.Tools.x86.x64", "-property", "installationPath",
+    ], text=True).strip()
+    if not install:
+        sys.exit("No Visual Studio installation with the x64 C++ build tools was found.")
     bat = pathlib.Path(install) / "VC/Auxiliary/Build/vcvars64.bat"
     out = subprocess.check_output(f'cmd /c ""{bat}" >nul 2>&1 && set"', text=True, shell=True)
     return dict(l.split("=", 1) for l in out.splitlines() if "=" in l)
