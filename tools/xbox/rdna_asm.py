@@ -1,15 +1,29 @@
 """Tiny RDNA2 assembler for execution-harness test programs (inputs, not a general assembler).
-Opcode numbers come from the decoder tables in rdna2.py (out_disasm, set XBOX_RDNA2_DIR), or from LLVM (rdna2_llvm.py) when rdna2.py is not
-found or XBOX_RDNA2=llvm; every program is checked by decoding it back."""
-import os, struct, sys
+Opcode numbers come from the decoder tables in rdna2.py (out_disasm, set XBOX_RDNA2_DIR). When rdna2.py is not found they come from LLVM
+(rdna2_llvm.py) if an llvm-mc with the AMDGPU target is available, otherwise from the recompiler's decoder (rdna2_recomp.py). An llvm-mc
+found on PATH that cannot decode AMDGPU (the official Windows LLVM builds have no such target) is passed over; XBOX_LLVM_MC or
+XBOX_RDNA2=llvm insist on LLVM, XBOX_RDNA2=recomp picks the recompiler's tables. Every program is checked by decoding it back."""
+import os, shutil, struct, sys
 sys.path.insert(0, os.environ.get("XBOX_RDNA2_DIR", r"E:/Programming/rpf9shaders/out_disasm"))
+_CHOICE = os.environ.get("XBOX_RDNA2")
 try:
-    if os.environ.get("XBOX_RDNA2") == "llvm":
+    if _CHOICE in ("llvm", "recomp"):
         raise ImportError
     import rdna2
 except ImportError:
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    import rdna2_llvm as rdna2
+    rdna2 = None
+    if _CHOICE == "llvm" or (_CHOICE != "recomp" and os.environ.get("XBOX_LLVM_MC")):
+        import rdna2_llvm as rdna2
+    elif _CHOICE != "recomp" and shutil.which("llvm-mc"):
+        try:
+            import rdna2_llvm as rdna2
+        except (OSError, RuntimeError):
+            rdna2 = None
+        if rdna2 is not None and not rdna2.SOPP:
+            rdna2 = None
+    if rdna2 is None:
+        import rdna2_recomp as rdna2
 
 def _inv(t):
     return {v: k for k, v in t.items()}

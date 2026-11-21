@@ -7,8 +7,12 @@ Experimental tooling for running Xbox Series shader code through the shader reco
    (needs the `SPIRV-Headers` and `Vulkan-Headers` submodules; `exec` opens the Vulkan loader at run time, as the AGC driver does).
    When a device address does not fit in the 48 bits of a guest pointer (RADV hands out such addresses), `exec` gives the regions remapped
    guest addresses as `lowguest` does. Without `rdna2.py`, `rdna_asm.py` takes its opcode
-   tables from LLVM (`rdna2_llvm.py`, needs `llvm-mc` with the AMDGPU target), so `exec_tests.py` and `exec_bvh_tests.py` run with no
-   game files: `XBOX_EXEC=build-xbox/exec python3 tools/xbox/exec_tests.py`. `VK_DRIVER_FILES=<icd.json>` picks the GPU.
+   tables from LLVM (`rdna2_llvm.py`, needs `llvm-mc` with the AMDGPU target) or, without such an `llvm-mc` (the official Windows LLVM
+   builds have no AMDGPU target), from the recompiler's own decoder (`rdna2_recomp.py`, which needs nothing outside the repository;
+   `XBOX_RDNA2=llvm|recomp` picks one), so `exec_tests.py` and
+   `exec_bvh_tests.py` run with no game files: `XBOX_EXEC=build-xbox/exec python3 tools/xbox/exec_tests.py`. `VK_DRIVER_FILES=<icd.json>`
+   picks the GPU. `rdna2_recomp.py` has rdna2.py's whole interface (`decode`, `sweep` with instruction words and formats), so `cpu_ref.py`
+   falls back to it as well; its instruction lengths and opcodes follow the recompiler's decoder.
    The same commands build on macOS against MoltenVK (Homebrew `molten-vk`, `vulkan-loader`); `exec` enables portability enumeration
    and `VK_KHR_portability_subset` when they are offered. A device that cannot pin the compute subgroup size (MoltenVK) gets SPIR-V 1.5
    without a required size, so the subgroup size is the device's fixed `subgroupSize`; wave64 then runs as two 32-wide halves as on
