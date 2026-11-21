@@ -27,11 +27,11 @@ Experimental tooling for running Xbox Series shader code through the shader reco
    buffers, shader data, flattened SRT, identity BDA page table and fault reporting, single-level linear 1D, 2D, 2D array and 3D images in
    any format the AGC driver maps and the device can sample, T#s encoded with the AGC driver's `EncodeTextureResource`, samplers built
    from the guest S# with its `DecodeSamplerResource`. Pixel shaders (`stage ps`, see the pixel smoke, interpolation and per-vertex
-   tests): one triangle over up to eight RGBA32F targets; per-vertex inputs need `VK_KHR_fragment_shader_barycentric`. Scenario lines for images: `image <id> <w> <h> [format <IMG_FORMAT>] [dim 1d|2d|3d] [depth <d>] [layers <n>]
+   tests): one triangle over up to eight RGBA32F targets; per-vertex inputs need `VK_KHR_fragment_shader_barycentric`. Scenario lines for images: `image <id> <w> <h> [format <IMG_FORMAT>] [dim 1d|2d|3d] [depth <d>] [layers <n>] [mips <n>]
    [clear r g b a] [init <file>]` (default format 77, 32_32_32_32_FLOAT; init files hold raw texels in the image format, row-major, slice
-   after slice; clear values are integers for UINT/SINT formats; read back as `out/image<id>.bin` in the image format) and
+   after slice, level after level; clear values are integers for UINT/SINT formats; read back as `out/image<id>.bin` in the image format) and
    `timg <region> <offset> <image>`, which writes the image's linear T#. `exec` compiles five AGC driver sources and a no-op run-report stand-in (`stub_run_report.cpp`) for this
-   (`CMakeLists.txt`, `build_msvc.py --with-exec`). Not yet: block-compressed and cube images, mip levels, image tables, texel buffers,
+   (`CMakeLists.txt`, `build_msvc.py --with-exec`). Mip levels are sampled and loaded; storage access to a mipmapped image stops the run. Not yet: block-compressed and cube images, storage mip levels, image tables, texel buffers,
    other graphics stages.
    Compute shaders get the device's subgroup size for their wave size; a wave64 shader on a device whose largest compute subgroup is 32
    (NVIDIA, Intel) is recompiled for 32-wide subgroups, two guest lanes per invocation. `XBOX_HOST_SUBGROUP=<n>` forces the host size.
