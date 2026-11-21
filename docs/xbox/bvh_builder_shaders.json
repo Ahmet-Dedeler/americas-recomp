@@ -1,0 +1,470 @@
+{
+ "0": {
+  "name": "InitPartitionedHeaders",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "global_store_dword_with_cache",
+   "global_store_dwordx4_with_cache"
+  ]
+ },
+ "1": {
+  "name": "PT_WriteOfflinePartition",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "global_load_dwordx3_with_cache",
+   "global_load_dwordx4_with_cache"
+  ]
+ },
+ "2": {
+  "name": "PT_WritePartitions",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "global_load_dword_with_cache"
+  ]
+ },
+ "3": {
+  "name": "PT_WriteInstances",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "global_load_dword_with_cache",
+   "global_load_dwordx3_with_cache"
+  ]
+ },
+ "4": {
+  "name": "PT_LoadInstances",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "Max3_F32",
+   "Med3_F32",
+   "Min3_F32",
+   "global_atomic_fmax",
+   "global_atomic_fmin",
+   "global_load_dword_with_cache",
+   "global_load_dwordx3_with_cache",
+   "global_load_dwordx4_with_cache"
+  ]
+ },
+ "5": {
+  "name": "PT_BeginPass",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "global_load_dword_with_cache",
+   "global_store_dwordx3_with_cache"
+  ]
+ },
+ "6": {
+  "name": "ResetCounterValues",
+  "result_on_amd_pc_compiler": "OK",
+  "xbox_intrinsics": []
+ },
+ "7": {
+  "name": "InitHeaders",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "global_store_dwordx3_with_cache",
+   "global_store_dwordx4_with_cache"
+  ]
+ },
+ "8": {
+  "name": "CopyForBVHUpdate",
+  "result_on_amd_pc_compiler": "OK",
+  "xbox_intrinsics": []
+ },
+ "9": {
+  "name": "ResetToIndexBuffer",
+  "result_on_amd_pc_compiler": "OK",
+  "xbox_intrinsics": []
+ },
+ "10": {
+  "name": "CopyCounters",
+  "result_on_amd_pc_compiler": "OK",
+  "xbox_intrinsics": []
+ },
+ "11": {
+  "name": "CalculateMortonCodes",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "Max3_U32",
+   "Med3_U32",
+   "Min3_U32",
+   "global_load_dword_with_cache",
+   "global_load_dwordx3_with_cache",
+   "global_load_dwordx4_with_cache",
+   "s_load_dword_with_cache"
+  ]
+ },
+ "12": {
+  "name": "CalculateMortonCodes64",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "Max3_U32",
+   "Med3_U32",
+   "Min3_U32",
+   "global_load_dword_with_cache",
+   "global_load_dwordx3_with_cache",
+   "global_load_dwordx4_with_cache",
+   "s_load_dword_with_cache"
+  ]
+ },
+ "13": {
+  "name": "BitonicPreSortCS",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "BFI",
+   "s_load_dword_with_cache"
+  ]
+ },
+ "14": {
+  "name": "BitonicOuterSortCS",
+  "result_on_amd_pc_compiler": "FAIL",
+  "xbox_intrinsics": [
+   "BFI",
+   "s_load_dword_with_cache"
+  ]
+ },
+ "15": {
+  "name": "BitonicInnerSortCS",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "BFI",
+   "s_load_dword_with_cache"
+  ]
+ },
+ "16": {
+  "name": "BitonicPreSort64CS",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "BFI",
+   "s_load_dword_with_cache"
+  ]
+ },
+ "17": {
+  "name": "BitonicOuterSort64CS",
+  "result_on_amd_pc_compiler": "FAIL",
+  "xbox_intrinsics": [
+   "BFI",
+   "s_load_dword_with_cache"
+  ]
+ },
+ "18": {
+  "name": "BitonicInnerSort64CS",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "BFI",
+   "s_load_dword_with_cache"
+  ]
+ },
+ "19": {
+  "name": "RadixReset",
+  "result_on_amd_pc_compiler": "OK",
+  "xbox_intrinsics": []
+ },
+ "20": {
+  "name": "RadixCount",
+  "result_on_amd_pc_compiler": "FAIL",
+  "xbox_intrinsics": [
+   "Ballot64",
+   "MakeUniform.i32"
+  ]
+ },
+ "21": {
+  "name": "PrefixSum64",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "LaneSwizzle.i32",
+   "V_CNDMASK_B32"
+  ]
+ },
+ "22": {
+  "name": "PrefixSum128",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "LaneSwizzle.i32",
+   "V_CNDMASK_B32"
+  ]
+ },
+ "23": {
+  "name": "PrefixSum256",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "LaneSwizzle.i32",
+   "ReadLane.i32",
+   "V_CNDMASK_B32"
+  ]
+ },
+ "24": {
+  "name": "PrefixSum512",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "LaneSwizzle.i32",
+   "ReadLane.i32",
+   "V_CNDMASK_B32"
+  ]
+ },
+ "25": {
+  "name": "PrefixSum1024",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "GetLaneID",
+   "LaneSwizzle.i32",
+   "ReadLane.i32",
+   "V_CNDMASK_B32"
+  ]
+ },
+ "26": {
+  "name": "PrefixSum2048",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "GetLaneID",
+   "LaneSwizzle.i32",
+   "ReadLane.i32",
+   "V_CNDMASK_B32"
+  ]
+ },
+ "27": {
+  "name": "PrefixSum4096",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "GetLaneID",
+   "LaneSwizzle.i32",
+   "ReadLane.i32",
+   "V_CNDMASK_B32"
+  ]
+ },
+ "28": {
+  "name": "RadixAlloc",
+  "result_on_amd_pc_compiler": "FAIL",
+  "xbox_intrinsics": [
+   "Ballot64",
+   "GetLaneID",
+   "LaneSwizzle.i32",
+   "MBCNT64",
+   "MakeUniform.i32",
+   "ReadLane.i32",
+   "S_BCNT1_U64",
+   "V_CNDMASK_B32"
+  ]
+ },
+ "29": {
+  "name": "RearrangeTriangles",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "s_load_dword_with_cache"
+  ]
+ },
+ "30": {
+  "name": "RearrangeBVHs",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "global_load_dword_with_cache",
+   "s_load_dword_with_cache"
+  ]
+ },
+ "31": {
+  "name": "LoadInstances",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "Max3_F32",
+   "Med3_F32",
+   "Min3_F32",
+   "global_atomic_add",
+   "global_atomic_fmax",
+   "global_atomic_fmin",
+   "global_atomic_sub",
+   "global_load_dword_with_cache",
+   "global_load_dwordx2_with_cache",
+   "global_load_dwordx3_with_cache",
+   "global_load_dwordx4_with_cache"
+  ]
+ },
+ "32": {
+  "name": "SplitInstances",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "Med3_F32",
+   "global_atomic_add",
+   "global_atomic_sub",
+   "global_load_dwordx3_with_cache",
+   "global_load_dwordx4_with_cache"
+  ]
+ },
+ "33": {
+  "name": "LoadTriangles",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "V_ALIGNBYTE_B32",
+   "global_atomic_add",
+   "global_atomic_fmax",
+   "global_atomic_fmin",
+   "global_atomic_sub",
+   "global_load_dword_with_cache",
+   "global_load_dwordx4_with_cache",
+   "s_load_dword_with_cache"
+  ]
+ },
+ "34": {
+  "name": "LoadProceduralGeometry",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "global_atomic_add",
+   "global_atomic_fmax",
+   "global_atomic_fmin",
+   "global_atomic_sub"
+  ]
+ },
+ "35": {
+  "name": "ReloadTriangles",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "V_ALIGNBYTE_B32",
+   "global_atomic_fmax",
+   "global_atomic_fmin",
+   "global_load_dword_with_cache",
+   "global_load_dwordx2_with_cache",
+   "global_load_dwordx3_with_cache",
+   "global_load_dwordx4_with_cache"
+  ]
+ },
+ "36": {
+  "name": "ReloadProcedurals",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "global_atomic_fmax",
+   "global_atomic_fmin",
+   "global_load_dwordx3_with_cache"
+  ]
+ },
+ "37": {
+  "name": "PT_ConstructBVH4",
+  "result_on_amd_pc_compiler": "OK",
+  "xbox_intrinsics": []
+ },
+ "38": {
+  "name": "ConstructBVH4",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "Med3_F32"
+  ]
+ },
+ "39": {
+  "name": "RefitBVH4",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "Max3_F32",
+   "Med3_F32",
+   "Min3_F32",
+   "global_load_dword_with_cache",
+   "global_load_dwordx3_with_cache",
+   "global_load_dwordx4_with_cache"
+  ]
+ },
+ "40": {
+  "name": "BuildBVHSplits",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "global_load_dword_with_cache",
+   "s_load_dword_with_cache"
+  ]
+ },
+ "41": {
+  "name": "BuildBVHSplits64",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "global_load_dword_with_cache",
+   "s_load_dword_with_cache"
+  ]
+ },
+ "42": {
+  "name": "FindTreelets",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "BFI",
+   "MakeUniform.i32",
+   "MakeUniform.i64",
+   "Max3_F32",
+   "Min3_F32",
+   "WaveMin_U32",
+   "global_load_dword_with_cache",
+   "s_load_dword_with_cache"
+  ]
+ },
+ "43": {
+  "name": "ResetKDOP",
+  "result_on_amd_pc_compiler": "OK",
+  "xbox_intrinsics": []
+ },
+ "44": {
+  "name": "BuildKDOP",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "Max3_F32",
+   "Min3_F32",
+   "global_atomic_fmax",
+   "global_atomic_fmin",
+   "global_load_dword_with_cache",
+   "global_load_dwordx3_with_cache",
+   "s_load_dword_with_cache"
+  ]
+ },
+ "45": {
+  "name": "BuildApexPointMap",
+  "result_on_amd_pc_compiler": "FAIL",
+  "xbox_intrinsics": [
+   "Med3_F32"
+  ]
+ },
+ "46": {
+  "name": "GetBVHCompactedSize",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "global_load_dword_with_cache",
+   "s_load_dword_with_cache"
+  ]
+ },
+ "47": {
+  "name": "DecompressHeader",
+  "result_on_amd_pc_compiler": "OK",
+  "xbox_intrinsics": []
+ },
+ "48": {
+  "name": "LeafRehydration",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "TypedLoad.i32",
+   "V_ALIGNBYTE_B32",
+   "global_load_dword_with_cache",
+   "global_load_dwordx2_with_cache",
+   "global_load_dwordx3_with_cache",
+   "global_load_dwordx4_with_cache"
+  ]
+ },
+ "49": {
+  "name": "Box16Rehydration",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "V_PK_MAX_F16",
+   "V_PK_MIN_F16"
+  ]
+ },
+ "50": {
+  "name": "Box32Rehydration",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "V_PK_MAX_F16",
+   "V_PK_MIN_F16"
+  ]
+ },
+ "51": {
+  "name": "CopyAndCompactBVH",
+  "result_on_amd_pc_compiler": "OK",
+  "xbox_intrinsics": []
+ },
+ "52": {
+  "name": "GetBVHCompactedSize",
+  "result_on_amd_pc_compiler": "CRASH",
+  "xbox_intrinsics": [
+   "global_load_dword_with_cache",
+   "s_load_dword_with_cache"
+  ]
+ }
+}

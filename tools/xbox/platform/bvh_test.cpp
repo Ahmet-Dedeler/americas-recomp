@@ -19,9 +19,35 @@ using Microsoft::WRL::ComPtr;
 // Xbox device vtable slot 62: the builder's pipeline creation. Called as (desc, 0, 0, riid, ppv) with a D3D12_COMPUTE_PIPELINE_STATE_DESC
 // (root signature, shader bytecode, node mask, cached pso, flags). Treated here as the PC CreateComputePipelineState; the two zero
 // arguments are not understood (logged if nonzero).
+#include "bvh_dummy_cs.h"      // g_dummy: an empty compute shader, used in place of a blob the PC compiler cannot take
+static int g_pipe = 0, g_crashed = 0, g_failed = 0;
+static const char* g_dump = nullptr;     // BVH_DUMP_DIR: write every shader blob handed to the device
+static HRESULT TryCreate(ID3D12Device* dev, const D3D12_COMPUTE_PIPELINE_STATE_DESC* d, REFIID riid, void** out, bool* crashed) {
+    __try { *crashed = false; return dev->CreateComputePipelineState(d, riid, out); }
+    __except (EXCEPTION_EXECUTE_HANDLER) { *crashed = true; return E_FAIL; }
+}
 static HRESULT __fastcall Slot62(XboxObjectProxy* self, const D3D12_COMPUTE_PIPELINE_STATE_DESC* desc, void* a, void* b, REFIID riid, void** out) {
-    HRESULT hr = ((ID3D12Device*)self->real)->CreateComputePipelineState(desc, riid, out);
-    printf("  [slot 62] compute pipeline, shader %llu bytes, a=%p b=%p -> 0x%08lx\n", (unsigned long long)desc->CS.BytecodeLength, a, b, (unsigned long)hr);
+    int idx = g_pipe++;
+    if (g_dump) {
+        char path[MAX_PATH]; sprintf_s(path, "%s%sshader_%02d.dxil", g_dump, "\\", idx);
+        FILE* f = nullptr; if (!fopen_s(&f, path, "wb")) { fwrite(desc->CS.pShaderBytecode, 1, desc->CS.BytecodeLength, f); fclose(f); }
+    }
+    static int only = getenv("BVH_ONLY") ? atoi(getenv("BVH_ONLY")) : -1;     // BVH_ONLY=n: really compile blob n, give every other one the empty shader
+    if (only >= 0 && idx != only) {
+        D3D12_COMPUTE_PIPELINE_STATE_DESC d2 = *desc;
+        d2.CS.pShaderBytecode = g_dummy; d2.CS.BytecodeLength = sizeof(g_dummy);
+        return ((ID3D12Device*)self->real)->CreateComputePipelineState(&d2, riid, out);
+    }
+    bool crashed = false;
+    HRESULT hr = TryCreate((ID3D12Device*)self->real, desc, riid, out, &crashed);
+    if (only >= 0) printf("RESULT %d %s 0x%08lx" "\n", idx, crashed ? "CRASH" : FAILED(hr) ? "FAIL" : "OK", (unsigned long)hr);
+    if (crashed || FAILED(hr)) {
+        (crashed ? g_crashed : g_failed)++;
+        printf("  [slot 62] #%02d %llu bytes: %s (0x%08lx), substituting an empty shader\n", idx, (unsigned long long)desc->CS.BytecodeLength, crashed ? "COMPILER CRASH" : "failed", (unsigned long)hr);
+        D3D12_COMPUTE_PIPELINE_STATE_DESC d2 = *desc;
+        d2.CS.pShaderBytecode = g_dummy; d2.CS.BytecodeLength = sizeof(g_dummy);
+        hr = ((ID3D12Device*)self->real)->CreateComputePipelineState(&d2, riid, out);
+    }
     return hr;
 }
 
@@ -137,6 +163,7 @@ int main(int argc, char** argv) {
     memset(obj, 0, 1 << 20);
     printf("constructing XboxBvhBuilder(device, false)...\n"); fflush(stdout);
     XboxObjectProxy* proxy = XboxObjectProxy::Create(dev.Get());
+    g_dump = getenv("BVH_DUMP_DIR");
     proxy->Override(62, (void*)Slot62);
     if (unsigned long ex = SehCtor(ctor, obj, (ID3D12Device*)proxy)) {
         printf("  constructor raised exception 0x%lx\n", ex);
@@ -144,6 +171,7 @@ int main(int argc, char** argv) {
         return 2;
     }
     printf("  constructor returned\n");
+    printf("pipelines requested %d, compiler crashes %d, other failures %d\n", g_pipe, g_crashed, g_failed);
     proxy->PrintHits("device");
     DumpMessages(dev.Get());
     if (morton64 && set64) set64(obj, true);

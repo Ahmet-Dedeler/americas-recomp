@@ -28,9 +28,29 @@ Static imports only: this does not include what the DLLs call through COM/vtable
 3. **WARP**: all 53 pipelines are created (`S_OK`, shader blobs from 4 KB to 30 KB), the constructor returns, and
    `GetRaytracingAccelerationStructurePrebuildInfo` answers for a 3,000-vertex triangle geometry: result 204,800 bytes, scratch 128,704
    (the PC driver's own answer for the same input: 115,984 / 124,560, so the layouts differ as expected). The destructor runs.
-   **AMD Radeon RX 7800 XT**: the driver's shader compiler (`amdxc64.dll`) crashes with an access violation on the first of these shaders,
-   so the builder's DXIL does not compile on this PC GPU as it is (likely the 64-bit address loads). WARP creating the pipelines does not
-   show that they compile: it may defer that.
+   **AMD Radeon RX 7800 XT**: the driver's shader compiler (`amdxc64.dll`) crashes on most of the builder's shaders. Compiling each of the 53
+   blobs alone (`BVH_ONLY=n`): 9 compile, 39 crash the compiler (access violation inside `amdxc64.dll`), 5 fail with an error (one message:
+   "Unknown pointer operation encountered during ParseAddress"); after a crash the device is removed, so they have to be run one per process.
+   WARP creating the pipelines does not show that they compile: it may defer that.
+   **Cause**: not a random driver bug. The shaders are Xbox DXIL: 44 of the 53 call non-standard functions `@xbox.*` (declared with opaque
+   `i32` opcode first arguments, written by the Xbox DXC, `dxcxbox`), and those 44 are exactly the 44 that fail; the 9 that compile have
+   none (`ResetCounterValues`, `CopyForBVHUpdate`, `ResetToIndexBuffer`, `CopyCounters`, `RadixReset`, `PT_ConstructBVH4`, `ResetKDOP`,
+   `DecompressHeader`, `CopyAndCompactBVH`). The intrinsics are one-to-one wrappers of RDNA instructions: `global_load_dword/x2/x3/x4_with_cache`,
+   `global_store_*`, `global_atomic_{add,sub,fmin,fmax}` and `s_load_dword_with_cache` (all with a 64-bit address operand), `Med3/Min3/Max3`
+   (float and unsigned), `BFI`, `V_ALIGNBYTE_B32`, `V_CNDMASK_B32`, `V_PK_MIN/MAX_F16`, and lane operations (`ReadLane`, `LaneSwizzle`,
+   `Ballot64`, `MBCNT64`, `S_BCNT1_U64`, `GetLaneID`, `WaveMin_U32`, `MakeUniform`, `TypedLoad`). 33 distinct names (the first `i32`
+   argument looks like an instruction number, e.g. 356 for the dword global load). `tools/xbox/platform/bvh_shader_scan.py` classifies the
+   shaders, `docs/xbox/bvh_builder_shaders.json` has the per-shader result:
+   | group | shaders |
+   |---|---:|
+   | standard DXIL only (compile) | 9 |
+   | needs raw 64-bit address access (global load/store/atomic) | 31 |
+   | wave/lane intrinsics, no pointers (RadixCount, PrefixSum*, RadixAlloc) | 9 |
+   | arithmetic intrinsics only (ConstructBVH4, BuildApexPointMap, Box16/32Rehydration) | 4 |
+   So a PC path needs the 13 pointer-free shaders' intrinsics lowered to standard DXIL (all have direct equivalents: wave ops, min/max, bitfield
+   insert, funnel shift), and for the 31 others an address-to-resource mapping for the 64-bit addresses, which the Xbox2Windows-style
+   translation or our own RDNA-aware path would have to provide. The ISA semantics of these intrinsics are the ones the SPIR-V recompiler
+   already implements for the same instructions.
 Not reached: any build or rehydrate call. They take GPU virtual addresses, which the builder's DXIL shaders read by 64-bit address (no PC
 D3D12 equivalent), and real inputs would also need the matching vertex/index buffers (BVH_CONTAINER.md).
 
