@@ -34,6 +34,8 @@ Static imports only: calls made through GetProcAddress, COM or vtables do not sh
 * Lower and sign: `dxc -dumpbin` -> `xbox_dxil_lower.py in.ll out.ll` -> `dxasm in.ll out.dxil` (replaces `@xbox.*` intrinsics; handles min/max f16 and med3 so far;
   it reports the intrinsics it could not replace). `dxil_sm66_wave.py` pins the wave size when a shader depends on 64 lanes.
 * Try: `bvh_test.exe` with `BVH_REPLACE_DIR=<dir of repl_NN.dxil>` for pipeline creation; `dispatch_test.exe shader.dxil [groups] [seed]` for a dispatch on GPU and WARP.
-* Not done: the nine wave/lane shaders (ReadLane, LaneSwizzle, Ballot64, MBCNT64 ...), the 31 shaders using raw 64-bit addresses, and a CPU reference to check lowered output.
+* `lower_all.py <dir> <out>` runs the whole chain on a directory of disassembled shaders (22 of the 53 builder shaders pass). `oplower_check.py` and `wavelower_check.py` check lowered operations against software models.
+* `XS_TRACE=1` makes every proxy log the first call of each forwarded slot (argument registers, caller): one run shows which Xbox-only slots a program uses.
+* Not done: the 31 shaders using raw 64-bit addresses (design in PLATFORM_SURFACE.md).
 
 No game files are part of this repository: the DLLs, the videos and the decoded frames stay local.
