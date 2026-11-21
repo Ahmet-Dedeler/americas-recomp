@@ -7,7 +7,7 @@
 //   region <id> <bytes> [init <file>]   (a device-address buffer; its address is real)
 //   poke <id> <byteOffset> <u32>        ptrlo <id> <byteOffset> <targetId> [addBytes]
 //   ptrhi <id> <byteOffset> <targetId> <orMask>     ((address >> 32) & 0xffff) | orMask
-//   image <id> <width> <height> [clear r g b a]    (an R32G32B32A32_SFLOAT 2D image; it gets a fake 256-aligned guest address)
+//   image <id> <width> <height> [clear r g b a] [init <file>]    (an R32G32B32A32_SFLOAT 2D image; it gets a fake 256-aligned guest address)
 //   timg <regionId> <byteOffset> <imageId>          (writes an 8-dword 2D RGBA32F T# for the image into a region)
 //   user <sgpr> <targetId>              (user data pair: low, high dword of the region address)
 //   userval <sgpr> <u32>
@@ -56,6 +56,7 @@ struct ImageRes {
     VkDeviceMemory memory = VK_NULL_HANDLE;
     VkImageView view = VK_NULL_HANDLE;
     float clear[4] = {0, 0, 0, 0};
+    std::string initFile;   // raw R32G32B32A32 float texels, row-major; replaces the clear value
 };
 
 struct Device {
@@ -210,6 +211,7 @@ int main(int argc, char** argv) {
             im.width = static_cast<std::uint32_t>(Num(l.w[2])); im.height = static_cast<std::uint32_t>(Num(l.w[3]));
             im.fakeAddress = 0x7000000000ull + 0x1000000ull * im.id;
             if (l.w.size() >= 9 && l.w[4] == "clear") for (int c = 0; c < 4; ++c) im.clear[c] = std::stof(l.w[5 + c]);
+            for (std::size_t k = 4; k + 1 < l.w.size(); ++k) if (l.w[k] == "init") im.initFile = l.w[k + 1];
             VkImageCreateInfo ici{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
             ici.imageType = VK_IMAGE_TYPE_2D; ici.format = VK_FORMAT_R32G32B32A32_SFLOAT;
             ici.extent = {im.width, im.height, 1}; ici.mipLevels = 1; ici.arrayLayers = 1; ici.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -448,14 +450,27 @@ int main(int argc, char** argv) {
         VK(vkAllocateCommandBuffers(dev.device, &cbai, &cmd));
         VkCommandBufferBeginInfo bbi{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
         VK(vkBeginCommandBuffer(cmd, &bbi));
+        std::vector<Region> staging;
+        staging.reserve(images.size());
         for (auto& [iid, im] : images) {
             VkImageMemoryBarrier toTransfer{VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
             toTransfer.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; toTransfer.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED; toTransfer.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
             toTransfer.srcQueueFamilyIndex = toTransfer.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; toTransfer.image = im.image; toTransfer.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
             vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &toTransfer);
-            VkClearColorValue color{}; std::memcpy(color.float32, im.clear, sizeof(im.clear));
-            VkImageSubresourceRange range{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-            vkCmdClearColorImage(cmd, im.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &color, 1, &range);
+            if (!im.initFile.empty()) {
+                std::ifstream in(im.initFile, std::ios::binary);
+                if (!in) throw std::runtime_error("cannot open image init file " + im.initFile);
+                staging.emplace_back();
+                MakeBuffer(dev, staging.back(), static_cast<std::uint64_t>(im.width) * im.height * 16, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+                in.read(static_cast<char*>(staging.back().mapped), static_cast<std::streamsize>(staging.back().size));
+                VkBufferImageCopy up{};
+                up.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1}; up.imageExtent = {im.width, im.height, 1};
+                vkCmdCopyBufferToImage(cmd, staging.back().buffer, im.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &up);
+            } else {
+                VkClearColorValue color{}; std::memcpy(color.float32, im.clear, sizeof(im.clear));
+                VkImageSubresourceRange range{VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+                vkCmdClearColorImage(cmd, im.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &color, 1, &range);
+            }
             VkImageMemoryBarrier toGeneral = toTransfer;
             toGeneral.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; toGeneral.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
             toGeneral.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL; toGeneral.newLayout = VK_IMAGE_LAYOUT_GENERAL;

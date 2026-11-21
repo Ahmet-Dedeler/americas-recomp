@@ -259,3 +259,12 @@ Getting there found no recompiler bug, but it found several tooling facts worth 
 * A buffer load at a byte address that is not 4-byte aligned makes the recompiler read the containing aligned dword. D3D forbids such loads, so this is not treated as a bug, but the reference skips shaders that do it.
 * The harness V# now uses OOB_SELECT 1 (only the index is range checked), which suits both structured and raw uses of the same buffer; mode 3 checks a 32-bit byte offset that wraps for huge indices.
 
+
+
+### Images in the CPU reference, and a recompiler finding
+
+`cpu_ref.py` now models 2D RGBA32F images (`image_load`, `image_store`, `image_sample_lz`, `image_sample_l`; out-of-range access, a16/d16, other dimensions are skipped). Over the shaders up to 1500 bytes: 223 match byte for byte, 3 mismatch, 2 fail in the harness (descriptor role 10), the rest are skipped for unsupported instructions. The 3 mismatches (22186, 22570, 23442) use LDS and give a different GPU value on every run, so they are flaky shaders (unwritten workgroup memory), not recompiler results.
+
+Finding (fixed): a shader that stores to a texel and loads it back (read-modify-write, e.g. 23448) got stale data. The tracker keeps a read and a write of one descriptor as two resources, so the load was emitted as `OpImageFetch` on the sampled binding while the store went through the storage binding; the two are not coherent. `EmitReadOp` in `SpirvImageEmitter.cpp` now reads through the storage binding when a plain written storage resource of the same source exists (`XBOX_NO_STORAGE_RMW_READ=1` restores the old behaviour). `exec_tests.py::test_image_load_after_store_same_texel` fails without the fix and passes with it.
+
+Reference fixes found on the way: VOP2 madmk/madak/fmamk/fmaak literals, and image texels kept as raw bits (a float round trip quieted signalling NaNs).

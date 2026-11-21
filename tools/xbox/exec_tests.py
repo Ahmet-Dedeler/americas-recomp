@@ -129,6 +129,27 @@ def test_image_store_phi_split():
         assert pixels[written] == want, ("selector", selector, "image", written, pixels[written][:8])
         assert pixels[untouched] == tuple([-1.0] * 128), ("selector", selector, "image", untouched, "was written", pixels[untouched][:8])
 
+def test_image_load_after_store_same_texel():
+    # read-modify-write: store (lane, 2, 3.5, 1) to a texel, load the same texel back in the same invocation and store the loaded value.
+    # The load has to see this invocation's own store; a sampled-image fetch next to the storage-image write can return the old (-1) texel.
+    p = rdna_asm.Program()
+    p.smem('s_load_dwordx8', 8, 4, 0)
+    p.sopp('s_waitcnt', 0)
+    p.vop1('v_cvt_f32_u32', 4, 'v0')
+    p.vop1('v_mov_b32', 5, ('lit', 0x40000000))
+    p.vop1('v_mov_b32', 6, ('lit', 0x40600000))
+    p.vop1('v_mov_b32', 7, ('lit', 0x3f800000))
+    p.vop1('v_mov_b32', 1, 0)
+    p.mimg('image_store', 4, 0, 8)
+    p.mimg('image_load', 10, 0, 8)
+    p.sopp('s_waitcnt', 0)
+    p.mimg('image_store', 10, 0, 8)
+    p.sopp('s_endpgm')
+    r = run(p.bytes(), {0: (256, None)}, [], extra=["image 1 32 1 clear -1 -1 -1 -1", "timg 0 0 1"])
+    got = _image_pixels(r['out'], 1)
+    want = tuple(v for lane in range(32) for v in (float(lane), 2.0, 3.5, 1.0))
+    assert got == want, got[:8]
+
 def _group_prologue(p, threads):
     # s[4:5] = SRT pointer, 6 user SGPRs, so the workgroup id x is s6. v2 = group id * threads + local id (global linear id)
     p.smem('s_load_dwordx4', 8, 4, 0)
@@ -181,7 +202,7 @@ def test_multiwave_wave64():
 def test_lds_reverse_wave64():
     test_lds_reverse_across_waves(64)
 
-TESTS = [test_multiwave_wave64, test_lds_reverse_wave64, test_multiwave_multigroup_global_id, test_lds_reverse_across_waves, test_store_lane_ids, test_readfirstlane_after_narrowed_write, test_waterfall_loop, test_image_store_phi_split]
+TESTS = [test_image_load_after_store_same_texel, test_multiwave_wave64, test_lds_reverse_wave64, test_multiwave_multigroup_global_id, test_lds_reverse_across_waves, test_store_lane_ids, test_readfirstlane_after_narrowed_write, test_waterfall_loop, test_image_store_phi_split]
 
 if __name__ == "__main__":
     bad = 0

@@ -114,8 +114,19 @@ class Wave:
         self.scc = 0
         self.lds = bytearray(65536)
         self.approx = False
-        ins, _ = rdna2.sweep(code, 0, len(code))
-        self.by_off = {i.off: i for i in ins}
+        self.images = {}    # id -> {w, h, data (floats), written}
+        self.by_off = {}
+        off = 0
+        while off < len(code):
+            i = rdna2.decode(code, off)
+            # VOP2 madmk/madak/fmamk/fmaak carry a literal in the following dword; rdna2.py decodes them as 4-byte instructions
+            # and then treats the literal as an instruction of its own, so merge the literal into the instruction here
+            if i.fmt == "VOP2" and len(i.words) == 1 and ((i.words[0] >> 25) & 0x3f) in (0x20, 0x21, 0x2c, 0x2d) and (i.words[0] >> 31) == 0:
+                i.words = [i.words[0], int.from_bytes(code[i.off + 4:i.off + 8], "little")]
+                i.size = 8
+                i.name = {0x20: "v_madmk_f32", 0x21: "v_madak_f32", 0x2c: "v_fmamk_f32", 0x2d: "v_fmaak_f32"}[(i.words[0] >> 25) & 0x3f]
+            self.by_off[i.off] = i
+            off += i.size
         self.code = code
         self.steps = 0
 
@@ -208,6 +219,8 @@ class Wave:
             return self.valu(inst, w, n, f)
         if f == "MUBUF":
             return self.mubuf(inst, w, n)
+        if f in ("MIMG", "MIMG+NSA1", "MIMG+NSA3", "MIMG+NSA2"):
+            return self.mimg(inst, w, n)
         if f == "DS":
             return self.ds(inst, w, n)
         raise Unsupported("format %s (%s)" % (f, n))
@@ -490,8 +503,10 @@ class Wave:
             "v_max_f32": lambda: b32(max(f32(A), f32(B))),
             "v_fma_f32": lambda: b32(math.fma(f32(A), f32(B), f32(C))),
             "v_fmac_f32": lambda: b32(math.fma(f32(A), f32(B), f32(self.v[vdst][lane]))),
-            "v_madak_f32": lambda: b32(math.fma(f32(A), f32(B), f32(self.lit(inst)))),
-            "v_madmk_f32": lambda: b32(math.fma(f32(A), f32(self.lit(inst)), f32(B))),
+            "v_madak_f32": lambda: b32(f32(b32(f32(A) * f32(B))) + f32(self.lit(inst))),
+            "v_madmk_f32": lambda: b32(f32(b32(f32(A) * f32(self.lit(inst)))) + f32(B)),
+            "v_fmaak_f32": lambda: b32(math.fma(f32(A), f32(B), f32(self.lit(inst)))),
+            "v_fmamk_f32": lambda: b32(math.fma(f32(A), f32(self.lit(inst)), f32(B))),
             "v_max3_f32": lambda: b32(max(f32(A), f32(B), f32(C))),
             "v_min3_f32": lambda: b32(min(f32(A), f32(B), f32(C))),
             "v_med3_f32": lambda: b32(sorted((f32(A), f32(B), f32(C)))[1]),
@@ -623,6 +638,67 @@ class Wave:
                 for c in range(comps):
                     self.v[vdata + c][lane] = self.mem.u32(addr + 4 * c) if inrange else 0
         # format loads of fewer than 4 components leave the rest to the shader; nothing more to do
+
+    def mimg(self, inst, w, n):
+        """2D RGBA32F images only (the harness image model): image_load, image_store, image_sample_lz, image_sample_l.
+        Sampling is nearest with clamp-to-edge on normalised coordinates, like the harness sampler."""
+        op = ((w >> 18) & 0x7f) | ((w & 1) << 7)
+        nsa = (w >> 1) & 3
+        dmask, dim = (w >> 8) & 0xf, (w >> 3) & 7
+        w1 = inst.words[1]
+        vaddr, vdata, srsrc = w1 & 0xff, (w1 >> 8) & 0xff, ((w1 >> 16) & 0x1f) * 4
+        if (w1 >> 30) & 1 or (w1 >> 31) & 1:
+            raise Unsupported("a16/d16 image access")
+        if dim != 1:
+            raise Unsupported("image dim %d" % dim)
+        kinds = {0x00: ("load", 2), 0x08: ("store", 2), 0x27: ("sample", 2), 0x24: ("sample", 3)}
+        if op not in kinds:
+            raise Unsupported("MIMG opcode 0x%x" % op)
+        kind, naddr = kinds[op]
+        regs = [vaddr + i for i in range(naddr)]
+        if nsa:
+            regs = [vaddr]
+            for word in inst.words[2:]:
+                regs += [(word >> (8 * b)) & 0xff for b in range(4)]
+            regs = regs[:naddr]
+        elif nsa == 0 and False:
+            pass
+        words = [self.s[srsrc + k] for k in range(8)]
+        base = (words[0] << 8) | ((words[1] & 0xff) << 40)
+        img_id = (base - 0x7000000000) >> 24
+        img = self.images.get(img_id) if base >= 0x7000000000 and (base - 0x7000000000) % 0x1000000 == 0 else None
+        if img is None:
+            raise Unsupported("image descriptor does not name a known image")
+        wd, ht = img["w"], img["h"]
+        comps = [c for c in range(4) if (dmask >> c) & 1]
+        ex = self.exec()
+        for lane in range(WAVE):
+            if not (ex >> lane) & 1:
+                continue
+            a = [self.v[r][lane] for r in regs]
+            if kind == "sample":
+                u, v = f32(a[0]), f32(a[1])
+                if not (math.isfinite(u) and math.isfinite(v)):
+                    raise Unsupported("non-finite sample coordinate")
+                x = min(max(math.floor(f32(b32(u * wd))), 0), wd - 1)
+                y = min(max(math.floor(f32(b32(v * ht))), 0), ht - 1)
+            else:
+                x, y = s32(a[0]), s32(a[1])
+                if not (0 <= x < wd and 0 <= y < ht):
+                    raise Unsupported("image access out of bounds")
+            texel = (y * wd + x) * 4
+            if kind == "store":
+                vals = [self.v[vdata + k][lane] for k in range(len(comps))]
+                for c, val in zip(comps, vals):
+                    key = (img_id, texel + c)
+                    prev = img["written"].get(key)
+                    if prev is not None and prev[0] != lane and prev[1] != val:
+                        raise Unsupported("racing image stores")
+                    img["written"][key] = (lane, val)
+                    img["data"][texel + c] = val & M32     # raw bits: a float round trip would quiet signalling NaNs
+            else:
+                for k, c in enumerate(comps):
+                    self.v[vdata + k][lane] = img["data"][texel + c]
 
     def ds(self, inst, w, n):
         o0, o1 = w & 0xff, (w >> 8) & 0xff

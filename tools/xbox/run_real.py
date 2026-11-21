@@ -14,7 +14,7 @@ EXEC = os.environ.get("XBOX_EXEC", r"E:/Programming/anyps5_src/build/exec.exe")
 USER_DWORDS = 10          # the wrapped compute shaders read the workgroup id from s10/s11
 NODE_BYTES = 1 << 16
 DATA_BYTES = 1 << 20
-IMG = 16
+IMG = 64
 
 def _blob(profile="mixed"):
     """seeded input data: 'mixed' = floats at even dwords and small integers at odd dwords (exercises both kinds of code, but the
@@ -75,7 +75,11 @@ def build(idx, wave, workdir, threads=None, profile="mixed"):
             info["data"].append(data_id)
             data_id += 1
         elif cls == "img1":
-            lines += [f"image {image_id} {IMG} {IMG} clear 0.5 0.5 0.5 0.5", f"timg {base} {off} {image_id}"]
+            # every image gets its own seeded normal-float texels so that a wrong coordinate or a mixed-up image shows in the result
+            ip = os.path.join(workdir, f"img{image_id}.bin")
+            irnd = random.Random(1000 + image_id)
+            open(ip, "wb").write(b"".join(struct.pack('<f', 0.25 + irnd.random() * 3.75) for _ in range(IMG * IMG * 4)))
+            lines += [f"image {image_id} {IMG} {IMG} init {ip}", f"timg {base} {off} {image_id}"]
             info["images"].append(image_id)
             image_id += 1
         elif cls.startswith("img"):
@@ -118,7 +122,7 @@ def run_once(idx, wave, env_extra, timeout, tag, threads=None):
     if out.splitlines()[-1:] == ["RAN"]:
         res = {"status": "RAN", "secs": secs, "dir": d}
         res["blob"] = b"".join(open(f"{d}/out/region{r}.bin", "rb").read() for r in info["data"]) + b"".join(open(f"{d}/out/image{i}.bin", "rb").read() for i in info["images"])
-        initial = b"".join(open(f"{d}/data{r}.bin", "rb").read() for r in info["data"]) + struct.pack('<f', 0.5) * (4 * IMG * IMG * len(info["images"]))
+        initial = b"".join(open(f"{d}/data{r}.bin", "rb").read() for r in info["data"]) + b"".join(open(f"{d}/img{i}.bin", "rb").read() for i in info["images"])
         res["changed"] = res["blob"] != initial
         return res
     last = out.splitlines()[-1] if out else (p.stderr.strip()[-200:] or f"exit {p.returncode}")

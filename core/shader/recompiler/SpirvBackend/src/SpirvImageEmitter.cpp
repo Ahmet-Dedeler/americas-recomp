@@ -1393,6 +1393,8 @@ void EmitByReadOp(SpirvValueEmitContext& ctx, const ImageEmitAccess& access) {
     }));
 }
 
+std::uint32_t ImageSampleIndex(SpirvValueEmitContext& ctx, const ImageEmitAccess& access);
+
 void EmitReadOp(SpirvValueEmitContext& ctx, const ImageEmitAccess& access) {
     if (access.mem.imageByElements != 0u) {
         EmitByReadOp(ctx, access);
@@ -1408,10 +1410,50 @@ void EmitReadOp(SpirvValueEmitContext& ctx, const ImageEmitAccess& access) {
     if (VolumeSliceAddress(access)) {
         condition = Binary(state, spv::OpLogicalAnd, TypeBool(state), condition, VolumeSliceInRange(ctx, access, LoadSampledImageDescriptor(state, access.mem.resource), LodU32(ctx, access)));
     }
+    // A load from an image the same shader also writes must read through the storage binding: a sampled-image fetch after a storage
+    // write to the same texel by the same invocation can return the old value (the two descriptors are not coherent with each other).
+    // The tracker keeps a read and a write of one descriptor as two resources (sampled and storage). Reading a texel through the sampled
+    // binding after this invocation wrote it through the storage binding is not coherent, so when a plain written storage resource with the
+    // same source exists, read through that one.
+    std::optional<std::uint32_t> storageWriter;
+    const ImageResource* storageWriterMode = nullptr;
+    if (std::getenv("XBOX_NO_STORAGE_RMW_READ") == nullptr && access.image.resourceClass == ImageResourceClass::Sampled && !access.image.depthCompare && !access.mem.imagePacked && !access.mem.imageHasMip &&
+        std::ranges::find(state.supportedCapabilities, spv::CapabilityStorageImageReadWithoutFormat) != state.supportedCapabilities.end()) {
+        const auto& images = state.program.Info().images;
+        for (std::uint32_t i = 0; i < images.size(); ++i) {
+            const auto& w = images[i];
+            if (w.resourceClass == ImageResourceClass::Storage && w.written && !w.atomic && !w.atomic64 && !w.packed && !w.targetMerge && w.table == NoTable && w.mipMode != ImageMipMode::DynamicStorage && w.byElements == 0u &&
+                w.source == access.image.source && w.dimension == access.image.dimension && w.numericClass == access.image.numericClass) {
+                storageWriter = i;
+                break;
+            }
+        }
+        if (storageWriter && state.runtimeImage != nullptr) {
+            // inside a runtime image mode the descriptor lookups use the mode variant, so pick the writer's variant of the same shape
+            storageWriterMode = nullptr;
+            const auto& modes = state.program.Info().runtimeImageModes;
+            if (*storageWriter < modes.size()) {
+                for (const auto& m : modes[*storageWriter]) {
+                    if (m.resourceClass == ImageResourceClass::Storage && m.written && !m.atomic && !m.atomic64 && !m.packed && m.table == NoTable && m.dimension == state.runtimeImage->dimension && m.numericClass == state.runtimeImage->numericClass) {
+                        storageWriterMode = &m;
+                        break;
+                    }
+                }
+            }
+            if (storageWriterMode == nullptr) storageWriter.reset();
+        }
+    }
     ctx.Define(access.inst, EmitValueOrDefaultIfCondition(state, condition, TypeU32Vector(state, 4), ConstantU32CompositeZero(state, 4), [&]() {
+        const auto coord = CoordU32(ctx, access);
+        if (storageWriter) {
+            const auto* savedRuntimeImage = state.runtimeImage;
+            if (storageWriterMode != nullptr) state.runtimeImage = storageWriterMode;
+            const auto stored = EmitStorageImageRead(state, *storageWriter, coord, dimensionInfo.multisampled != 0u ? ImageSampleIndex(ctx, access) : 0u);
+            state.runtimeImage = savedRuntimeImage;
+            return LoadedTexelResult(ctx, access, stored, numericClass);
+        }
         const auto descriptor = LoadSampledImageDescriptor(state, access.mem.resource);
         const auto color = state.module.AllocateId();
-        const auto coord = CoordU32(ctx, access);
         if (dimensionInfo.multisampled != 0u) {
             const auto& addressInfo = AddressDimension(access);
             if (addressInfo.multisampled == 0u || access.mem.imageAddressComponents <= addressInfo.coordinateComponents) {

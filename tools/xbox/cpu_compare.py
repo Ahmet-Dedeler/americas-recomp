@@ -29,6 +29,13 @@ def scenario_memory(lines):
             regions[int(w[1])] = data
     guest = {rid: 0x10000000 + 0x1000000 * k for k, rid in enumerate(sorted(regions))}
     sgpr = {}
+    images = {}
+    for l in lines:
+        w = l.split()
+        if w[0] == "image":
+            iid, wd, ht = int(w[1]), int(w[2]), int(w[3])
+            data = list(struct.unpack('<%dI' % (wd * ht * 4), open(w[w.index("init") + 1], "rb").read())) if "init" in w else [0] * (wd * ht * 4)
+            images[iid] = {"w": wd, "h": ht, "data": data, "written": {}}
     def put(rid, off, v):
         struct.pack_into('<I', regions[rid], off, v & 0xffffffff)
     for l in lines:
@@ -43,12 +50,18 @@ def scenario_memory(lines):
             sgpr[int(w[1])] = guest[int(w[2])]
         elif w[0] == "userval":
             sgpr[int(w[1])] = int(w[2], 0)
+        elif w[0] == "timg":
+            im = images[int(w[3])]
+            fake = 0x7000000000 + 0x1000000 * int(w[3])
+            o = int(w[2], 0)
+            for k, v in enumerate([fake >> 8, ((fake >> 40) & 0xff) | (77 << 20) | (3 << 30), (im["w"] - 1) | ((im["h"] - 1) << 14), 0xfac | (9 << 28), 0, 0, 0, 0]):
+                put(int(w[1]), o + 4 * k, v)
         elif w[0] in ("user", "ptr8lo", "ptr8hi"):
             raise C.Unsupported("scenario keyword " + w[0])
     mem = C.Memory()
     for rid, d in regions.items():
         mem.add(guest[rid], d)
-    return regions, sgpr
+    return regions, sgpr, images
 
 
 def close(a, b):
@@ -69,12 +82,13 @@ def one_profile(idx, profile):
     code = open(R.ROOT + f"bins_all/{idx}.bin", "rb").read()
     # CPU side first: cheap, and decides whether the shader is interpretable at all
     try:
-        regions, sgpr = scenario_memory(lines)
+        regions, sgpr, images = scenario_memory(lines)
         mem = C.Memory()
         guest = {rid: 0x10000000 + 0x1000000 * k for k, rid in enumerate(sorted(regions))}
         for rid, dd in regions.items():
             mem.add(guest[rid], dd)
         wave = C.Wave(code, mem, sgpr)
+        wave.images = images
         wave.run()
     except C.Unsupported as e:
         return {"idx": idx, "outcome": "SKIP", "detail": str(e)[:100]}
@@ -102,6 +116,14 @@ def one_profile(idx, profile):
             a, b = struct.unpack_from('<I', gpu, k)[0], struct.unpack_from('<I', cpu, k)[0]
             if a != b and not (wave.approx and close(a, b)):
                 bad.append((r, k, a, b))
+    for iid in info["images"]:
+        gpu = open(f"{d}/out/image{iid}.bin", "rb").read()
+        cpu = struct.pack('<%dI' % len(images[iid]["data"]), *images[iid]["data"])
+        changed |= cpu != open(f"{d}/img{iid}.bin", "rb").read()
+        for k in range(0, len(gpu), 4):
+            a, b = struct.unpack_from('<I', gpu, k)[0], struct.unpack_from('<I', cpu, k)[0]
+            if a != b and not (wave.approx and close(a, b)):
+                bad.append((1000 + iid, k, a, b))
     rec = {"idx": idx, "profile": profile, "outcome": "MISMATCH" if bad else "MATCH", "cpu_changed_memory": changed, "approx": wave.approx, "steps": wave.steps}
     if bad:
         rec["ndiff"] = len(bad)
