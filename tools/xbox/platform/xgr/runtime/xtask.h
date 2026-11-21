@@ -60,6 +60,7 @@ HRESULT RegisterMonitor(Queue* q, void* ctx, MonitorCallback cb, RegistrationTok
 void UnregisterMonitor(Queue* q, RegistrationToken tok);
 bool GetProcessQueue(Queue** out);  // duplicated handle; caller closes
 void SetProcessQueue(Queue* q);
+bool IsEmpty(Queue* q, PortId port);
 
 // --- XAsync -------------------------------------------------------------------------------
 HRESULT AsyncGetStatus(AsyncBlock* b, bool wait);
