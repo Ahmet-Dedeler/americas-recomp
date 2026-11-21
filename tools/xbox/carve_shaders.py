@@ -1,11 +1,13 @@
 """Carve the shader blobs out of an RPF9 ``shaders.rpf`` without its table of contents.
 
-Every shader entry in the archive is self-describing and inline::
+Every shader entry in the archive is inline and self-describing::
 
-    <u8 nameLength> <nameLength bytes> "_Wrapped" 0x00 <header> <raw deflate stream -> DXBC>
+    <name> "_Wrapped" 0x00 <17-byte header> <raw deflate stream -> DXBC>
 
-The raw deflate stream starts 26 bytes after the first byte of the ``_Wrapped`` suffix and
-inflates to a DXBC container (``wbits=-15``). Inside it the ``DXIL`` chunk is a nested
+The name has no stored length in front of it, so it is read backwards over the characters an
+asset name can contain and then validated by the payload. The raw deflate stream starts 26
+bytes after the first byte of the ``_Wrapped`` suffix (8 bytes of suffix, the NUL and the
+17-byte header) and inflates to a DXBC container (``wbits=-15``). Inside it the ``DXIL`` chunk is a nested
 container whose ``XBCH`` section holds a zlib stream::
 
     "XBCH" <u32 3> <u32 compressedSize> <u32 0> <u32 uncompressedSize> <u32 0> <zlib stream>
@@ -25,6 +27,7 @@ import collections
 import csv
 import mmap
 import os
+import re
 import struct
 import zlib
 
@@ -47,6 +50,8 @@ STAGES = {
 }
 CHUNK_LIMIT = 1 << 24
 READ_LIMIT = 1 << 22
+NAME = re.compile(rb"[A-Za-z0-9_.:]+$")
+MANAGED = re.compile(r"[0-9]+\.bin")
 FIELDS = ["idx", "name", "kind", "stage", "bytes", "prologue", "error"]
 
 
@@ -63,9 +68,11 @@ def find_entries(archive):
             if not (previous.isalnum() or previous in b"_.:"):
                 break
             start -= 1
-        name = bytes(archive[start:suffix]).decode("utf-8", "replace")
-        entries.append((name, suffix + PAYLOAD_OFFSET))
         position = suffix + 1
+        name = bytes(archive[start:suffix])
+        if not name or len(name) > 255 or NAME.fullmatch(name) is None:
+            continue
+        entries.append((name.decode("utf-8"), suffix + PAYLOAD_OFFSET))
 
 
 def parse_dxbc(container):
@@ -87,10 +94,10 @@ def parse_dxbc(container):
 
 def fssm_from(nested):
     marker = nested.find(b"XBCH")
-    if marker < 0:
+    if marker < 0 or marker + 24 > len(nested):
         return None
     compressed, zero, uncompressed = struct.unpack_from("<III", nested, marker + 8)
-    if zero != 0 or uncompressed == 0:
+    if zero != 0 or uncompressed == 0 or compressed == 0:
         return None
     start = marker + 24
     if start + compressed > len(nested) or nested[start] & 0x0F != 0x08:
@@ -141,8 +148,8 @@ def carve_one(name, offset, archive):
     blob = fssm_from(nested)
     if blob is None:
         return {"name": name, "kind": kind, "error": "no-xbch"}
-    if blob[:4] != b"FSSM":
-        return {"name": name, "kind": kind, "error": "not-fssm"}
+    if blob[:4] != b"FSSM" or len(blob) < 0xC0 + 16:
+        return {"name": name, "kind": kind, "error": "short-fssm"}
     codeOffset, codeSize = struct.unpack_from("<QQ", blob, 0xC0)
     code = blob[codeOffset : codeOffset + codeSize]
     if len(code) != codeSize:
@@ -163,10 +170,25 @@ def main():
     parser.add_argument(
         "--out", required=True, help="directory for bins/ and manifest.csv"
     )
+    parser.add_argument(
+        "--force", action="store_true", help="replace blobs this tool wrote earlier"
+    )
     arguments = parser.parse_args()
 
     bins = os.path.join(arguments.out, "bins")
+    managed = (
+        sorted(name for name in os.listdir(bins) if MANAGED.fullmatch(name))
+        if os.path.isdir(bins)
+        else []
+    )
+    if managed and not arguments.force:
+        parser.error(
+            "%s already holds %d carved blobs; pass --force to replace them"
+            % (bins, len(managed))
+        )
     os.makedirs(bins, exist_ok=True)
+    for name in managed:
+        os.remove(os.path.join(bins, name))
     with open(arguments.archive, "rb") as handle:
         archive = mmap.mmap(handle.fileno(), 0, access=mmap.ACCESS_READ)
         entries = find_entries(archive)
