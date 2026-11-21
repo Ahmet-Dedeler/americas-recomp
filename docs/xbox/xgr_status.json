@@ -938,7 +938,7 @@ false
 ],
 [
 "XPackageIsPackagedProcess",
-false
+true
 ],
 [
 "XPackageCreateInstallationMonitor",
@@ -966,7 +966,7 @@ false
 ],
 [
 "XPackageGetUserLocale",
-false
+true
 ],
 [
 "XPackageFindChunkAvailability",

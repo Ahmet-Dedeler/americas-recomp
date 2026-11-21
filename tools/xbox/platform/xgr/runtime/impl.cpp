@@ -16,6 +16,7 @@
 
 namespace gtx::xgr::user { const Override* overrides(size_t* count); }   // impl_user.cpp (this repository)
 namespace gtx::xgr::storage { const Override* overrides(size_t* count); }
+namespace gtx::xgr::package { const Override* overrides(size_t* count); }
 
 #include <iterator>
 #include <vector>
@@ -139,6 +140,8 @@ const Override* overrides(size_t* count) {
     v.insert(v.end(), u, u + n);
     const Override* s = storage::overrides(&n);
     v.insert(v.end(), s, s + n);
+    const Override* p = package::overrides(&n);
+    v.insert(v.end(), p, p + n);
     return v;
   }();
   *count = all.size();
