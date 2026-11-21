@@ -20,6 +20,7 @@ struct User {
   std::atomic<long> refs{1};
   uint64_t id;
   uint64_t localId;
+  std::atomic<bool> added{false};
 };
 struct LocalId { uint64_t value; };
 
@@ -56,6 +57,7 @@ HRESULT CALLBACK add_provider(task::AsyncOp op, const task::AsyncProviderData* d
     case task::AsyncOp::GetResult: {
       User* u = the_user();
       u->refs++;
+      u->added = true;
       void* h = u;
       std::memcpy(d->buffer, &h, sizeof(h));
       break;
@@ -154,6 +156,76 @@ HRESULT XUserRegisterForChangeEvent_impl(void*, void*, void*, void*, task::Regis
 }
 uint8_t XUserUnregisterForChangeEvent_impl(void*, task::RegistrationToken, uint8_t) { return 1; }
 
+constexpr HRESULT kDeferralNotAvailable = static_cast<HRESULT>(0x89245103);
+HRESULT XUserGetSignOutDeferral_impl(void*, void** deferral) {
+  if (!deferral) return E_INVALIDARG;
+  *deferral = nullptr;
+  return kDeferralNotAvailable;
+}
+void XUserCloseSignOutDeferralHandle_impl(void*, void*) {}
+
+struct AppLocalDeviceId { uint8_t value[32]; };
+constexpr HRESULT kUserNotFound = static_cast<HRESULT>(0x89245104);
+
+HRESULT XUserFindForDevice_impl(void*, const AppLocalDeviceId* device, void** out) {
+  if (!device || !out) return E_INVALIDARG;
+  User* u = the_user();
+  if (!u->added) return kUserNotFound;
+  u->refs++;
+  *out = u;
+  return S_OK;
+}
+
+HRESULT register_never_fired(const void* callback, task::RegistrationToken* tok) {
+  static std::atomic<uint64_t> next{1};
+  if (!callback || !tok) return E_INVALIDARG;
+  tok->token = next++;
+  return S_OK;
+}
+
+HRESULT XUserRegisterForDeviceAssociationChanged_impl(void*, void*, void*, const void* callback, task::RegistrationToken* tok) {
+  return register_never_fired(callback, tok);
+}
+uint8_t XUserUnregisterForDeviceAssociationChanged_impl(void*, task::RegistrationToken, uint8_t) { return 1; }
+
+constexpr uint32_t kAudioEndpointKindCount = 2;
+
+HRESULT XUserGetDefaultAudioEndpointUtf16_impl(void*, LocalId, uint32_t kind, size_t count, wchar_t* endpoint, size_t*) {
+  if (kind >= kAudioEndpointKindCount || (count && !endpoint)) return E_INVALIDARG;
+  return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+}
+
+HRESULT XUserRegisterForDefaultAudioEndpointUtf16Changed_impl(void*, void*, void*, const void* callback, task::RegistrationToken* tok) {
+  return register_never_fired(callback, tok);
+}
+uint8_t XUserUnregisterForDefaultAudioEndpointUtf16Changed_impl(void*, task::RegistrationToken, uint8_t) { return 1; }
+
+HRESULT CALLBACK find_controller_provider(task::AsyncOp op, const task::AsyncProviderData* d) {
+  switch (op) {
+    case task::AsyncOp::DoWork:
+      task::AsyncComplete(d->async, S_OK, sizeof(AppLocalDeviceId));
+      break;
+    case task::AsyncOp::GetResult:
+      std::memset(d->buffer, 0, sizeof(AppLocalDeviceId));
+      break;
+    default:
+      break;
+  }
+  return S_OK;
+}
+HRESULT XUserFindControllerForUserWithUiAsync_impl(void*, void* h, task::AsyncBlock* a) {
+  if (!h || !a) return E_INVALIDARG;
+  HRESULT hr = task::AsyncBegin(a, nullptr, reinterpret_cast<const void*>(&XUserFindControllerForUserWithUiAsync_impl),
+                                "XUserFindControllerForUserWithUiAsync", find_controller_provider);
+  if (FAILED(hr)) return hr;
+  return task::AsyncSchedule(a, 0);
+}
+HRESULT XUserFindControllerForUserWithUiResult_impl(void*, task::AsyncBlock* a, AppLocalDeviceId* device) {
+  if (!device) return E_INVALIDARG;
+  return task::AsyncGetResult(a, reinterpret_cast<const void*>(&XUserFindControllerForUserWithUiAsync_impl), sizeof(AppLocalDeviceId),
+                              device, nullptr);
+}
+
 const Override kOverrides[] = {
     {"XUserGetMaxUsers", reinterpret_cast<void*>(&XUserGetMaxUsers_impl)},
     {"XUserAddAsync", reinterpret_cast<void*>(&XUserAddAsync_impl)},
@@ -174,6 +246,16 @@ const Override kOverrides[] = {
     {"XUserIsSignOutPresent", reinterpret_cast<void*>(&XUserIsSignOutPresent_impl)},
     {"XUserRegisterForChangeEvent", reinterpret_cast<void*>(&XUserRegisterForChangeEvent_impl)},
     {"XUserUnregisterForChangeEvent", reinterpret_cast<void*>(&XUserUnregisterForChangeEvent_impl)},
+    {"XUserGetSignOutDeferral", reinterpret_cast<void*>(&XUserGetSignOutDeferral_impl)},
+    {"XUserCloseSignOutDeferralHandle", reinterpret_cast<void*>(&XUserCloseSignOutDeferralHandle_impl)},
+    {"XUserFindForDevice", reinterpret_cast<void*>(&XUserFindForDevice_impl)},
+    {"XUserRegisterForDeviceAssociationChanged", reinterpret_cast<void*>(&XUserRegisterForDeviceAssociationChanged_impl)},
+    {"XUserUnregisterForDeviceAssociationChanged", reinterpret_cast<void*>(&XUserUnregisterForDeviceAssociationChanged_impl)},
+    {"XUserGetDefaultAudioEndpointUtf16", reinterpret_cast<void*>(&XUserGetDefaultAudioEndpointUtf16_impl)},
+    {"XUserRegisterForDefaultAudioEndpointUtf16Changed", reinterpret_cast<void*>(&XUserRegisterForDefaultAudioEndpointUtf16Changed_impl)},
+    {"XUserUnregisterForDefaultAudioEndpointUtf16Changed", reinterpret_cast<void*>(&XUserUnregisterForDefaultAudioEndpointUtf16Changed_impl)},
+    {"XUserFindControllerForUserWithUiAsync", reinterpret_cast<void*>(&XUserFindControllerForUserWithUiAsync_impl)},
+    {"XUserFindControllerForUserWithUiResult", reinterpret_cast<void*>(&XUserFindControllerForUserWithUiResult_impl)},
 };
 
 }  // namespace

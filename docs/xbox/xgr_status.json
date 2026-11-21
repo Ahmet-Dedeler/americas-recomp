@@ -10,7 +10,7 @@ false
 ],
 [
 "XHighContrastGetMode",
-false
+true
 ],
 [
 "XSpeechToTextSetPositionHint",
@@ -324,7 +324,7 @@ true
 "IXDisplayImpl": [
 [
 "XDisplayTryEnableHdrMode",
-false
+true
 ]
 ],
 "IXLauncherImpl": [
@@ -334,21 +334,21 @@ false
 ],
 [
 "XDisplayAcquireTimeoutDeferral",
-false
+true
 ],
 [
 "XDisplayCloseTimeoutDeferralHandle",
-false
+true
 ]
 ],
 "IXErrorImpl": [
 [
 "XErrorSetCallback",
-false
+true
 ],
 [
 "XErrorSetOptions",
-false
+true
 ]
 ],
 "IXGameImpl": [
@@ -372,11 +372,11 @@ false
 "IXGameActivationImpl": [
 [
 "XGameActivationRegisterForEvent",
-false
+true
 ],
 [
 "XGameActivationUnregisterForEvent",
-false
+true
 ],
 [
 "XGameActivationAcceptPendingInvite",
@@ -392,21 +392,21 @@ false
 "IXGameInviteImpl": [
 [
 "XGameInviteRegisterForEvent",
-false
+true
 ],
 [
 "XGameInviteUnregisterForEvent",
-false
+true
 ]
 ],
 "IXGameInviteImpl2": [
 [
 "XGameInviteRegisterForPendingEvent",
-false
+true
 ],
 [
 "XGameInviteUnregisterForPendingEvent",
-false
+true
 ],
 [
 "XGameInviteAcceptPendingInvite",
@@ -416,17 +416,17 @@ false
 "IXGameProtocolImpl": [
 [
 "XGameProtocolRegisterForActivation",
-false
+true
 ],
 [
 "XGameProtocolUnregisterForActivation",
-false
+true
 ]
 ],
 "IXGameRuntimeFeatureImpl": [
 [
 "XGameRuntimeIsFeatureAvailable",
-false
+true
 ]
 ],
 "IXGameSaveImpl": [
@@ -690,71 +690,71 @@ false
 "IXGameUiImpl": [
 [
 "XGameUiShowMessageDialogAsync",
-false
+true
 ],
 [
 "XGameUiShowMessageDialogResult",
-false
+true
 ],
 [
 "XGameUiShowSendGameInviteAsync",
-false
+true
 ],
 [
 "XGameUiShowSendGameInviteResult",
-false
+true
 ],
 [
 "XGameUiShowPlayerProfileCardAsync",
-false
+true
 ],
 [
 "XGameUiShowPlayerProfileCardResult",
-false
+true
 ],
 [
 "XGameUiShowAchievementsAsync",
-false
+true
 ],
 [
 "XGameUiShowAchievementsResult",
-false
+true
 ],
 [
 "XGameUiShowPlayerPickerAsync",
-false
+true
 ],
 [
 "XGameUiShowPlayerPickerResultCount",
-false
+true
 ],
 [
 "XGameUiShowPlayerPickerResult",
-false
+true
 ],
 [
 "XGameUiShowErrorDialogAsync",
-false
+true
 ],
 [
 "XGameUiShowErrorDialogResult",
-false
+true
 ],
 [
 "XGameUiSetNotificationPositionHint",
-false
+true
 ],
 [
 "XGameUiShowTextEntryAsync",
-false
+true
 ],
 [
 "XGameUiShowTextEntryResultSize",
-false
+true
 ],
 [
 "XGameUiShowTextEntryResult",
-false
+true
 ],
 [
 "XGameUiShowWebAuthenticationAsync",
@@ -906,29 +906,29 @@ false
 ],
 [
 "XNetworkingGetConnectivityHint",
-false
+true
 ],
 [
 "XNetworkingRegisterConnectivityHintChanged",
-false
+true
 ],
 [
 "XNetworkingUnregisterConnectivityHintChanged",
-false
+true
 ]
 ],
 "IXNetworkingImpl2": [
 [
 "XNetworkingQueryConfigurationSetting",
-false
+true
 ],
 [
 "XNetworkingSetConfigurationSetting",
-false
+true
 ],
 [
 "XNetworkingQueryStatistics",
-false
+true
 ]
 ],
 "IXPackageImpl": [
@@ -1438,7 +1438,7 @@ true
 ],
 [
 "XSystemGetAppSpecificDeviceId",
-false
+true
 ]
 ],
 "IXSystemImpl3": [
@@ -1454,7 +1454,7 @@ false
 "IXSystemImpl4": [
 [
 "XSystemAllowFullDownloadBandwidth",
-false
+true
 ]
 ],
 "IXSystemAnalyticsImpl": [
@@ -1590,11 +1590,11 @@ true
 ],
 [
 "XUserGetSignOutDeferral",
-false
+true
 ],
 [
 "XUserCloseSignOutDeferralHandle",
-false
+true
 ]
 ],
 "IXUserImpl2": [
@@ -1662,35 +1662,35 @@ false
 "IXUserDeviceImpl": [
 [
 "XUserFindForDevice",
-false
+true
 ],
 [
 "XUserRegisterForDeviceAssociationChanged",
-false
+true
 ],
 [
 "XUserUnregisterForDeviceAssociationChanged",
-false
+true
 ],
 [
 "XUserGetDefaultAudioEndpointUtf16",
-false
+true
 ],
 [
 "XUserRegisterForDefaultAudioEndpointUtf16Changed",
-false
+true
 ],
 [
 "XUserUnregisterForDefaultAudioEndpointUtf16Changed",
-false
+true
 ],
 [
 "XUserFindControllerForUserWithUiAsync",
-false
+true
 ],
 [
 "XUserFindControllerForUserWithUiResult",
-false
+true
 ]
 ],
 "IXUserGamertagImpl": [
