@@ -24,7 +24,7 @@ Experimental tooling for running Xbox Series shader code through the shader reco
    `exec_tests.py` and `exec_bvh_tests.py` hold the tests. Set `XBOX_EXEC` to the `exec.exe` path. Supported: guest buffers, shader data,
    flattened SRT, identity BDA page table and fault reporting, 2D RGBA32F images, samplers. Pixel shaders (`stage ps`, see the pixel
    smoke, interpolation and per-vertex tests): one triangle over up to eight RGBA32F targets; per-vertex inputs need
-   `VK_KHR_fragment_shader_barycentric`. Not yet: other image formats/dimensions, image tables, texel buffers, other graphics stages.
+   `VK_KHR_fragment_shader_barycentric`. Image tables (a T# loaded with a run-time index) bind like the other images. Not yet: other image formats/dimensions, texel buffers, other graphics stages.
    Compute shaders get the device's subgroup size for their wave size; a wave64 shader on a device whose largest compute subgroup is 32
    (NVIDIA, Intel) is recompiled for 32-wide subgroups, two guest lanes per invocation. `XBOX_HOST_SUBGROUP=<n>` forces the host size.
 

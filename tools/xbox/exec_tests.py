@@ -221,7 +221,66 @@ def test_multiwave_wave64():
 def test_lds_reverse_wave64():
     test_lds_reverse_across_waves(64)
 
-TESTS = [test_image_load_after_store_same_texel, test_readfirstlane_wave64_upper_half, test_multiwave_wave64, test_lds_reverse_wave64, test_multiwave_multigroup_global_id, test_lds_reverse_across_waves, test_store_lane_ids, test_readfirstlane_after_narrowed_write, test_waterfall_loop, test_image_store_phi_split]
+def _run_image_table(selector):
+    p = rdna_asm.Program()
+    p.smem('s_load_dwordx4', 16, 4, 128)
+    p.sopp('s_waitcnt', 0)
+    p.vop1('v_mov_b32', 1, 0)
+    p.mubuf('buffer_load_dword', 2, 1, 16)
+    p.sopp('s_waitcnt', 0)
+    p.vop1('v_readfirstlane_b32', 0, 'v2')
+    p.sop2('s_lshl_b32', 0, 's0', 5)
+    p.smem('s_load_dwordx8', 8, 4, 0, soffset='s0')
+    p.sopp('s_waitcnt', 0)
+    p.vop1('v_cvt_f32_u32', 4, 'v0')
+    p.vop1('v_mov_b32', 5, ('lit', 0x40000000))
+    p.vop1('v_mov_b32', 6, ('lit', 0x40600000))
+    p.vop1('v_mov_b32', 7, ('lit', 0x3f800000))
+    p.vop1('v_mov_b32', 1, 0)
+    p.mimg('image_store', 4, 0, 8)
+    p.sopp('s_endpgm')
+    images = ["image %d 32 1 clear -1 -1 -1 -1" % i for i in (1, 2, 3)]
+    pokes = images + ["timg 0 0 1", "timg 0 32 2", "timg 0 64 3"] + vsharp(0, 128, 4, 16) + [f"poke 4 0 {selector}"]
+    return run(p.bytes(), {0: (256, None), 4: (16, None)}, [], extra=pokes)
+
+def test_image_table_runtime_index():
+    want = tuple(v for lane in range(32) for v in (float(lane), 2.0, 3.5, 1.0))
+    for selector in (0, 1, 2):
+        r = _run_image_table(selector)
+        for i in (1, 2, 3):
+            got = _image_pixels(r['out'], i)
+            if i == selector + 1:
+                assert got == want, ("selector", selector, "image", i, got[:8])
+            else:
+                assert got == tuple([-1.0] * 128), ("selector", selector, "image", i, "was written", got[:8])
+
+def test_image_table_runtime_index_load():
+    for selector in (0, 2):
+        p = rdna_asm.Program()
+        p.smem('s_load_dwordx4', 16, 4, 128)
+        p.smem('s_load_dwordx4', 20, 4, 144)
+        p.sopp('s_waitcnt', 0)
+        p.vop1('v_mov_b32', 1, 0)
+        p.mubuf('buffer_load_dword', 2, 1, 16)
+        p.sopp('s_waitcnt', 0)
+        p.vop1('v_readfirstlane_b32', 0, 'v2')
+        p.sop2('s_lshl_b32', 0, 's0', 5)
+        p.smem('s_load_dwordx8', 8, 4, 0, soffset='s0')
+        p.sopp('s_waitcnt', 0)
+        p.vop1('v_mov_b32', 1, 0)
+        p.mimg('image_load', 4, 0, 8)
+        p.sopp('s_waitcnt', 0)
+        p.vop2('v_lshlrev_b32', 1, 4, 'v0')
+        p.mubuf('buffer_store_dwordx4', 4, 1, 20)
+        p.sopp('s_endpgm')
+        images = ["image %d 32 1 clear %d %d %d %d" % (i, 10 * i, 10 * i + 1, 10 * i + 2, 10 * i + 3) for i in (1, 2, 3)]
+        pokes = images + ["timg 0 0 1", "timg 0 32 2", "timg 0 64 3"] + vsharp(0, 128, 4, 16) + vsharp(0, 144, 5, 512) + [f"poke 4 0 {selector}"]
+        r = run(p.bytes(), {0: (256, None), 4: (16, None), 5: (512, None)}, [], extra=pokes)
+        i = selector + 1
+        got = struct.unpack('<128f', r[5])
+        assert got == tuple([10.0 * i, 10.0 * i + 1, 10.0 * i + 2, 10.0 * i + 3] * 32), ("selector", selector, got[:8])
+
+TESTS = [test_image_table_runtime_index, test_image_table_runtime_index_load, test_image_load_after_store_same_texel, test_readfirstlane_wave64_upper_half, test_multiwave_wave64, test_lds_reverse_wave64, test_multiwave_multigroup_global_id, test_lds_reverse_across_waves, test_store_lane_ids, test_readfirstlane_after_narrowed_write, test_waterfall_loop, test_image_store_phi_split]
 
 if __name__ == "__main__":
     bad = 0
