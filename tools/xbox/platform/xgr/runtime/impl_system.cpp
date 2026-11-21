@@ -336,7 +336,6 @@ const FeatureRequirement kFeatureRequirements[] = {
     {10, {"XNetworkingGetConnectivityHint", "XNetworkingRegisterConnectivityHintChanged", "XNetworkingUnregisterConnectivityHintChanged"}},
     {11, {"XPackageGetCurrentProcessPackageIdentifier", "XPackageIsPackagedProcess"}},
     {12, {"XPersistentLocalStorageGetPathSize", "XPersistentLocalStorageGetPath"}},
-    {13, {"XSpeechSynthesizerCreate", "XSpeechSynthesizerCreateStreamFromText", "XSpeechSynthesizerCloseHandle"}},
     {14, {"XStoreCreateContext", "XStoreQueryGameLicenseAsync", "XStoreQueryGameLicenseResult"}},
     {15, {"XSystemGetAnalyticsInfo", "XSystemGetConsoleId"}},
     {16, {"XTaskQueueCreate", "XTaskQueueDispatch", "XTaskQueueCloseHandle", "XTaskQueueSubmitCallback",

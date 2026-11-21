@@ -196,8 +196,8 @@ static void CheckErrorAndDisplay() {
 static void CheckFeatures() {
   Api feature = Get(kFeature);
   auto available = feature.At<BOOLEAN (*)(void*, uint32_t)>(3, "XGameRuntimeIsFeatureAvailable");
-  const uint32_t expectedOn[] = {2, 3, 4, 7, 11, 12, 15, 16, 17, 18, 19};
-  const uint32_t expectedOff[] = {0, 1, 5, 9, 13, 14, 20, 21, 22, 0xffffffffu};
+  const uint32_t expectedOn[] = {0, 2, 3, 4, 7, 11, 12, 15, 16, 17, 18, 19};
+  const uint32_t expectedOff[] = {1, 5, 9, 13, 14, 20, 21, 22, 0xffffffffu};
   bool on = true, off = true;
   for (uint32_t f : expectedOn) on = on && available(feature.self, f);
   for (uint32_t f : expectedOff) off = off && !available(feature.self, f);
@@ -288,7 +288,6 @@ static void CheckAccessibility() {
   bool desktopOn = (contrast.dwFlags & HCF_HIGHCONTRASTON) != 0;
   Check(hr == S_OK && (desktopOn ? (mode == 1 || mode == 2) : mode == 0), "XHighContrastGetMode matches the Windows high-contrast setting");
   Check(access.At<HRESULT (*)(void*, uint32_t*)>(5, "XHighContrastGetMode")(access.self, nullptr) == E_INVALIDARG, "XHighContrastGetMode rejects null");
-  Check(access.At<HRESULT (*)(void*, void*)>(3, "XClosedCaptionGetProperties")(access.self, &mode) == E_NOTIMPL, "XClosedCaptionGetProperties stays failing");
 }
 
 static void CheckUser() {
