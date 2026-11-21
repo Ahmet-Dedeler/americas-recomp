@@ -43,9 +43,9 @@ class Program:
         self.words = []
     def sopp(self, name, imm=0):
         self.words.append(0xBF800000 | (SOPP[name] << 16) | (imm & 0xffff))
-    def smem(self, name, sdata, sbase, offset=0):
+    def smem(self, name, sdata, sbase, offset=0, soffset=None):
         self.words.append(0xF4000000 | (SMEM[name] << 18) | (sdata << 6) | (sbase >> 1))
-        self.words.append((0x7D << 25) | offset)
+        self.words.append(((0x7D if soffset is None else int(soffset[1:])) << 25) | offset)
     def vop2(self, name, vdst, s0, vsrc1):
         code, lit = src(s0)
         self.words.append((VOP2[name] << 25) | (vdst << 17) | (int(vsrc1[1:]) << 9) | code)
