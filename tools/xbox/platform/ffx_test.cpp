@@ -14,6 +14,7 @@
 #include <cstdlib>
 using Microsoft::WRL::ComPtr;
 #include "xbox_device_proxy.h"
+#include "xbox_device_overrides.h"
 
 // Xbox device vtable slot 76 (+0x260) is the resource creation call: heap properties, heap flags, resource description, initial state,
 // optimized clear value, iid, output. Same argument order as the PC CreateCommittedResource (slot 27), but the description carries an
@@ -46,8 +47,7 @@ static HRESULT __fastcall Slot76(XboxDeviceProxy* self, const D3D12_HEAP_PROPERT
         for (int i = 56; i < 80; i += 4) printf(" %08x", *(const unsigned*)(desc + i));
         printf("\n");
     }
-    if ((unsigned)d.Layout == 0x101) d.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;   // Xbox tiled layout: let the PC driver choose
-    return ((ID3D12Device*)self->real)->CreateCommittedResource(hp, (D3D12_HEAP_FLAGS)heapFlags, &d, (D3D12_RESOURCE_STATES)state, cv, riid, out);
+    return xbox_overrides::CreateResource((ID3D12Device*)self->real, hp, heapFlags, desc, state, cv, riid, out);   // layout 0x101 -> driver's choice, RGB9E5 UAV fallback
 }
 
 struct Header { uint64_t type; Header* next; };
@@ -129,6 +129,8 @@ int main(int argc, char** argv) {
     XboxDeviceProxy* proxy = XboxDeviceProxy::Create(dev.Get());
     proxy->Override(76, (void*)Slot76);
     proxy->Override(14, (void*)Slot14);
+    proxy->Override(18, (void*)xbox_overrides::Slot18);
+    proxy->Override(19, (void*)xbox_overrides::Slot19);
     be.h.type = 0x01000002; be.device = proxy;      // the DLLs get the Xbox-layout stand-in, not the PC device
     CreateUpscale cu = {};
     cu.h.type = 0x10000; cu.h.next = &be.h;
