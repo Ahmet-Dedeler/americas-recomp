@@ -3,7 +3,8 @@ import os, struct, subprocess, sys, tempfile
 sys.path.insert(0, os.path.dirname(__file__))
 import rdna_asm
 
-EXEC = os.environ.get("XBOX_EXEC", r"E:/Programming/anyps5_src/build/exec.exe")
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+EXEC = os.environ.get("XBOX_EXEC", os.path.join(ROOT, "build-xbox", "exec.exe"))
 
 def run(program_bytes, regions, pokes=(), user=((4, 0),), groups=(1, 1, 1), wave=32, extra=()):
     """regions: {id: (size, initial_bytes|None)}; pokes: scenario lines. Returns {id: bytes} or raises."""
