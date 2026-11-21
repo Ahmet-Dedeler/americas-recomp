@@ -2,6 +2,20 @@
 
 Experimental tooling for running Xbox Series shader code through the shader recompiler. See `docs/xbox/XBOX_SHADERS.md`.
 
+### Verify the pixel stage
+
+With the Vulkan SDK's `glslangValidator` on PATH and the execution harness built,
+run this from the repository root:
+
+```powershell
+python tools/xbox/pixel_smoke.py --exec "build-xbox/exec.exe"
+```
+
+The vertex shader draws a full-screen triangle. The standalone RDNA2 pixel shader
+writes the pixel-center X and Y coordinates, zero blue, and unit alpha to a
+13 by 7 RGBA32F attachment. The test checks every channel at every coordinate
+and reports the first mismatch. It uses no external shader corpus.
+
 1. `build_msvc.py` builds the recompiler and the tools below with MSVC (run it from PowerShell/cmd).
 2. `extract_shaders.py` writes prologue-stripped, trimmed code blobs `<idx>.bin` (it depends on the RPF9
    extraction pipeline and `rdna2.py` decoder kept next to the dumped shaders; adjust its paths).
