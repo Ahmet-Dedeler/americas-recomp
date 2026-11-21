@@ -33,6 +33,7 @@ struct Item {
   void* ctx;
   Queue* owner;           // queue the item was submitted through (holds a ref + inflight count)
   bool canceled = false;  // set by termination; still delivered through the port (verified vs MS runtime)
+  Port* port = nullptr;
 };
 
 struct Port {
@@ -42,6 +43,7 @@ struct Port {
   std::condition_variable cv;
   std::deque<Item> items;  // Manual + SerializedThreadPool
   bool serial_running = false;
+  std::atomic<long> outstanding{0};
 };
 
 struct Monitor {
@@ -83,15 +85,18 @@ void release(Queue* q) {
   delete q;
 }
 
-Item begin_item(Queue* q, Callback cb, void* ctx) {
+Item begin_item(Queue* q, PortId port_id, Callback cb, void* ctx) {
   add_ref(q);
+  Port* port = q->ports[static_cast<uint32_t>(port_id)];
+  port->outstanding.fetch_add(1, std::memory_order_acq_rel);
   std::lock_guard<std::mutex> lock(q->m);
   ++q->inflight;
-  return {cb, ctx, q};
+  return {cb, ctx, q, false, port};
 }
 
 void finish_item(const Item& item, bool canceled) {
   item.cb(item.ctx, canceled || item.canceled);
+  item.port->outstanding.fetch_sub(1, std::memory_order_acq_rel);
   Queue* q = item.owner;
   {
     std::lock_guard<std::mutex> lock(q->m);
@@ -314,7 +319,7 @@ HRESULT Submit(Queue* q, PortId port, void* ctx, Callback cb) {
   if (is_terminated(q)) {
     hr = E_ABORT;
   } else {
-    enqueue(q, port, begin_item(q, cb, ctx));
+    enqueue(q, port, begin_item(q, port, cb, ctx));
   }
   if (!borrowed) Close(q);
   return hr;
@@ -330,7 +335,7 @@ HRESULT SubmitDelayed(Queue* q, PortId port, uint32_t delay_ms, void* ctx, Callb
   if (is_terminated(q)) {
     hr = E_ABORT;
   } else {
-    Delayed d{q, port, begin_item(q, cb, ctx)};
+    Delayed d{q, port, begin_item(q, port, cb, ctx)};
     std::lock_guard<std::mutex> lock(g_delay_m);
     if (!g_delay_thread_started) {
       g_delay_thread_started = true;
@@ -490,6 +495,16 @@ void SetProcessQueue(Queue* q) {
     g_proc_explicit = true;
   }
   if (old) release(old);
+}
+
+bool IsEmpty(Queue* q, PortId port) {
+  if (!valid_port(port)) return true;
+  bool borrowed = false;
+  q = resolve(q, &borrowed);
+  if (!q) return true;
+  bool empty = q->ports[static_cast<uint32_t>(port)]->outstanding.load(std::memory_order_acquire) == 0;
+  if (!borrowed) Close(q);
+  return empty;
 }
 
 // =========================================================================== XAsync
@@ -784,6 +799,7 @@ HRESULT v_RegisterMonitor(void*, Queue* q, void* c, MonitorCallback cb, Registra
 void v_UnregisterMonitor(void*, Queue* q, RegistrationToken t) { UnregisterMonitor(q, t); }
 bool v_GetProcessQueue(void*, Queue** q) { return GetProcessQueue(q); }
 void v_SetProcessQueue(void*, Queue* q) { SetProcessQueue(q); }
+bool v_IsEmpty(void*, Queue* q, PortId p) { return IsEmpty(q, p); }
 
 #define GTX_OV(api, fn) {api, reinterpret_cast<void*>(&fn)}
 const Override kOverrides[] = {
@@ -810,6 +826,7 @@ const Override kOverrides[] = {
     GTX_OV("XTaskQueueUnregisterMonitor", v_UnregisterMonitor),
     GTX_OV("XTaskQueueGetCurrentProcessTaskQueue", v_GetProcessQueue),
     GTX_OV("XTaskQueueSetCurrentProcessTaskQueue", v_SetProcessQueue),
+    GTX_OV("XTaskQueueIsEmpty", v_IsEmpty),
 };
 #undef GTX_OV
 }  // namespace
