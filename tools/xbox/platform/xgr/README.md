@@ -18,3 +18,12 @@ Environment: `XGR_LOG=<file>` (interfaces queried, first call of each stubbed me
 and the system analytics info (reports Windows.Xbox / Xbox Series X). Implemented: the whole XAsync/XTaskQueue layer, XThread hints, system and title ids, and the user functions with no network (XUserAdd*, ids, gamertag, state, age group, privileges, change-event registration), and persistent local storage (path, path size, space info: a directory limited to the title's declared quota).
 Everything else logs and fails: save games, packages, store, game UI, networking, gamer picture, tokens.
 Vendored files (`runtime/xtask.*`, `xgr_internal.h`, `impl.cpp`, `gtx/`) are GrandTheftXbox's; `impl.cpp` has one local change, marked in the file.
+
+Behaviour of the implemented methods where the console is not matched exactly (written from the interface signatures and the public GDK documentation):
+* Persistent local storage (`runtime/impl_storage.cpp`): a directory, `XGR_PLS_DIR` or `PersistentLocalStorage` next to the executable, created on first use; the path ends in a backslash like the console's `T:\`.
+  Quota: `XGR_PLS_SIZE_MB` or the `SizeMB` of `MicrosoftGame.Config`; a title that declares none gets `E_NOTIMPL` (the console's answer is not known).
+  Space info: total = quota, used = size of the files under the directory, total free = quota - used, available = that limited by the PC volume's free space (no cluster or metadata accounting).
+  `PromptUserForSpaceAsync/Result` (system UI) and `MountForPackage` log and fail.
+* `XUserGetGamertag`: `XGR_GAMERTAG` or `Player`; Classic is cut to 15 bytes; the offline profile has no modern suffix, so ModernSuffix is empty and UniqueModern equals Modern.
+* A buffer shorter than the text plus its terminator gets `HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER)`; the console's code for that case is not verified.
+* `runtime/impl.cpp` (vendored) also registers `impl_storage.cpp`'s overrides, next to `impl_user.cpp`'s.

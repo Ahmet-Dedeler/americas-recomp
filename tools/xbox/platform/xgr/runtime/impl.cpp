@@ -1,5 +1,5 @@
 // xgameruntime.dll shim — real implementations (T-012).
-// VENDORED from GrandTheftXbox (MIT, see GTX_LICENSE.txt). Local change: also registers impl_user.cpp's and impl_storage.cpp's overrides (marked below).
+// VENDORED from GrandTheftXbox (MIT, see GTX_LICENSE.txt). Local change: also registers impl_user.cpp's overrides (marked below).
 // Each function is member-style: first parameter is the interface object (`self`), then the
 // public API's parameters in order (see tools/xgameruntime/api_table.json for prototypes).
 // Add an entry to kOverrides to replace the logging stub for that API's vtable slot.
@@ -15,7 +15,7 @@
 #include "xtask.h"
 
 namespace gtx::xgr::user { const Override* overrides(size_t* count); }   // impl_user.cpp (this repository)
-namespace gtx::xgr::storage { const Override* overrides(size_t* count); }   // impl_storage.cpp (this repository)
+namespace gtx::xgr::storage { const Override* overrides(size_t* count); }
 
 #include <iterator>
 #include <vector>
@@ -137,7 +137,7 @@ const Override* overrides(size_t* count) {
     v.insert(v.end(), t, t + n);
     const Override* u = user::overrides(&n);     // modification of the vendored file: also register the offline user
     v.insert(v.end(), u, u + n);
-    const Override* s = storage::overrides(&n);  // modification of the vendored file: persistent local storage
+    const Override* s = storage::overrides(&n);
     v.insert(v.end(), s, s + n);
     return v;
   }();

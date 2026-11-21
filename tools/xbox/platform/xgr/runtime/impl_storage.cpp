@@ -1,13 +1,3 @@
-// Persistent local storage for the xgameruntime stand-in: a directory on the PC, limited to the quota the title declares.
-// Written from the interface signatures (IXPersistentLocalStorageImpl in the Xodus IDLs) and the public GDK documentation.
-// Directory: XGR_PLS_DIR, else <directory of the process executable>\PersistentLocalStorage; created on first use. The path handed out
-// ends in a backslash, as the console's T:\ does.
-// Quota: XGR_PLS_SIZE_MB, else <PersistentLocalStorage><SizeMB> in MicrosoftGame.Config next to the executable. A title that declares
-// no quota gets E_NOTIMPL from every call (what the console returns then is not known).
-// Space info: totalBytes = quota, usedBytes = size of the files under the directory, totalFreeBytes = quota - used,
-// availableFreeBytes = totalFreeBytes limited by the free space of the PC volume. The console's exact accounting (cluster rounding,
-// metadata) is not modelled.
-// Not implemented (log and fail): XPersistentLocalStoragePromptUserForSpaceAsync/Result (system UI), XPersistentLocalStorageMountForPackage.
 #define GTX_SHIM_DLL "xgameruntime.dll"
 #include <windows.h>
 
@@ -74,7 +64,6 @@ bool make_dirs(const std::string& dir) {
   return true;
 }
 
-// the directory, with a trailing backslash, created if missing; empty on failure
 const std::string& root() {
   static const std::string r = [] {
     const char* e = std::getenv("XGR_PLS_DIR");

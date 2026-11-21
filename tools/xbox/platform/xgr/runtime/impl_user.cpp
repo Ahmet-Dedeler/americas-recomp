@@ -131,8 +131,6 @@ HRESULT XUserCheckPrivilege_impl(void*, void* h, uint32_t, uint32_t, uint8_t* ha
   *has = 1;   // offline profile: every privilege granted, so no title is blocked on a missing one
   return S_OK;
 }
-// gamertag: XGR_GAMERTAG, else "Player". Classic is limited to 15 bytes; an offline profile has no modern suffix, so ModernSuffix is
-// empty and UniqueModern equals Modern. A buffer shorter than the text plus its terminator gets ERROR_INSUFFICIENT_BUFFER.
 HRESULT XUserGetGamertag_impl(void*, void* h, uint32_t component, size_t size, char* out, size_t* used) {
   if (!h || !out || component > 3) return E_INVALIDARG;
   const char* e = std::getenv("XGR_GAMERTAG");
