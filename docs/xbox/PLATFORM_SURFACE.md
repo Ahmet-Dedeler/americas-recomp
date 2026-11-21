@@ -80,8 +80,18 @@ That covers the four arithmetic-only shaders, and on the RX 7800 XT (one shader 
 - This shows the lowered shader is stable, not that it is correct: the original cannot run anywhere, so there is no reference output.
   A CPU model of the rehydration (from the shader text and `BVH_CONTAINER.md`) is the next way to check it.
 
-Next: the nine wave/lane shaders (`ReadLane`, `LaneSwizzle`, `Ballot64`, `MBCNT64`, `S_BCNT1_U64`, `MakeUniform`, `V_CNDMASK_B32`; these depend on the
-64-lane wave the Xbox build assumed: `__XBOX_ENABLE_WAVE32` is set in the shaders seen so far) and then the raw-address ones.
+**More intrinsics lowered; 22 of the 53 builder shaders now compile on the GPU (`lower_all.py`)**: `lower_all.py <dir with shader_NN.ll> <out_dir>` lowers, pins the wave
+size to 64 where wave operations are used (`dxil_sm66_wave.py`), assembles, signs and repairs the shader-flags word. Added to the table: lane id, readfirstlane, readlane,
+`ds_swizzle` (bitmask and quad modes), ballot, `v_cndmask_b32`, `mbcnt`, `s_bcnt1`, min3/max3/med3 (f32 and u32), `v_bfi`, `v_alignbyte`, `WaveMin_U32`, 64-bit `MakeUniform`.
+All 22 (the 13 pointer-free shaders of the earlier count plus the nine wave/lane ones) are accepted as pipelines by the RX 7800 XT.
+The lane intrinsics were run (`wavelower_kernel.ll` + `wavelower_check.py`, wave size 64, 64 groups x 64 lanes) and match a software model with 0 mismatches;
+the model uses the same formulas as the lowering, so this checks the plumbing. The one argument order that is inferred and not documented is `V_CNDMASK_B32(mask pair, {src0, src1})`:
+it is what the Hillis-Steele prefix sums in these shaders (masks `0xAAAAAAAA`/`0xCCCCCCCC`/`0xF0F0F0F0` with swizzle offsets 30/60/120) require.
+The other 31 shaders use `global_load/store/atomic` and `s_load` on 64-bit addresses (plus one `TypedLoad`). Those addresses are not derived inside the shader:
+they are 64-bit fields read from buffers (for example `rawBufferLoad.i64` at offset 24 of an input record), so they are GPU virtual addresses that the game obtained from the device.
+Design for them: the proxy records every resource's (virtual address, size, descriptor) when it is created, the lowered shader looks the address up in that table
+(range search in a constant table) and loads through `ResourceDescriptorHeap[i]` (SM 6.6) at `address - base`. It needs the real addresses, so it waits for the game or a captured input;
+raw buffers are limited to 4 GiB per view.
 Not reached: any build or rehydrate call. They take GPU virtual addresses, which the builder's DXIL shaders read by 64-bit address (no PC
 D3D12 equivalent), and real inputs would also need the matching vertex/index buffers (BVH_CONTAINER.md).
 
