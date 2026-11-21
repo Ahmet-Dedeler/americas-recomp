@@ -72,5 +72,207 @@ class XboxDxilLowerDeclarationTests(unittest.TestCase):
         self.assert_decls_before_first_define(result)
 
 
+RENUMBER_MODULE = """source_filename = "test"
+target triple = "dxil-ms-dx"
+%dx.types.Handle = type { i8* }
+
+define void @main() {
+  %1 = add i32 1, 2
+  %7 = add i32 %1, 3
+  ret void
+}
+
+define i32 @second(i32 %0, i32 %3) {
+  %5 = add i32 %0, %3
+  %sum = add i32 %5, 7
+  %9 = add i32 %sum, 1
+  ret i32 %9
+}
+
+define void @branches() {
+; <label>:7
+  br label %9
+; <label>:9
+  ret void
+}
+
+define i32 @phi_switch(i32 %0) {
+; <label>:4
+  %6 = phi i32 [ %0, %4 ], [ 1, %8 ]
+  switch i32 %6, label %8 [ i32 1, label %9
+                            i32 2, label %4 ]
+; <label>:8
+  %11 = add i32 %6, 1
+  ret i32 %11
+; <label>:9
+  ret i32 %0
+}
+
+define void @branch_entry() {
+  br label %5
+; <label>:5
+  %7 = add i32 1, 2
+  ret void
+}
+
+define i32 @omitted_args(i32, i32 %4, i32) {
+  %8 = add i32 %0, %4
+  %9 = add i32 %8, %5
+  ret i32 %9
+}
+
+define i32 @attr_align() alignstack(16) {
+  %1 = add i32 1, 2
+  ret i32 %1
+}
+
+define void @typed_param(%dx.types.Handle %4) {
+  %7 = add i32 1, 2
+  ret void
+}
+
+define void @bare_labels() {
+  br label %5
+5:
+  %7 = add i32 1, 2
+  ret void
+}
+
+define i32 @implicit_entry_phi(i32 %4) {
+  %7 = phi i32 [ %4, %5 ]
+  ret i32 %7
+}
+
+define void @indented_labels() {
+  br label %8
+  8:
+  %9 = add i32 1, 2
+  ret void
+}
+
+"""
+
+
+def function_body(text, name):
+    m = re.search(r"^define [^\n]*@" + re.escape(name) + r"\([^\n]*\)[^\n]*\{", text, re.M)
+    start = m.end()
+    return text[start:text.index("\n}\n", start)]
+
+
+def function_ids(text, name):
+    m = re.search(r"^define [^\n]*@" + re.escape(name) + r"\(([^\n]*)\)[^\n]*\{", text, re.M)
+    ids = [x[1:] for x in re.findall(r"%\d+\b", m.group(1))]
+    lines = [line for line in function_body(text, name).split("\n") if line]
+    if lines and not re.match(r"^(; <label>:|%?\d+:)", lines[0]):
+        ids.append(str(len(ids)))
+    for line in lines:
+        label = re.match(r"^; <label>:(\d+)", line)
+        value = re.match(r"^\s*%(\d+) = ", line)
+        numbered_label = re.match(r"^%?(\d+):", line)
+        if label:
+            ids.append(label.group(1))
+        elif value:
+            ids.append(value.group(1))
+        elif numbered_label:
+            ids.append(numbered_label.group(1))
+    return ids
+
+
+class XboxDxilLowerRenumberTests(unittest.TestCase):
+    def test_single_function_numbering_unchanged(self):
+        result = lower_module.renumber(RENUMBER_MODULE)
+        self.assertEqual(function_ids(result, "main"), ["0", "1", "2"])
+        self.assertNotIn("%7", function_body(result, "main"))
+        self.assertIn("%2 = add i32 %1, 3", function_body(result, "main"))
+
+    def test_second_function_arguments_and_holes_renumbered(self):
+        result = lower_module.renumber(RENUMBER_MODULE)
+        self.assertEqual(function_ids(result, "second"), ["0", "1", "2", "3", "4"])
+        self.assertIn("define i32 @second(i32 %0, i32 %1) {", result)
+        body = function_body(result, "second")
+        self.assertIn("%3 = add i32 %0, %1", body)
+        self.assertIn("%sum = add i32 %3, 7", body)
+        self.assertIn("%4 = add i32 %sum, 1", body)
+        self.assertIn("ret i32 %4", body)
+        self.assertNotIn("%9", body)
+
+    def test_numeric_labels_and_branch_targets_renumbered(self):
+        result = lower_module.renumber(RENUMBER_MODULE)
+        self.assertEqual(function_ids(result, "branches"), ["0", "1"])
+        body = function_body(result, "branches")
+        self.assertIn("; <label>:0", body)
+        self.assertIn("br label %1", body)
+        self.assertIn("; <label>:1", body)
+
+    def test_phi_incoming_blocks_and_switch_targets_renumbered(self):
+        result = lower_module.renumber(RENUMBER_MODULE)
+        self.assertEqual(function_ids(result, "phi_switch"), ["0", "1", "2", "3", "4", "5"])
+        body = function_body(result, "phi_switch")
+        self.assertIn("%2 = phi i32 [ %0, %1 ], [ 1, %3 ]", body)
+        self.assertIn("switch i32 %2, label %3 [ i32 1, label %5", body)
+        self.assertIn("i32 2, label %1 ]", body)
+        self.assertIn("%4 = add i32 %2, 1", body)
+        self.assertIn("ret i32 %4", body)
+
+    def test_entry_branch_reserves_its_slot(self):
+        result = lower_module.renumber(RENUMBER_MODULE)
+        self.assertEqual(function_ids(result, "branch_entry"), ["0", "1", "2"])
+        body = function_body(result, "branch_entry")
+        self.assertIn("br label %1", body)
+        self.assertIn("; <label>:1", body)
+        self.assertIn("%2 = add i32 1, 2", body)
+
+    def test_omitted_parameter_ids_are_counted(self):
+        result = lower_module.renumber(RENUMBER_MODULE)
+        self.assertIn("define i32 @omitted_args(i32, i32 %1, i32) {", result)
+        body = function_body(result, "omitted_args")
+        self.assertIn("%4 = add i32 %0, %1", body)
+        self.assertIn("%5 = add i32 %4, %2", body)
+        self.assertIn("ret i32 %5", body)
+
+    def test_trailing_function_attribute_is_not_a_parameter(self):
+        result = lower_module.renumber(RENUMBER_MODULE)
+        self.assertEqual(function_ids(result, "attr_align"), ["0", "1"])
+        body = function_body(result, "attr_align")
+        self.assertIn("%1 = add i32 1, 2", body)
+        self.assertIn("ret i32 %1", body)
+
+    def test_named_struct_type_parameter_counts_its_value_id(self):
+        result = lower_module.renumber(RENUMBER_MODULE)
+        self.assertIn("define void @typed_param(%dx.types.Handle %0) {", result)
+        self.assertEqual(function_ids(result, "typed_param"), ["0", "1", "2"])
+        self.assertIn("%2 = add i32 1, 2", function_body(result, "typed_param"))
+
+    def test_bare_numeric_block_labels_renumbered(self):
+        result = lower_module.renumber(RENUMBER_MODULE)
+        self.assertEqual(function_ids(result, "bare_labels"), ["0", "1", "2"])
+        body = function_body(result, "bare_labels")
+        self.assertIn("br label %1", body)
+        self.assertIn("1:", body)
+        self.assertIn("%2 = add i32 1, 2", body)
+
+    def test_implicit_entry_id_is_mapped(self):
+        result = lower_module.renumber(RENUMBER_MODULE)
+        self.assertIn("define i32 @implicit_entry_phi(i32 %0) {", result)
+        body = function_body(result, "implicit_entry_phi")
+        self.assertIn("phi i32 [ %0, %1 ]", body)
+        self.assertIn("ret i32 %2", body)
+
+    def test_indented_numeric_label_is_rewritten(self):
+        result = lower_module.renumber(RENUMBER_MODULE)
+        body = function_body(result, "indented_labels")
+        self.assertIn("br label %1", body)
+        self.assertIn("  1:", body)
+        self.assertIn("%2 = add i32 1, 2", body)
+
+    def test_references_only_defined_ids(self):
+        result = lower_module.renumber(RENUMBER_MODULE)
+        for name in ("main", "second", "branches", "phi_switch"):
+            with self.subTest(function=name):
+                defined = set(function_ids(result, name))
+                referenced = set(re.findall(r"%(\d+)\b", function_body(result, name)))
+                self.assertLessEqual(referenced, defined)
+
+
 if __name__ == "__main__":
     unittest.main()
