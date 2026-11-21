@@ -106,6 +106,13 @@ downloads/
 !/docs/run-report-fixtures/*.json
 !tools/titles.json
 !tools/input-mapper/package.json
+!/docs/xbox/bvh_builder_shaders.json
+!/docs/xbox/cpu_compare.json
+!/docs/xbox/cpu_compare_ps.json
+!/docs/xbox/dxil_probe.json
+!/docs/xbox/results.json
+!/docs/xbox/xgr_status.json
+!/tools/xbox/canary.json
 
 !/assets/*.jpg
 !/assets/*.png
