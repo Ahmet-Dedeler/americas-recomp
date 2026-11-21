@@ -17,8 +17,9 @@ Experimental tooling for running Xbox Series shader code through the shader reco
    host GPU and writes the memory regions (and images) back. Build it on Windows with `build_msvc.py --with-exec`.
    `rdna_asm.py` assembles small RDNA2 test programs (opcode numbers come from the decoder tables; each program is decoded back to check it),
    `exec_tests.py` and `exec_bvh_tests.py` hold the tests. Set `XBOX_EXEC` to the `exec.exe` path. Supported: guest buffers, shader data,
-   flattened SRT, identity BDA page table and fault reporting, 2D RGBA32F images, samplers. Pixel shaders (`stage ps`, see the pixel smoke test): one triangle over
-   a single RGBA32F target. Not yet: other image formats/dimensions, image tables, texel buffers, other graphics stages.
+   flattened SRT, identity BDA page table and fault reporting, 2D RGBA32F images, samplers. Pixel shaders (`stage ps`, see the pixel
+   smoke, interpolation and per-vertex tests): one triangle over up to eight RGBA32F targets; per-vertex inputs need
+   `VK_KHR_fragment_shader_barycentric`. Not yet: other image formats/dimensions, image tables, texel buffers, other graphics stages.
 
 ## Pixel smoke test
 
@@ -50,6 +51,22 @@ CPU derives screen-space weights from the projected triangle, divides each by
 the corresponding W, then normalizes their sum to one. Covered pixels must match
 within 0.00001 per channel. Outside pixels must exactly retain the clear value.
 The triangle edges avoid pixel centers, so the reference needs no edge tie-break.
+
+## Per-vertex input test
+
+With a built execution harness and the Vulkan SDK's `glslangValidator` on PATH:
+
+```powershell
+python tools/xbox/per_vertex_test.py --exec "build-xbox/exec.exe"
+```
+
+The fragment program reads the P0, P10 and P20 interpolation parameters of one
+attribute with `VINTRP MOV` and writes them to three RGBA32F targets. The vertex
+shader assigns red, green and blue to the three vertices. P10 and P20 are the
+vertex-1 and vertex-2 plane coefficients (P1 - P0 and P2 - P0), not the raw
+vertex colours. Every pixel must read P0 = (1, 0, 0, 1), P10 = (-1, 1, 0, 0) and
+P20 = (-1, 0, 1, 0). The test needs `VK_KHR_fragment_shader_barycentric`; without
+a geometry shader the host path is not a valid reference for per-vertex inputs.
 
 ## Windows compute smoke test
 
