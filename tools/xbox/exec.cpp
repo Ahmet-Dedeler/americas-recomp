@@ -90,6 +90,7 @@ struct Device {
     float maxSamplerAnisotropy = 1.0f;
     VkPhysicalDeviceVulkan13Properties subgroup{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_PROPERTIES};
     std::uint32_t nativeSubgroupSize = 0;
+    bool subgroupSizeControl = false;
     PFN_vkGetBufferDeviceAddress getAddress = nullptr;
 };
 
@@ -180,6 +181,7 @@ Device CreateDevice(std::uint32_t wave, bool bary) {
     }
     if (bary) f13.pNext = &fbary;
     vkGetPhysicalDeviceFeatures2(d.physical, &f2);
+    d.subgroupSizeControl = f13.subgroupSizeControl == VK_TRUE;
     if (bary && !fbary.fragmentShaderBarycentric) throw std::runtime_error(noBary);
     d.samplerAnisotropy = f2.features.samplerAnisotropy == VK_TRUE;
     d.shaderResourceMinLod = f2.features.shaderResourceMinLod == VK_TRUE;
@@ -533,11 +535,20 @@ int main(int argc, char** argv) {
         request.target.vulkanVersion = 0x00403000u;
         const bool computeSizes = (dev.subgroup.requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT) != 0;
         const auto fits = [&](std::uint32_t size) { return computeSizes ? size >= dev.subgroup.minSubgroupSize && size <= dev.subgroup.maxSubgroupSize : size == dev.nativeSubgroupSize; };
-        std::uint32_t hostSubgroup = fits(wave) || graphics ? wave : wave == 64u && fits(32u) ? 32u : wave;
-        if (graphics && wave == 32u && dev.nativeSubgroupSize > 32u) hostSubgroup = dev.nativeSubgroupSize;   // graphics stages cannot be pinned: a wider driver subgroup runs a wave32 program as split halves
-        if (const char* forced = std::getenv("XBOX_HOST_SUBGROUP")) hostSubgroup = static_cast<std::uint32_t>(Num(forced));
+        std::uint32_t hostSubgroup = graphics ? dev.nativeSubgroupSize : fits(wave) ? wave : wave == 64u && fits(32u) ? 32u : wave;
+        if (const char* forced = std::getenv("XBOX_HOST_SUBGROUP")) {
+            const auto size = Num(forced);
+            if (pixel && size != dev.nativeSubgroupSize &&
+                (!dev.subgroupSizeControl || !(dev.subgroup.requiredSubgroupSizeStages & VK_SHADER_STAGE_FRAGMENT_BIT) ||
+                 size < dev.subgroup.minSubgroupSize || size > dev.subgroup.maxSubgroupSize ||
+                 size == 0 || (size & (size - 1)) != 0)) {
+                throw std::runtime_error("the device cannot run fragments with subgroup size " + std::to_string(size) +
+                                         " (native " + std::to_string(dev.nativeSubgroupSize) + ")");
+            }
+            hostSubgroup = static_cast<std::uint32_t>(size);
+        }
         request.target.subgroupSize = hostSubgroup;
-        const bool nativeSubgroup = !graphics && !computeSizes && hostSubgroup == dev.nativeSubgroupSize;
+        const bool nativeSubgroup = hostSubgroup == dev.nativeSubgroupSize && (graphics || !computeSizes);
         request.target.spirvVersion = nativeSubgroup ? 0x00010500u : 0x00010600u;
         request.target.bdaAbiVersion = 1;
         std::vector<std::uint32_t> capsLocal = caps;
@@ -719,8 +730,10 @@ int main(int argc, char** argv) {
             VkPipelineShaderStageCreateInfo stages[3]{};
             stages[0] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, 0, VK_SHADER_STAGE_VERTEX_BIT, vsModule, "main", nullptr};
             std::uint32_t stageCount = 2;
+            VkPipelineShaderStageRequiredSubgroupSizeCreateInfo fragmentSubgroup{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO};
+            fragmentSubgroup.requiredSubgroupSize = hostSubgroup;
             if (pixel) {
-                stages[1] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, 0, VK_SHADER_STAGE_FRAGMENT_BIT, module, "main", entries.empty() ? nullptr : &spec};
+                stages[1] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nativeSubgroup ? nullptr : &fragmentSubgroup, 0, VK_SHADER_STAGE_FRAGMENT_BIT, module, "main", entries.empty() ? nullptr : &spec};
             } else {
                 stages[1] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, 0, VK_SHADER_STAGE_GEOMETRY_BIT, module, "main", entries.empty() ? nullptr : &spec};
                 stages[2] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, 0, VK_SHADER_STAGE_FRAGMENT_BIT, fsModule, "main", nullptr};
