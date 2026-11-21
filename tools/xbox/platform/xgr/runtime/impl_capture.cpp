@@ -21,7 +21,7 @@ constexpr uint16_t kScreenshotFormatHdr = 2;
 constexpr uint8_t kMetadataPriorityCount = 2;
 constexpr size_t kLocalIdBytes = 250;
 constexpr size_t kFilenamePrefixMaxBytes = 128;
-constexpr uint64_t kMetadataStorageBudgetBytes = 1024 * 1024;
+constexpr uint64_t kMetadataStorageBytes = 0;
 
 struct BroadcastStatus {
   uint8_t canStartBroadcast;
@@ -258,7 +258,7 @@ HRESULT XAppCaptureMetadataStopAllStates_impl(void*) { return S_OK; }
 
 HRESULT XAppCaptureMetadataRemainingStorageBytesAvailable_impl(void*, uint64_t* value) {
   if (!value) return E_INVALIDARG;
-  *value = kMetadataStorageBudgetBytes;
+  *value = kMetadataStorageBytes;
   return S_OK;
 }
 

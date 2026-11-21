@@ -321,8 +321,8 @@ static void CheckBroadcast() {
 
 static void CheckMetadata() {
   auto remaining = g_metadata.At<RemainingFn>(16, "XAppCaptureMetadataRemainingStorageBytesAvailable");
-  uint64_t before = 0;
-  Check(remaining(g_metadata.self, &before) == S_OK && before > 0, "XAppCaptureMetadataRemainingStorageBytesAvailable reports storage");
+  uint64_t before = 1;
+  Check(remaining(g_metadata.self, &before) == S_OK && before == 0, "XAppCaptureMetadataRemainingStorageBytesAvailable reports no storage, since nothing is kept");
   Check(remaining(g_metadata.self, nullptr) == E_INVALIDARG, "XAppCaptureMetadataRemainingStorageBytesAvailable rejects null");
 
   auto addString = g_metadata.At<StringMetadataFn>(8, "XAppCaptureMetadataAddStringEvent");
