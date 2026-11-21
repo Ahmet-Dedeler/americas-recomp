@@ -35,6 +35,22 @@ writes the pixel-center X and Y coordinates, zero blue, and unit alpha to a
 and reports the first mismatch. It uses no external shader corpus. The scenario's `export 0 9 0xe4` selects
 the 32-bit ABGR export mode with the identity component mapping.
 
+## Vertex color interpolation test
+
+With a built execution harness and the Vulkan SDK's `glslangValidator` on PATH:
+
+```powershell
+python tools/xbox/interpolation_test.py --exec "build-xbox/exec.exe"
+```
+
+A GLSL vertex shader assigns red, green and blue to a triangle. Its vertices
+have clip-space W values of 1, 2 and 4. The RDNA2 fragment program interpolates
+each channel using VINTRP P1/P2 and exports RGBA32F. At every pixel center, the
+CPU derives screen-space weights from the projected triangle, divides each by
+the corresponding W, then normalizes their sum to one. Covered pixels must match
+within 0.00001 per channel. Outside pixels must exactly retain the clear value.
+The triangle edges avoid pixel centers, so the reference needs no edge tie-break.
+
 ## Windows compute smoke test
 
 From the repository root in PowerShell, with Python 3, the x64 MSVC C++ toolchain,
