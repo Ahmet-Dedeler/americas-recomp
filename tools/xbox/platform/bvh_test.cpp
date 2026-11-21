@@ -1,0 +1,162 @@
+// Loads XboxBvhBuilder.dll next to the stand-in xmem.dll / d3d12_xs.dll and drives its C++ class XboxBvhBuilder on a PC D3D12 device.
+// Stage 1 (this file): construct it (the constructor creates the builder's root signatures and compute pipelines on the device), then
+// ask for prebuild sizes of a small triangle geometry and compare with the PC driver's own answer. Prints what succeeds, what fails and
+// every D3D12 debug-layer message, so the first failing step is visible. Nothing here is from the game except the DLL.
+// build: cl /nologo /EHsc /O2 /std:c++17 bvh_test.cpp d3d12.lib dxgi.lib /Fe:bvh_test.exe     usage: bvh_test [warp] [nodebug] [64bit-morton]
+#include <windows.h>
+#include <d3d12.h>
+#include <dxgi1_6.h>
+#include <wrl/client.h>
+#include <cstdio>
+#include <cstdint>
+#include <cstring>
+#include <exception>
+#include <cstdlib>
+#include <csignal>
+using Microsoft::WRL::ComPtr;
+
+// Exported names (decorated) of the class members used here; the object is opaque, so it is allocated oversized and zeroed.
+static const char* CTOR = "??0XboxBvhBuilder@@QEAA@PEAUID3D12Device11@@_N@Z";
+static const char* DTOR = "??1XboxBvhBuilder@@QEAA@XZ";
+static const char* PREBUILD = "?GetRaytracingAccelerationStructurePrebuildInfo@XboxBvhBuilder@@QEAAXPEBUD3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS@@PEBUD3D12XBOX_XDXR_STREAM_DESC@@PEAUD3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO@@@Z";
+static const char* MORTON = "?Set64BitMortonCodes@XboxBvhBuilder@@QEAAX_N@Z";
+typedef void* (__fastcall* CtorFn)(void*, ID3D12Device*, bool);
+typedef void(__fastcall* DtorFn)(void*);
+typedef void(__fastcall* PrebuildFn)(void*, const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS*, const void*, D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO*);
+typedef void(__fastcall* MortonFn)(void*, bool);
+
+// Describe a thrown C++ exception from its EXCEPTION_RECORD (MSVC x64: params = magic, object, ThrowInfo, image base; all links are RVAs)
+static int Describe(EXCEPTION_POINTERS* p) {
+    EXCEPTION_RECORD* r = p->ExceptionRecord;
+    if (r->ExceptionCode == 0xe06d7363 && r->NumberParameters >= 4) {
+        auto base = (const char*)r->ExceptionInformation[3];
+        auto ti = (const int*)r->ExceptionInformation[2];
+        auto arr = (const int*)(base + ti[3]);
+        printf("  thrown C++ type(s):");
+        for (int i = 0; i < arr[0] && i < 6; ++i) {
+            auto ct = (const int*)(base + arr[1 + i]);
+            auto tinfo = (const char*)(base + ct[1]);
+            printf(" %s", tinfo + 16);
+        }
+        auto obj = (const unsigned char*)r->ExceptionInformation[1];
+        printf("%s  first bytes of the object:", "\n");
+        for (int i = 0; i < 16; ++i) printf(" %02x", obj[i]);
+        printf("\n");
+    }
+    return EXCEPTION_EXECUTE_HANDLER;
+}
+// Print the current call stack as module+offset (offsets in XboxBvhBuilder.dll can be looked up in a disassembly)
+static void PrintStack(const char* why) {
+    void* frames[32];
+    USHORT n = CaptureStackBackTrace(0, 32, frames, nullptr);
+    printf("  %s, call stack:\n", why);
+    for (USHORT i = 0; i < n; ++i) {
+        HMODULE mod = nullptr;
+        GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR)frames[i], &mod);
+        char name[MAX_PATH] = "?";
+        if (mod) GetModuleFileNameA(mod, name, MAX_PATH);
+        const char* base = strrchr(name, 0x5c);
+        printf("    %s+0x%llx\n", base ? base + 1 : name, (unsigned long long)((char*)frames[i] - (char*)mod));
+    }
+    fflush(stdout);
+}
+static LONG CALLBACK TraceThrow(EXCEPTION_POINTERS* p) {
+    if (p->ExceptionRecord->ExceptionCode == 0xe06d7363) PrintStack("C++ throw");
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+static void OnTerminate() { PrintStack("std::terminate"); _exit(0x409); }
+static void OnAbort(int) { PrintStack("abort"); _exit(0x40a); }
+// SEH wrappers (functions with __try cannot hold C++ objects needing unwinding)
+static void CallCtor(CtorFn f, void* o, ID3D12Device* d) {
+    try { f(o, d, false); }
+    catch (const std::exception& e) { printf("  C++ exception std::exception: %s\n", e.what()); throw; }
+}
+static unsigned long SehCtor(CtorFn f, void* o, ID3D12Device* d) { __try { CallCtor(f, o, d); return 0; } __except (Describe(GetExceptionInformation())) { return GetExceptionCode(); } }
+static unsigned long SehPrebuild(PrebuildFn f, void* o, const D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS* in, D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO* out) { __try { f(o, in, nullptr, out); return 0; } __except (Describe(GetExceptionInformation())) { return GetExceptionCode(); } }
+static unsigned long SehDtor(DtorFn f, void* o) { __try { f(o); return 0; } __except (EXCEPTION_EXECUTE_HANDLER) { return GetExceptionCode(); } }
+
+static void DumpMessages(ID3D12Device* dev) {
+    ComPtr<ID3D12InfoQueue> q;
+    if (FAILED(dev->QueryInterface(IID_PPV_ARGS(&q)))) { printf("  (no info queue: debug layer not installed)\n"); return; }
+    UINT64 n = q->GetNumStoredMessages();
+    for (UINT64 i = 0; i < n && i < 40; ++i) {
+        SIZE_T len = 0;
+        q->GetMessage(i, nullptr, &len);
+        auto* m = (D3D12_MESSAGE*)malloc(len);
+        q->GetMessage(i, m, &len);
+        printf("  [d3d12 %d] %.300s\n", (int)m->Severity, m->pDescription);
+        free(m);
+    }
+    q->ClearStoredMessages();
+}
+
+int main(int argc, char** argv) {
+    bool warp = false, morton64 = false, nodebug = false;
+    for (int i = 1; i < argc; ++i) { warp |= !strcmp(argv[i], "warp"); morton64 |= !strcmp(argv[i], "64bit-morton"); nodebug |= !strcmp(argv[i], "nodebug"); }
+    ComPtr<ID3D12Debug> dbg;
+    if (!nodebug && SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&dbg)))) dbg->EnableDebugLayer();
+    ComPtr<IDXGIFactory4> fac;
+    CreateDXGIFactory1(IID_PPV_ARGS(&fac));
+    ComPtr<IDXGIAdapter> ad;
+    if (warp) fac->EnumWarpAdapter(IID_PPV_ARGS(&ad)); else fac->EnumAdapters(0, &ad);
+    DXGI_ADAPTER_DESC d; ad->GetDesc(&d);
+    printf("adapter: %ls\n", d.Description);
+    ComPtr<ID3D12Device> dev;
+    if (FAILED(D3D12CreateDevice(ad.Get(), D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&dev)))) { printf("no D3D12 device\n"); return 1; }
+    ComPtr<ID3D12Device11> dev11;
+    printf("ID3D12Device11: %s\n", SUCCEEDED(dev.As(&dev11)) ? "yes" : "NO (the builder wants a Device11)");
+    D3D12_FEATURE_DATA_D3D12_OPTIONS5 o5 = {};
+    dev->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &o5, sizeof(o5));
+    printf("raytracing tier: %d\n", (int)o5.RaytracingTier);
+    D3D12_FEATURE_DATA_SHADER_MODEL sm = { D3D_SHADER_MODEL_6_8 };
+    dev->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &sm, sizeof(sm));
+    printf("highest shader model: 0x%x\n", (unsigned)sm.HighestShaderModel);
+
+    AddVectoredExceptionHandler(1, TraceThrow);
+    std::set_terminate(OnTerminate);
+    signal(SIGABRT, OnAbort);
+    HMODULE m = LoadLibraryA("XboxBvhBuilder.dll");
+    if (!m) { printf("LoadLibrary XboxBvhBuilder.dll failed %lu\n", GetLastError()); return 1; }
+    auto ctor = (CtorFn)GetProcAddress(m, CTOR);
+    auto dtor = (DtorFn)GetProcAddress(m, DTOR);
+    auto prebuild = (PrebuildFn)GetProcAddress(m, PREBUILD);
+    auto set64 = (MortonFn)GetProcAddress(m, MORTON);
+    if (!ctor || !prebuild) { printf("exports not found\n"); return 1; }
+
+    void* obj = _aligned_malloc(1 << 20, 64);
+    memset(obj, 0, 1 << 20);
+    printf("constructing XboxBvhBuilder(device, false)...\n"); fflush(stdout);
+    if (unsigned long ex = SehCtor(ctor, obj, dev.Get())) {
+        printf("  constructor raised exception 0x%lx\n", ex);
+        DumpMessages(dev.Get());
+        return 2;
+    }
+    printf("  constructor returned\n");
+    DumpMessages(dev.Get());
+    if (morton64 && set64) set64(obj, true);
+
+    // one triangle-geometry bottom-level structure, 1,000 triangles worth of vertices (sizes only, no memory is read)
+    D3D12_RAYTRACING_GEOMETRY_DESC g = {};
+    g.Type = D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES;
+    g.Triangles.VertexFormat = DXGI_FORMAT_R32G32B32_FLOAT;
+    g.Triangles.VertexCount = 3000;
+    g.Triangles.VertexBuffer.StrideInBytes = 12;
+    g.Triangles.IndexFormat = DXGI_FORMAT_UNKNOWN;
+    D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS in = {};
+    in.Type = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL;
+    in.Flags = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAG_PREFER_FAST_TRACE;
+    in.DescsLayout = D3D12_ELEMENTS_LAYOUT_ARRAY;
+    in.NumDescs = 1;
+    in.pGeometryDescs = &g;
+    D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO pc = {}, xb = {};
+    ComPtr<ID3D12Device5> d5;
+    if (SUCCEEDED(dev.As(&d5))) {
+        d5->GetRaytracingAccelerationStructurePrebuildInfo(&in, &pc);
+        printf("PC driver  prebuild: result %llu  scratch %llu  update-scratch %llu\n", pc.ResultDataMaxSizeInBytes, pc.ScratchDataSizeInBytes, pc.UpdateScratchDataSizeInBytes);
+    }
+    if (unsigned long ex = SehPrebuild(prebuild, obj, &in, &xb)) printf("prebuild raised exception 0x%lx\n", ex);
+    else printf("Xbox builder prebuild: result %llu  scratch %llu  update-scratch %llu\n", xb.ResultDataMaxSizeInBytes, xb.ScratchDataSizeInBytes, xb.UpdateScratchDataSizeInBytes);
+    DumpMessages(dev.Get());
+    if (dtor) { unsigned long ex = SehDtor(dtor, obj); if (ex) printf("destructor exception 0x%lx\n", ex); else printf("destructor ok\n"); }
+    return 0;
+}
