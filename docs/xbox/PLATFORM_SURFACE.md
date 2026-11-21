@@ -16,18 +16,42 @@ Argument shapes for the three less common xmem calls come from disassembling the
 Static imports only: this does not include what the DLLs call through COM/vtables (D3D12 device methods) or what the game executable imports.
 
 ## XboxBvhBuilder.dll on a PC device (tools/xbox/platform/bvh_test.cpp)
-`bvh_test.exe` loads the DLL next to the stand-in `xmem.dll` / `d3d12_xs.dll`, creates a PC D3D12 device (AMD Radeon RX 7800 XT, Device11,
-raytracing tier 1.1, shader model 6.8) and constructs the `XboxBvhBuilder(ID3D12Device11*, bool)` class through its exported constructor.
-What the first run showed, in order:
-1. The constructor throws `E_INVALIDARG`. The cause is its first root signature: its flags are `0x3000000`, bits the PC runtime does not
-   define (the PC flags are all in the low 16 bits), so the PC serializer rejects it. `d3d12_xs.dll` now clears the high byte on a copy of the
-   descriptor (what the bits mean is not known; `XS_KEEP_XBOX_FLAGS=1` forwards it unchanged, `XS_LOG=<file>` logs every serialize call with
-   the parameters and the runtime's result). The signature is plain: root SRV, root UAV, 16 root constants.
-2. The constructor then creates seven compute pipelines (embedded shader blobs of 0x1410, 0x1ec4, 0x1580, 0x493c, 0x752c, 0x1118 and 0xfe8
-   bytes) through a device method at vtable slot 62 (`+0x1f0`), called with the pipeline description, two zero arguments, the interface id and
-   the output pointer. On a PC device slot 62 is `ID3D12Device5::CreateStateObject(desc, riid, ppv)`, which takes three arguments, so this is
-   not the PC method: the Xbox `ID3D12Device` vtable has methods the PC one does not, and the call crashes inside the PC runtime
-   (fail-fast, the process dies). So the builder needs a device object with the Xbox vtable layout, forwarding to the PC device. That
-   proxy is the "D3D12.X runtime" row of the progress map, and the game executable will use many more of those slots.
-Not reached: any build or rehydrate call. Those take GPU virtual addresses, and the builder's own shaders are DXIL that read memory by 64-bit
-address, which has no PC D3D12 equivalent, so running them on a PC device needs the shader path decided first (see XBOX_SHADERS.md).
+`bvh_test.exe` loads the DLL next to the stand-in `xmem.dll` / `d3d12_xs.dll`, creates a PC D3D12 device and constructs the
+`XboxBvhBuilder(ID3D12Device11*, bool)` class through its exported constructor, handing it an Xbox-layout device stand-in
+(`xbox_device_proxy.h`, see below). In order:
+1. The first root signature carries flags `0x3000000`, bits the PC runtime does not define (its flags are all in the low 16 bits), so the PC
+   serializer fails with `E_INVALIDARG`. `d3d12_xs.dll` clears the high byte on a copy of the descriptor (meaning of the bits unknown;
+   `XS_KEEP_XBOX_FLAGS=1` forwards it unchanged, `XS_LOG=<file>` logs every serialize call).
+2. The constructor then creates its 53 compute pipelines through device vtable slot 62, called as (description, 0, 0, interface id, output).
+   On a PC device slot 62 is `CreateStateObject` (three arguments), so called directly it crashes inside the PC runtime. The stand-in
+   maps slot 62 to `CreateComputePipelineState(description, iid, output)`; the description is a plain `D3D12_COMPUTE_PIPELINE_STATE_DESC`.
+3. **WARP**: all 53 pipelines are created (`S_OK`, shader blobs from 4 KB to 30 KB), the constructor returns, and
+   `GetRaytracingAccelerationStructurePrebuildInfo` answers for a 3,000-vertex triangle geometry: result 204,800 bytes, scratch 128,704
+   (the PC driver's own answer for the same input: 115,984 / 124,560, so the layouts differ as expected). The destructor runs.
+   **AMD Radeon RX 7800 XT**: the driver's shader compiler (`amdxc64.dll`) crashes with an access violation on the first of these shaders,
+   so the builder's DXIL does not compile on this PC GPU as it is (likely the 64-bit address loads). WARP creating the pipelines does not
+   show that they compile: it may defer that.
+Not reached: any build or rehydrate call. They take GPU virtual addresses, which the builder's DXIL shaders read by 64-bit address (no PC
+D3D12 equivalent), and real inputs would also need the matching vertex/index buffers (BVH_CONTAINER.md).
+
+## FidelityFX upscaler, unmodified, on a PC device (tools/xbox/platform/ffx_test.cpp)
+The package's own `amd_fidelityfx_loader_xbox.dll` and `amd_fidelityfx_upscaler_xbox.dll` run as they are (they are ordinary x64 PE files;
+nothing is recompiled), next to the stand-in `xmem.dll` / `d3d12_xs.dll`:
+* `ffxQuery` (version enumeration, null context): one upscaler, id `0xf5a5ca1e01001001`, name `4.1.1`.
+* `ffxCreateContext` for the upscale effect (type `0x10000`, backend extension type `0x01000002` carrying the device), 1280x720 to 1920x1080,
+  returns 0 and `ffxDestroyContext` returns 0, on the RX 7800 XT and on WARP, debug layer: 0 errors, 3 warnings (buffers ignore the initial state).
+* The create flags must be `0x29`: the descriptor validator (RVA `0xbb10`) fails with 6 unless bits 0x1, 0x8 and 0x20 are set and rejects
+  0x2, 0x4, 0x40, 0x100 and 0x200 as unsupported.
+* The provider creates 14 resources: 10 default-heap ones through device slot 76 (1920x1080 RGBA8, two RGBA16F, one RGB9E5, an 8-byte
+  buffer, 1x1 RG32F, 1x1 R32_UINT, 80x45 R32F, a 21,045,760-byte buffer, a 131,072-byte buffer) and 4 upload buffers through slot 27.
+Where the Xbox device differs from the PC one, as found by running it:
+| Xbox call | PC | handling |
+|---|---|---|
+| device slot 76 (resource creation, heap properties / heap flags / description / state / clear value / iid / output) | slot 27 is CreateCommittedResource; slot 76 is something else | forwarded to CreateCommittedResource; the description is 56 bytes plus extension words and its layout field is `0x101` (tiled) or `0x1` (row-major buffer), replaced by driver-chosen layout |
+| descriptor heap `GetCPU/GPUDescriptorHandleForHeapStart` (slots 9, 10) | returns through a hidden pointer in RDX | the Xbox build returns the 8-byte handle in RAX; heaps are wrapped so the call is made the PC way |
+| slots 1, 15, 18, 19, 27, 38 on the device | same | forwarded unchanged (AddRef, descriptor increment size, SRV, UAV, committed resource for uploads, copyable footprints) |
+This is the same finding the Xbox2Windows project reports (slot 76, layout `0x101`), reached here by running the code instead of translating it.
+No dispatch was run: it needs real textures, a command list and the package's shaders.
+
+`xbox_device_proxy.h` is the reusable part: an object whose vtable forwards every slot to the PC object by generated thunks (with per-slot hit
+counters, `PrintHits`) and lets selected slots be replaced. It is the starting point for the "D3D12.X runtime" row.

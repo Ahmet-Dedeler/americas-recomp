@@ -14,6 +14,16 @@
 #include <cstdlib>
 #include <csignal>
 using Microsoft::WRL::ComPtr;
+#include "xbox_device_proxy.h"
+
+// Xbox device vtable slot 62: the builder's pipeline creation. Called as (desc, 0, 0, riid, ppv) with a D3D12_COMPUTE_PIPELINE_STATE_DESC
+// (root signature, shader bytecode, node mask, cached pso, flags). Treated here as the PC CreateComputePipelineState; the two zero
+// arguments are not understood (logged if nonzero).
+static HRESULT __fastcall Slot62(XboxObjectProxy* self, const D3D12_COMPUTE_PIPELINE_STATE_DESC* desc, void* a, void* b, REFIID riid, void** out) {
+    HRESULT hr = ((ID3D12Device*)self->real)->CreateComputePipelineState(desc, riid, out);
+    printf("  [slot 62] compute pipeline, shader %llu bytes, a=%p b=%p -> 0x%08lx\n", (unsigned long long)desc->CS.BytecodeLength, a, b, (unsigned long)hr);
+    return hr;
+}
 
 // Exported names (decorated) of the class members used here; the object is opaque, so it is allocated oversized and zeroed.
 static const char* CTOR = "??0XboxBvhBuilder@@QEAA@PEAUID3D12Device11@@_N@Z";
@@ -61,7 +71,7 @@ static void PrintStack(const char* why) {
     fflush(stdout);
 }
 static LONG CALLBACK TraceThrow(EXCEPTION_POINTERS* p) {
-    if (p->ExceptionRecord->ExceptionCode == 0xe06d7363) PrintStack("C++ throw");
+    { DWORD c = p->ExceptionRecord->ExceptionCode; if (c == 0xe06d7363 || c == 0xc0000005) PrintStack(c == 0xc0000005 ? "access violation" : "C++ throw"); }
     return EXCEPTION_CONTINUE_SEARCH;
 }
 static void OnTerminate() { PrintStack("std::terminate"); _exit(0x409); }
@@ -126,12 +136,15 @@ int main(int argc, char** argv) {
     void* obj = _aligned_malloc(1 << 20, 64);
     memset(obj, 0, 1 << 20);
     printf("constructing XboxBvhBuilder(device, false)...\n"); fflush(stdout);
-    if (unsigned long ex = SehCtor(ctor, obj, dev.Get())) {
+    XboxObjectProxy* proxy = XboxObjectProxy::Create(dev.Get());
+    proxy->Override(62, (void*)Slot62);
+    if (unsigned long ex = SehCtor(ctor, obj, (ID3D12Device*)proxy)) {
         printf("  constructor raised exception 0x%lx\n", ex);
         DumpMessages(dev.Get());
         return 2;
     }
     printf("  constructor returned\n");
+    proxy->PrintHits("device");
     DumpMessages(dev.Get());
     if (morton64 && set64) set64(obj, true);
 

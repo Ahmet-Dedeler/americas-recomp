@@ -8,7 +8,7 @@ What the package's DLLs need from the platform, and stand-ins for the Xbox-only 
 * `xmem.cpp` is a stand-in `xmem.dll` (XMemAlloc, XMemFree, XMemGetWorkingSetStatistics, XMemVirtualQuery); `d3d12_xs.cpp` forwards the two
   `d3d12_xs.dll` functions the DLLs import to the PC `d3d12.dll`. Build each with `cl /LD /O2 file.cpp /Fe:name.dll`. Argument shapes were read from the callers' machine code;
   the meaning of the attribute bits and of two output fields is a guess (see the comments in `xmem.cpp`). `XMEM_LOG=<file>` logs every call.
-* `bvh_test.cpp` loads `XboxBvhBuilder.dll` and constructs its class on a PC D3D12 device (see PLATFORM_SURFACE.md: where it stops and why).
+* `bvh_test.cpp` and `ffx_test.cpp` run the package's BVH builder and FidelityFX DLLs on a PC D3D12 device behind `xbox_device_proxy.h` (what works and where it stops: PLATFORM_SURFACE.md).
 * `bink_test.cpp` loads `Bink2Scarlett.dll` next to a stand-in `xmem.dll`, decodes every frame of a video and saves two frames as raw BGRA.
   `carve_bink.py <movies.rpf> <out_dir> [count]` extracts Bink videos from the archive (they are stored raw).
 
