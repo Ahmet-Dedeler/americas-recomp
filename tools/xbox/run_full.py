@@ -23,7 +23,7 @@ BUILD = r"E:/Programming/anyps5_src/build/"
 DRIVER_GFX = os.environ.get("XBOX_DRIVER_GFX", BUILD + "driver_gfx2.exe")    # PS/VS/MS driver; override to test a new build
 LIMIT = 120                      # seconds per driver run
 BINDS = M + "binds_full/"        # canary.py --binds-dir points this elsewhere for its self-test
-GFX = {"PS": "ps", "VS": "vs", "?": "ms"}
+GFX = {"PS": "ps", "VS": "vs", "?": "ms", "GS": "gs"}
 
 
 def attrs(idx):

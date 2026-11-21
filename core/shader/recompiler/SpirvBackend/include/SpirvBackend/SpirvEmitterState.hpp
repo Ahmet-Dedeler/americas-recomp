@@ -288,6 +288,9 @@ struct SpirvEmitterState {
     std::uint32_t subgroupLocalInvocationIdVariable = 0;
     std::uint32_t subgroupIdVariable = 0;
     std::uint32_t perVertexVariable = 0;
+    std::uint32_t geometryInputPerVertexVariable = 0;
+    std::vector<std::uint32_t> geometryInputParameters;
+    std::uint32_t geometryEmitCountVariable = 0;
     std::uint32_t barycentricReciprocalWVariable = 0;
     std::uint32_t pointSizeVariable = 0;
     std::uint32_t clipDistanceVariable = 0;

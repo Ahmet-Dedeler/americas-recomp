@@ -740,6 +740,7 @@ void EmitDirectInstruction(SpirvValueEmitContext& ctx, const IrValue& inst) {
         case IrOpcode::ControlNop: return Invoke(EmitControlNop, ctx, inst);
         case IrOpcode::Waitcnt: return Invoke(EmitWaitcnt, ctx, inst);
         case IrOpcode::Sendmsg: return Invoke(EmitSendmsg, ctx, inst);
+        case IrOpcode::EmitVertex: return Invoke(EmitGeometryVertex, ctx, inst);
         case IrOpcode::TtraceData: return Invoke(EmitTtraceData, ctx, inst);
         case IrOpcode::InstPrefetch: return Invoke(EmitInstPrefetch, ctx, inst);
         case IrOpcode::SelectU32: return Invoke(EmitSelectU32, ctx, inst);
@@ -1514,6 +1515,71 @@ void EmitWaitcnt(SpirvValueEmitContext& context) {
 
 void EmitSendmsg(SpirvValueEmitContext& context) {
     EmitVoid(context);
+}
+
+void EmitGeometryVertex(SpirvValueEmitContext& ctx, const IrValue& inst) {
+    auto& state = ctx.state;
+    if (StageOf(state) != IrShaderStage::Geometry) {
+        EmitVoid(ctx);
+        return;
+    }
+    const std::uint32_t op = inst.Argument(0)->Resolve()->ImmediateU32();
+    const std::uint32_t stream = inst.Argument(1)->Resolve()->ImmediateU32();
+    const std::uint32_t exec = ctx.Arg(inst, 2u);
+    EmitIfCondition(state, exec, [&] {
+        const auto& geom = VertexInfo(state).geometry;
+        if (stream != 0u) {
+            state.module.EmitCapability(spv::CapabilityGeometryStreams);
+        }
+        if (op == 2u || op == 3u) {
+            const auto emitIdx = state.module.AllocateId();
+            state.module.AddFunction(spv::OpLoad, TypeU32(state), emitIdx, state.geometryEmitCountVariable);
+            const auto baseDword = EmitAddU32(state, ConstantU32(state, geom.gsvsOffsetDwords), EmitBinaryU32(state, spv::OpIMul, emitIdx, ConstantU32(state, geom.gsvsVertexSize)));
+            const std::uint32_t ldsLimit = LdsStorageDwords(state);
+            const auto limitConst = ConstantU32(state, ldsLimit);
+            const auto lastConst = ConstantU32(state, ldsLimit - 1u);
+            const auto ptrLdsU32 = TypeU32ElementPointer(state, spv::StorageClassFunction);
+            const auto loadVec4 = [&](std::uint32_t slotDwords) {
+                std::array<std::uint32_t, 4> comps{};
+                for (std::uint32_t c = 0u; c < 4u; ++c) {
+                    const auto idx = EmitAddU32(state, baseDword, ConstantU32(state, slotDwords + c));
+                    const auto inRange = Binary(state, spv::OpULessThan, TypeBool(state), idx, limitConst);
+                    const auto clamped = Select(state, TypeU32(state), inRange, idx, lastConst);
+                    const auto ptr = state.module.AllocateId();
+                    state.module.AddFunction(spv::OpAccessChain, ptrLdsU32, ptr, state.ldsVariable, clamped);
+                    const auto bits = state.module.AllocateId();
+                    state.module.AddFunction(spv::OpLoad, TypeU32(state), bits, ptr);
+                    comps[c] = Unary(state, spv::OpBitcast, TypeF32(state), bits);
+                }
+                const auto vec = state.module.AllocateId();
+                state.module.AddFunction(spv::OpCompositeConstruct, TypeF32Vector(state, 4u), vec, comps[0], comps[1], comps[2], comps[3]);
+                return vec;
+            };
+            if (geom.outputPosition && state.perVertexVariable != 0u) {
+                const auto posPtr = state.module.AllocateId();
+                state.module.AddFunction(spv::OpAccessChain, TypePointer(state, spv::StorageClassOutput, TypeF32Vector(state, 4u)), posPtr, state.perVertexVariable, ConstantU32(state, 0u));
+                state.module.AddFunction(spv::OpStore, posPtr, loadVec4(0u));
+            }
+            const std::uint32_t firstParam = geom.outputPosition ? 1u : 0u;
+            for (const auto& output : state.outputs) {
+                if (output.kind != StageOutputKind::Parameter || output.variableId == 0u) continue;
+                state.module.AddFunction(spv::OpStore, output.variableId, loadVec4((firstParam + output.index) * 4u));
+            }
+            if (stream == 0u) {
+                state.module.AddFunction(spv::OpEmitVertex);
+            } else {
+                state.module.AddFunction(spv::OpEmitStreamVertex, ConstantU32(state, stream));
+            }
+            state.module.AddFunction(spv::OpStore, state.geometryEmitCountVariable, EmitAddU32(state, emitIdx, ConstantU32(state, 1u)));
+        }
+        if (op == 1u || op == 3u) {
+            if (stream == 0u) {
+                state.module.AddFunction(spv::OpEndPrimitive);
+            } else {
+                state.module.AddFunction(spv::OpEndStreamPrimitive, ConstantU32(state, stream));
+            }
+        }
+    });
 }
 
 void EmitTtraceData(SpirvValueEmitContext& context) {

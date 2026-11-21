@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
     // User data words = SGPRs s0.. (userDataBaseRegister 0). Mesh (merged NGG) shaders: s0-s7 are system/hidden words and user data runs
     // from s8 up to s39 (32 user SGPRs), so 40 words; compute and the other stages keep 16 (for compute, workgroup ids follow the user data).
     const std::string stageArg = argc > 6 ? argv[6] : "cs";
-    const std::size_t nud = stageArg == "ms" ? 40 : 16;
+    const std::size_t nud = (stageArg == "ms" || stageArg == "gs") ? 40 : 16;
     std::vector<std::uint32_t> userData(nud);
     struct Node { std::uint32_t id = 0; std::int64_t parent = -1; std::uint32_t off = 0; std::vector<std::uint32_t> mem = std::vector<std::uint32_t>(0x10000); std::uint32_t base = 0; };
     std::map<std::uint32_t, Node> nodes;
@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
         const std::uint32_t fp16Mask = argc > 9 ? std::stoul(argv[9], nullptr, 16) : 0u;
         for (std::uint32_t i = 0; i < px.interpolatorCount && i < 32; i++) px.interpolatorSettings[i] = i | (((fp16Mask >> i) & 1u) ? 0x80000u : 0u);
         request.context.pixel = px;
-    } else if (stage == "vs" || stage == "ms") {
+    } else if (stage == "vs" || stage == "ms" || stage == "gs") {
         ShaderVertexStageInfo vx{};
         request.context.vertex = vx;
     }
@@ -127,7 +127,23 @@ int main(int argc, char** argv) {
         request.graphics = g;
         request.target.mesh = MeshTargetLimits{{128u, 128u, 128u}, 128u, 32768u, 256u, 256u, 128u, 32768u, 1u, 1u};
     }
-    request.shader = {stage == "ms" ? ShaderStage::Mesh : stage == "ps" ? ShaderStage::Fragment : stage == "vs" ? ShaderStage::Vertex : ShaderStage::Compute, 0x20000u, code, 0, {}};
+    if (stage == "gs") {
+        GraphicsCompileContext g{};
+        g.firstUserSgpr = 0;
+        GeometryConfiguration geom{};
+        if (argc > 7) geom.inputPrimitive = std::stoul(argv[7]);
+        if (argc > 8) geom.outputTopology = std::stoul(argv[8]);
+        if (argc > 9) geom.maxOutputVertices = std::stoul(argv[9]);
+        if (argc > 10) geom.esgsItemSize = std::stoul(argv[10]);
+        if (argc > 11) geom.gsvsVertexSize = std::stoul(argv[11]);
+        if (argc > 12) geom.inputAttributeCount = std::stoul(argv[12]);
+        if (argc > 13) geom.outputAttributeCount = std::stoul(argv[13]);
+        const std::uint32_t inVerts = geom.inputPrimitive == 1u ? 1u : geom.inputPrimitive == 2u ? 2u : geom.inputPrimitive == 3u ? 3u : geom.inputPrimitive == 4u ? 4u : 6u;
+        geom.gsvsOffsetDwords = std::max<std::uint32_t>(64u, ((inVerts * geom.esgsItemSize + 63u) & ~63u));
+        g.geometry = geom;
+        request.graphics = g;
+    }
+    request.shader = {stage == "ms" ? ShaderStage::Mesh : stage == "gs" ? ShaderStage::Geometry : stage == "ps" ? ShaderStage::Fragment : stage == "vs" ? ShaderStage::Vertex : ShaderStage::Compute, 0x20000u, code, 0, {}};
     request.context.waveSize = wave;
     request.context.userDataBaseRegister = 0;
     request.context.userData = userData;

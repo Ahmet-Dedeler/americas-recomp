@@ -119,6 +119,31 @@ struct ShaderTessellationInputInfo {
     std::uint32_t geometryItemDwords = 0;
 };
 
+struct ShaderGeometryInputInfo {
+    std::uint32_t inputPrimitive = 3;
+    std::uint32_t outputTopology = 3;
+    std::uint32_t maxOutputVertices = 3;
+    std::uint32_t invocations = 1;
+    std::uint32_t esgsItemSize = 8;
+    std::uint32_t gsvsVertexSize = 20;
+    std::uint32_t gsvsOffsetDwords = 64;
+    std::uint32_t inputAttributeCount = 2;
+    std::uint32_t outputAttributeCount = 5;
+    bool inputPosition = true;
+    bool outputPosition = true;
+
+    [[nodiscard]] std::uint32_t InputVertexCount() const {
+        switch (inputPrimitive) {
+        case 1u: return 1u;
+        case 2u: return 2u;
+        case 3u: return 3u;
+        case 4u: return 4u;
+        case 5u: return 6u;
+        default: return 0u;
+        }
+    }
+};
+
 struct ShaderVertexInputInfo {
     static constexpr int MaxResources = 32;
 
@@ -141,6 +166,7 @@ struct ShaderVertexInputInfo {
     ShaderDepthRemap depthRemap;
     ShaderMeshInputInfo mesh;
     ShaderTessellationInputInfo tess;
+    ShaderGeometryInputInfo geometry;
     bool fetchExternal = false;
     bool fetchEmbedded = false;
 };

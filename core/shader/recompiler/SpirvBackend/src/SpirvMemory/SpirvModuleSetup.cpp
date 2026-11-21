@@ -33,6 +33,7 @@ std::uint32_t ExecutionModelForStage(IrShaderStage stage) {
     case IrShaderStage::TessellationControl: return spv::ExecutionModelTessellationControl;
     case IrShaderStage::TessellationEvaluation: return spv::ExecutionModelTessellationEvaluation;
     case IrShaderStage::Mesh: return spv::ExecutionModelMeshEXT;
+    case IrShaderStage::Geometry: return spv::ExecutionModelGeometry;
     case IrShaderStage::Pixel: return spv::ExecutionModelFragment;
     case IrShaderStage::Compute: return spv::ExecutionModelGLCompute;
     default: FailEmit("shader stage has no execution model");
@@ -333,6 +334,9 @@ void DefineModule(SpirvEmitterState& state) {
     DefineInputs(state);
     DefineOutputs(state);
     DefineTessellationInterfaces(state);
+    if (StageOf(state) == IrShaderStage::Geometry) {
+        DefineGeometryInterfaces(state);
+    }
     DefineDescriptors(state);
     if (state.requirements.functionLds && !state.pixelFunctionLdsBuffer) {
         state.ldsVariable = state.module.AllocateId();
@@ -368,6 +372,9 @@ void DefineModule(SpirvEmitterState& state) {
     }
     if (StageOf(state) == IrShaderStage::TessellationControl || StageOf(state) == IrShaderStage::TessellationEvaluation) {
         DefineTessellationExecutionModes(state);
+    }
+    if (StageOf(state) == IrShaderStage::Geometry) {
+        DefineGeometryExecutionModes(state);
     }
     state.entryLabel = state.module.AllocateId();
     EmitBaseHeader(state.module, state.program, state.stencilReplayLateStore || state.requirements.imageAtomicLocks || state.requirements.bufferAtomicLocks);

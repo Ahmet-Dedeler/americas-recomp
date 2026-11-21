@@ -91,6 +91,8 @@ void DefineDescriptors(SpirvEmitterState& state);
 void DefineModule(SpirvEmitterState& state);
 void DefineTessellationInterfaces(SpirvEmitterState& state);
 void DefineTessellationExecutionModes(SpirvEmitterState& state);
+void DefineGeometryInterfaces(SpirvEmitterState& state);
+void DefineGeometryExecutionModes(SpirvEmitterState& state);
 void DefineMeshOutputs(SpirvEmitterState& state);
 void EmitMeshEntryPoint(SpirvEmitterState& state);
 void EmitMeshAllocate(SpirvValueEmitContext& ctx, const IrValue& inst);

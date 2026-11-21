@@ -1273,6 +1273,55 @@ void DefineTessellationExecutionModes(SpirvEmitterState& state) {
     }
 }
 
+void DefineGeometryInterfaces(SpirvEmitterState& state) {
+    const auto& geom = VertexInfo(state).geometry;
+    const std::uint32_t vertices = geom.InputVertexCount();
+    const auto vec4Type = TypeF32Vector(state, 4u);
+    if (geom.inputPosition) {
+        const auto perVertexIn = state.module.DecoratedType(spv::OpTypeStruct,
+            {{spv::OpMemberDecorate, {0u, spv::DecorationBuiltIn, spv::BuiltInPosition}},
+             {spv::OpDecorate, {spv::DecorationBlock}}},
+            vec4Type);
+        const auto glInType = state.module.Type(spv::OpTypeArray, perVertexIn, ConstantU32(state, vertices));
+        state.geometryInputPerVertexVariable = DefineInterfaceVariable(state, glInType, spv::StorageClassInput, "gl_in");
+    }
+    const std::uint32_t firstParam = geom.inputPosition ? 1u : 0u;
+    const auto paramArrayType = state.module.Type(spv::OpTypeArray, vec4Type, ConstantU32(state, vertices));
+    for (std::uint32_t slot = firstParam; slot < geom.inputAttributeCount; ++slot) {
+        const std::uint32_t location = slot - firstParam;
+        const auto name = "in_gs_param_" + std::to_string(location);
+        const auto variable = DefineInterfaceVariable(state, paramArrayType, spv::StorageClassInput, name.c_str());
+        state.module.AddAnnotation(spv::OpDecorate, variable, spv::DecorationLocation, location);
+        state.geometryInputParameters.push_back(variable);
+    }
+    state.geometryEmitCountVariable = state.module.AllocateId();
+}
+
+void DefineGeometryExecutionModes(SpirvEmitterState& state) {
+    const auto& geom = VertexInfo(state).geometry;
+    state.module.EmitCapability(spv::CapabilityGeometry);
+    std::uint32_t inputMode = spv::ExecutionModeTriangles;
+    switch (geom.inputPrimitive) {
+    case 1u: inputMode = spv::ExecutionModeInputPoints; break;
+    case 2u: inputMode = spv::ExecutionModeInputLines; break;
+    case 3u: inputMode = spv::ExecutionModeTriangles; break;
+    case 4u: inputMode = spv::ExecutionModeInputLinesAdjacency; break;
+    case 5u: inputMode = spv::ExecutionModeInputTrianglesAdjacency; break;
+    default: FailEmit("unsupported geometry input primitive");
+    }
+    std::uint32_t outputMode = spv::ExecutionModeOutputTriangleStrip;
+    switch (geom.outputTopology) {
+    case 1u: outputMode = spv::ExecutionModeOutputPoints; break;
+    case 2u: outputMode = spv::ExecutionModeOutputLineStrip; break;
+    case 3u: outputMode = spv::ExecutionModeOutputTriangleStrip; break;
+    default: FailEmit("unsupported geometry output topology");
+    }
+    state.module.AddExecutionMode(state.mainFunc, inputMode);
+    state.module.AddExecutionMode(state.mainFunc, spv::ExecutionModeInvocations, geom.invocations);
+    state.module.AddExecutionMode(state.mainFunc, outputMode);
+    state.module.AddExecutionMode(state.mainFunc, spv::ExecutionModeOutputVertices, geom.maxOutputVertices);
+}
+
 void DefineMeshOutputs(SpirvEmitterState& state) {
     if (state.inputInfo.vertex == nullptr) {
         throw std::runtime_error("vertex input info is missing for mesh output definition");
@@ -1944,6 +1993,9 @@ void EmitProgram(SpirvEmitterState& state) {
     if (state.requirements.functionLds && !state.pixelFunctionLdsBuffer) {
         state.module.AddFunction(spv::OpVariable, TypeU32ArrayPointer(state, spv::StorageClassFunction, LdsStorageDwords(state)), state.ldsVariable, spv::StorageClassFunction);
     }
+    if (state.geometryEmitCountVariable != 0u) {
+        state.module.AddFunction(spv::OpVariable, TypePointer(state, spv::StorageClassFunction, TypeU32(state)), state.geometryEmitCountVariable, spv::StorageClassFunction, ConstantU32(state, 0u));
+    }
     if (ScratchPoolActive(state)) {
         state.module.AddFunction(spv::OpVariable, TypePointer(state, spv::StorageClassFunction, TypeU32(state)), state.scratchPoolCandidateVariable, spv::StorageClassFunction);
         state.module.AddFunction(spv::OpVariable, TypePointer(state, spv::StorageClassFunction, TypeU32(state)), state.scratchPoolWonVariable, spv::StorageClassFunction);
@@ -2025,6 +2077,41 @@ void EmitProgram(SpirvEmitterState& state) {
         state.module.AddFunction(spv::OpBeginInvocationInterlockEXT);
     }
     EmitMemoryOffsets(state);
+    if (StageOf(state) == IrShaderStage::Geometry && state.ldsVariable != 0u) {
+        const auto& geom = VertexInfo(state).geometry;
+        const std::uint32_t vertices = geom.InputVertexCount();
+        const auto vec4Type = TypeF32Vector(state, 4u);
+        const auto ptrInVec4 = TypePointer(state, spv::StorageClassInput, vec4Type);
+        const auto ptrLdsU32 = TypeU32ElementPointer(state, spv::StorageClassFunction);
+        const auto storeVec4 = [&](std::uint32_t value, std::uint32_t baseDword) {
+            for (std::uint32_t c = 0u; c < 4u; ++c) {
+                const auto comp = state.module.AllocateId();
+                state.module.AddFunction(spv::OpCompositeExtract, TypeF32(state), comp, value, c);
+                const auto bits = Unary(state, spv::OpBitcast, TypeU32(state), comp);
+                const auto dst = state.module.AllocateId();
+                state.module.AddFunction(spv::OpAccessChain, ptrLdsU32, dst, state.ldsVariable, ConstantU32(state, baseDword + c));
+                state.module.AddFunction(spv::OpStore, dst, bits);
+            }
+        };
+        const std::uint32_t firstParam = geom.inputPosition ? 1u : 0u;
+        for (std::uint32_t v = 0u; v < vertices; ++v) {
+            const std::uint32_t vertexBase = v * geom.esgsItemSize;
+            if (geom.inputPosition && state.geometryInputPerVertexVariable != 0u) {
+                const auto ptr = state.module.AllocateId();
+                state.module.AddFunction(spv::OpAccessChain, ptrInVec4, ptr, state.geometryInputPerVertexVariable, ConstantU32(state, v), ConstantU32(state, 0u));
+                const auto val = state.module.AllocateId();
+                state.module.AddFunction(spv::OpLoad, vec4Type, val, ptr);
+                storeVec4(val, vertexBase);
+            }
+            for (std::size_t p = 0; p < state.geometryInputParameters.size(); ++p) {
+                const auto ptr = state.module.AllocateId();
+                state.module.AddFunction(spv::OpAccessChain, ptrInVec4, ptr, state.geometryInputParameters[p], ConstantU32(state, v));
+                const auto val = state.module.AllocateId();
+                state.module.AddFunction(spv::OpLoad, vec4Type, val, ptr);
+                storeVec4(val, vertexBase + (firstParam + static_cast<std::uint32_t>(p)) * 4u);
+            }
+        }
+    }
     if (state.program.Resources().stage == IrShaderStage::Pixel && state.inputInfo.pixel != nullptr && state.inputInfo.pixel->QuadMasked()) {
         const auto& pixel = *state.inputInfo.pixel;
         const auto quad = EmitQuadPixel(state);

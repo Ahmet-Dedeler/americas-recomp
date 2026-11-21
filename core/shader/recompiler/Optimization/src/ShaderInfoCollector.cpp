@@ -46,6 +46,7 @@ void ValidateOptions(const IrProgram& program, ShaderStageInputInfo inputInfo) {
         case IrShaderStage::TessellationControl:
         case IrShaderStage::TessellationEvaluation:
         case IrShaderStage::Mesh:
+        case IrShaderStage::Geometry:
             if (inputInfo.vertex == nullptr) {
                 return Fail("vertex shader has no input metadata");
             }
@@ -641,6 +642,16 @@ void ShaderInfoCollector::Collect(IrProgram& program, const ShaderStageInputInfo
         case IrShaderStage::Mesh:
             AddInput(next, StageInputKind::LocalInvocationIndex, 0, 1, "gl_LocalInvocationIndex");
             break;
+        case IrShaderStage::Geometry: {
+            const auto& geom = inputInfo.vertex->geometry;
+            if (geom.outputPosition) AddOutput(next, StageOutputKind::Position, 0, 0, "gl_Position");
+            const std::uint32_t firstParam = geom.outputPosition ? 1u : 0u;
+            for (std::uint32_t slot = firstParam; slot < geom.outputAttributeCount; ++slot) {
+                const std::uint32_t location = slot - firstParam;
+                AddOutput(next, StageOutputKind::Parameter, location, location, "out_param_" + std::to_string(location));
+            }
+            break;
+        }
         case IrShaderStage::Pixel:
             CollectPixelInputs(program, inputInfo.pixel, next);
             break;

@@ -28,6 +28,8 @@ IrShaderStage toIrShaderStage(ShaderStageKind stage) {
         return IrShaderStage::Compute;
     case ShaderStageKind::Mesh:
         return IrShaderStage::Mesh;
+    case ShaderStageKind::Geometry:
+        return IrShaderStage::Geometry;
     case ShaderStageKind::Local:
         return IrShaderStage::Local;
     case ShaderStageKind::TessellationControl:
@@ -52,6 +54,7 @@ void validateTranslateOptions(const TranslateOptions& options) {
     case ShaderStageKind::TessellationControl:
     case ShaderStageKind::TessellationEvaluation:
     case ShaderStageKind::Mesh:
+    case ShaderStageKind::Geometry:
         if (options.inputInfo.vertex == nullptr) {
             throw std::runtime_error("vertex shader translation has no vertex input metadata");
         }
@@ -531,6 +534,17 @@ void emitEntryPrologue(IrProgram& program, IrBlock& entryBlock, const TranslateO
             setVector(static_cast<VectorReg>(5), drawIndex(StageInputKind::VertexIndex));
             setVector(static_cast<VectorReg>(8), drawIndex(StageInputKind::InstanceIndex));
         }
+    } else if (options.stage == ShaderStageKind::Geometry) {
+        const auto& geom = options.inputInfo.vertex->geometry;
+        const std::uint32_t item = geom.esgsItemSize;
+        entryIr.SetScalarReg(static_cast<ScalarReg>(2), entryIr.Constant(geom.gsvsOffsetDwords * 4u));
+        entryIr.SetScalarReg(static_cast<ScalarReg>(3), entryIr.Constant((1u << 8u) | (1u << 28u)));
+        setVector(static_cast<VectorReg>(0), entryIr.Constant((0u * item) | ((1u * item) << 16u)));
+        setVector(static_cast<VectorReg>(1), entryIr.Constant((2u * item) | ((3u * item) << 16u)));
+        setVector(static_cast<VectorReg>(2), builtin(StageInputKind::PrimitiveId));
+        setVector(static_cast<VectorReg>(3), entryIr.Constant((4u * item) | ((5u * item) << 16u)));
+        setVector(static_cast<VectorReg>(4), geom.invocations > 1u ? builtin(StageInputKind::InvocationId) : entryIr.Constant(0u));
+        setVector(static_cast<VectorReg>(5), geom.invocations > 1u ? builtin(StageInputKind::InvocationId) : entryIr.Constant(0u));
     }
 }
 
