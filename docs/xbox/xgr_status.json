@@ -1078,15 +1078,15 @@ false
 "IXPersistentLocalStorageImpl": [
 [
 "XPersistentLocalStorageGetPathSize",
-false
+true
 ],
 [
 "XPersistentLocalStorageGetPath",
-false
+true
 ],
 [
 "XPersistentLocalStorageGetSpaceInfo",
-false
+true
 ],
 [
 "XPersistentLocalStoragePromptUserForSpaceAsync",
@@ -1696,7 +1696,7 @@ false
 "IXUserGamertagImpl": [
 [
 "XUserGetGamertag",
-false
+true
 ]
 ]
 }

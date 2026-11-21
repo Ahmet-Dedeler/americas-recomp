@@ -131,6 +131,20 @@ HRESULT XUserCheckPrivilege_impl(void*, void* h, uint32_t, uint32_t, uint8_t* ha
   *has = 1;   // offline profile: every privilege granted, so no title is blocked on a missing one
   return S_OK;
 }
+// gamertag: XGR_GAMERTAG, else "Player". Classic is limited to 15 bytes; an offline profile has no modern suffix, so ModernSuffix is
+// empty and UniqueModern equals Modern. A buffer shorter than the text plus its terminator gets ERROR_INSUFFICIENT_BUFFER.
+HRESULT XUserGetGamertag_impl(void*, void* h, uint32_t component, size_t size, char* out, size_t* used) {
+  if (!h || !out || component > 3) return E_INVALIDARG;
+  const char* e = std::getenv("XGR_GAMERTAG");
+  const char* tag = e && *e ? e : "Player";
+  size_t n = component == 2 ? 0 : std::strlen(tag);
+  if (component == 0 && n > 15) n = 15;
+  if (size < n + 1) return HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
+  std::memcpy(out, tag, n);
+  out[n] = 0;
+  if (used) *used = n + 1;
+  return S_OK;
+}
 uint8_t XUserIsStoreUser_impl(void*, void*) { return 0; }
 uint8_t XUserIsSignOutPresent_impl(void*) { return 0; }
 
@@ -157,6 +171,7 @@ const Override kOverrides[] = {
     {"XUserGetState", reinterpret_cast<void*>(&XUserGetState_impl)},
     {"XUserGetAgeGroup", reinterpret_cast<void*>(&XUserGetAgeGroup_impl)},
     {"XUserCheckPrivilege", reinterpret_cast<void*>(&XUserCheckPrivilege_impl)},
+    {"XUserGetGamertag", reinterpret_cast<void*>(&XUserGetGamertag_impl)},
     {"XUserIsStoreUser", reinterpret_cast<void*>(&XUserIsStoreUser_impl)},
     {"XUserIsSignOutPresent", reinterpret_cast<void*>(&XUserIsSignOutPresent_impl)},
     {"XUserRegisterForChangeEvent", reinterpret_cast<void*>(&XUserRegisterForChangeEvent_impl)},
