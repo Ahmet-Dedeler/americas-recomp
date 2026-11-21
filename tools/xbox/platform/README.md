@@ -12,6 +12,11 @@ What the package's DLLs need from the platform, and stand-ins for the Xbox-only 
 * `bink_test.cpp` loads `Bink2Scarlett.dll` next to a stand-in `xmem.dll`, decodes every frame of a video and saves two frames as raw BGRA.
   `carve_bink.py <movies.rpf> <out_dir> [count]` extracts Bink videos from the archive (they are stored raw).
 
+* `xgr/idl_table.py <dir of IDLs> <table.json>` reads the interface definitions of another xgameruntime reimplementation (Xodus, LGPL-2.1; not part of this repo) and
+  `xgr/gen_stub.py <table.json> <out_dir>` generates a logging stand-in `xgameruntime.dll` from it (60 interfaces, 1505 vtable slots). With `XGR_LOG=<file>` it records which
+  interfaces a game queries and which methods it calls first, and logs interface ids missing from the table (where the console build differs from the PC one).
+  Neither the IDLs nor the generated table are committed.
+
 ## First run with the game executable
 1. `python exe_report.py <exe or directory> --out report --stubs` prints header facts (entry point, subsystem, sections) and classifies every
    static import: standard Windows, shipped in the package, covered by the stand-ins here, or *needs* an implementation. `report/needs.json`
